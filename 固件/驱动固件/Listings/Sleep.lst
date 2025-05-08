@@ -1,0 +1,122 @@
+C51 COMPILER V9.60.0.0   SLEEP                                                             05/01/2025 07:57:18 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SLEEP
+OBJECT MODULE PLACED IN .\Objects\Sleep.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Logic\Sleep.c OMF2 OPTIMIZE(9,SPEED) BROWSE MODDP2 INCDIR(.\StdDriver\in
+                    -c;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System) DEFINE(EnableStdGPIO) DEBUG PRINT
+                    -(.\Listings\Sleep.lst) TABS(2) OBJECT(.\Objects\Sleep.obj)
+
+line level    source
+
+   1          #include "cms8s6990.h"
+   2          #include "delay.h"
+   3          #include "SideKey.h"
+   4          #include "PWMCfg.h"
+   5          #include "PinDefs.h"
+   6          #include "ModeControl.h"
+   7          #include "OutputChannel.h"
+   8          #include "SpecialMode.h"
+   9          #include "BattDisplay.h"
+  10          #include "ADCCfg.h"
+  11          #include "LEDMgmt.h"
+  12          #include "LocateLED.h"
+  13          
+  14          //睡眠定时器
+  15          volatile int SleepTimer;
+  16          
+  17          //禁用/启用所有系统外设
+  18          void SystemPeripheralCTRL(bit IsEnable)
+  19            {
+  20   1        if(IsEnable)
+  21   1          {
+  22   2          ADC_Init(); //初始化ADC
+  23   2          PWM_Init(); //初始化PWM发生器
+  24   2          LED_Init(); //初始化侧按LED
+  25   2          OutputChannel_Init(); //初始化输出通道
+  26   2          return;
+  27   2          }
+  28   1        //关闭所有外设
+  29   1        SetSystemHBTimer(0); //禁用心跳定时器
+  30   1        PWM_DeInit();
+  31   1        ADC_DeInit(); //关闭PWM和ADC
+  32   1        LocateLED_Enable(); //打开定位LED
+  33   1        OutputChannel_DeInit(); //对输出通道进行复位
+  34   1        }
+  35            
+  36          //加载定时器时间
+  37          void LoadSleepTimer(void) 
+  38            {
+  39   1        //加载睡眠时间
+  40   1        SleepTimer=SysMode>Operation_Locked?4800:8*SleepTimeOut; //睡眠时间延长   
+  41   1        }
+  42          
+  43          //检测系统是否允许进入睡眠的条件
+  44          static char QueryIsSystemNotAllowToSleep(void)
+  45            {
+  46   1        //系统处于定位指示灯选择状态，不允许睡眠
+  47   1        if(LocLEDState!=LocateLED_NotEdit)return 1;
+  48   1        //系统在显示电池电压不允许睡眠
+  49   1        if(VshowFSMState!=BattVdis_Waiting)return 1;
+  50   1        //系统开机了
+  51   1        if(CurrentMode->ModeIdx!=Mode_OFF)return 1;
+  52   1        //允许睡眠
+  53   1        return 0;
+C51 COMPILER V9.60.0.0   SLEEP                                                             05/01/2025 07:57:18 PAGE 2   
+
+  54   1        } 
+  55            
+  56          //睡眠管理函数
+  57          void SleepMgmt(void)
+  58            {
+  59   1        bit sleepsel;
+  60   1        //非关机且仍然在显示电池电压的时候定时器复位禁止睡眠
+  61   1        if(QueryIsSystemNotAllowToSleep())LoadSleepTimer();
+  62   1        //允许睡眠开始倒计时
+  63   1        if(SleepTimer>0)SleepTimer--;
+  64   1        //立即进入睡眠阶段
+  65   1        else
+  66   1          {   
+  67   2          if(SysMode>Operation_Locked)SysMode=Operation_Normal; //强制退出战术模式
+  68   2          C0CON0=0; //侧按关机后关闭比较器
+  69   2          SystemPeripheralCTRL(0);//关闭所有外设
+  70   2          STOP();  //令STOP=1，使单片机进入睡眠
+  71   2          //系统已唤醒，立即开始检测
+  72   2          delay_init();  //延时函数初始化
+  73   2          SetSystemHBTimer(1); 
+  74   2          MarkAsKeyPressed(); //立即标记按键按下
+  75   2          do  
+  76   2            {
+  77   3            delay_ms(1);
+  78   3            SideKey_LogicHandler(); //处理侧按事务
+  79   3            //侧按按键的监测定时器处理(使用62.5mS心跳时钟,通过2分频)
+  80   3            if(!SysHFBitFlag)continue; 
+  81   3            SysHFBitFlag=0;
+  82   3            sleepsel=~sleepsel;
+  83   3            if(sleepsel)SideKey_TIM_Callback();
+  84   3            }
+  85   2          while(!IsKeyEventOccurred()); //等待按键唤醒
+  86   2          //系统已被唤醒，立即进入工作模式      
+  87   2          SystemPeripheralCTRL(1);
+  88   2          //所有外设初始化完毕，启动ADC异步处理模式并打开系统中断
+  89   2          EnableADCAsync(); 
+  90   2          }
+  91   1        }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    202    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       2
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

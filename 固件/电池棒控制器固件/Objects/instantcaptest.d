@@ -1,0 +1,9 @@
+.\objects\instantcaptest.o: POST\InstantCapTest.c
+.\objects\instantcaptest.o: .\GUI\GUI.h
+.\objects\instantcaptest.o: .\User\inc\lcd.h
+.\objects\instantcaptest.o: .\User\inc\LCD_Init.h
+.\objects\instantcaptest.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\instantcaptest.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\instantcaptest.o: .\User\inc\Config.h
+.\objects\instantcaptest.o: .\User\inc\IP2366_REG.h
+.\objects\instantcaptest.o: .\User\inc\ADC.h

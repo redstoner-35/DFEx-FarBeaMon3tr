@@ -1,0 +1,13 @@
+.\objects\mainmenu.o: Menu\MainMenu.c
+.\objects\mainmenu.o: .\User\inc\IP2366_REG.h
+.\objects\mainmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\mainmenu.o: .\GUI\GUI.h
+.\objects\mainmenu.o: .\User\inc\lcd.h
+.\objects\mainmenu.o: .\User\inc\LCD_Init.h
+.\objects\mainmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\mainmenu.o: .\User\inc\Config.h
+.\objects\mainmenu.o: .\User\inc\ADC.h
+.\objects\mainmenu.o: .\User\inc\pic.h
+.\objects\mainmenu.o: .\User\inc\Key.h
+.\objects\mainmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+.\objects\mainmenu.o: .\User\inc\INA226.h

@@ -1,0 +1,9 @@
+.\objects\typecconnreset.o: Menu\TypeCConnReset.c
+.\objects\typecconnreset.o: .\GUI\GUI.h
+.\objects\typecconnreset.o: .\User\inc\lcd.h
+.\objects\typecconnreset.o: .\User\inc\LCD_Init.h
+.\objects\typecconnreset.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\typecconnreset.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\typecconnreset.o: .\User\inc\IP2366_REG.h
+.\objects\typecconnreset.o: .\User\inc\Config.h
+.\objects\typecconnreset.o: .\User\inc\Key.h

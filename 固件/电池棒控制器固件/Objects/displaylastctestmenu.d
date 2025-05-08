@@ -1,0 +1,11 @@
+.\objects\displaylastctestmenu.o: Menu\DisplayLastCTestMenu.c
+.\objects\displaylastctestmenu.o: .\GUI\GUI.h
+.\objects\displaylastctestmenu.o: .\User\inc\lcd.h
+.\objects\displaylastctestmenu.o: .\User\inc\LCD_Init.h
+.\objects\displaylastctestmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\displaylastctestmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\displaylastctestmenu.o: .\User\inc\CapTest.h
+.\objects\displaylastctestmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+.\objects\displaylastctestmenu.o: .\User\inc\Key.h
+.\objects\displaylastctestmenu.o: .\User\inc\Config.h
+.\objects\displaylastctestmenu.o: .\User\inc\IP2366_REG.h

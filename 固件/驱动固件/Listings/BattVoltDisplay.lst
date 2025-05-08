@@ -1,0 +1,301 @@
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   04/29/2025 17:16:19 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BATTVOLTDISPLAY
+OBJECT MODULE PLACED IN .\Objects\BattVoltDisplay.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Logic\BattVoltDisplay.c OMF2 OPTIMIZE(9,SPEED) BROWSE MODDP2 INCDIR(.\St
+                    -dDriver\inc;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System) DEFINE(EnableStdGPIO) D
+                    -EBUG PRINT(.\Listings\BattVoltDisplay.lst) TABS(2) OBJECT(.\Objects\BattVoltDisplay.obj)
+
+line level    source
+
+   1          #include "ADCCfg.h"
+   2          #include "LEDMgmt.h"
+   3          #include "delay.h"
+   4          #include "ModeControl.h"
+   5          #include "SideKey.h"
+   6          #include "BattDisplay.h"
+   7          #include "SelfTest.h"
+   8          #include "LocateLED.h"
+   9          
+  10          //ÄÚ²¿flag
+  11          bit IsBatteryAlert; //µç³ØµçÑ¹µÍÓÚ¾¯¸æÖµ  
+  12          bit IsBatteryFault; //µç³ØµçÑ¹µÍÓÚ±£»¤Öµ    
+  13          
+  14          //ÄÚ²¿±äÁ¿
+  15          static char BattShowTimer; //µç³ØµçÁ¿ÏÔÊ¾¼ÆÊ±
+  16          static xdata AverageCalcDef BattVolt; 
+  17          static xdata int VshowTIM;
+  18          static char LowVoltStrobeTIM;
+  19          static xdata float VbattSample; //È¡ÑùµÄµç³ØµçÑ¹
+  20          
+  21          //Íâ²¿È«¾Ö±äÁ¿
+  22          BattStatusDef BattState; //µç³ØµçÁ¿±ê¼ÇÎ»
+  23          xdata float Battery; //µÈÐ§µ¥½Úµç³ØµçÑ¹
+  24          xdata BattVshowFSMDef VshowFSMState; //µç³ØµçÑ¹ÏÔÊ¾ËùÐèµÄ¼ÆÊ±Æ÷ºÍ×´Ì¬»ú×ªÒÆ
+  25          
+  26          //Æô¶¯µç³ØµçÑ¹ÏÔÊ¾
+  27          void TriggerVshowDisplay(void)  
+  28            {
+  29   1        if(VshowFSMState!=BattVdis_Waiting)return; //·ÇµÈ´ýÏÔÊ¾×´Ì¬½ûÖ¹²Ù×÷
+  30   1        VshowFSMState=BattVdis_PrepareDis;
+  31   1        if(CurrentMode->ModeIdx!=Mode_OFF)
+  32   1          {
+  33   2          LEDMode=LED_OFF;
+  34   2          VshowTIM=8; //µãÁÁ×´Ì¬²éÑ¯µçÁ¿£¬Ï¨ÃðLEDµÈÒ»»á
+  35   2          }
+  36   1        }   
+  37          
+  38          //Éú³ÉµÍµçÁ¿ÌáÊ¾±¨¾¯
+  39          bit LowPowerStrobe(void)
+  40            {
+  41   1        //µçÁ¿Õý³£
+  42   1        if(BattState!=Battery_VeryLow)LowVoltStrobeTIM=0;
+  43   1        //µçÁ¿Òì³£¿ªÊ¼¼ÆÊ±
+  44   1        else if(!LowVoltStrobeTIM)LowVoltStrobeTIM=1; //Æô¶¯¼ÆÊ±Æ÷
+  45   1        else if(LowVoltStrobeTIM>((LowVoltStrobeGap*8)-4))return 1; //´¥·¢ÉÁË¸±ê¼ÇµçÁ÷Îª0
+  46   1        //ÆäÓàÇé¿ö·µ»Ø0
+  47   1        return 0;
+  48   1        }
+  49            
+  50          //¿ØÖÆLED²à°´²úÉúÉÁË¸Ö¸Ê¾µç³ØµçÑ¹µÄ´¦Àí
+  51          static void VshowGenerateSideStrobe(LEDStateDef Color,BattVshowFSMDef NextStep)
+  52            {
+  53   1        //Í¨¹ý¿ìÉÁÒ»´Î±íÊ¾ÊÇ0
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   04/29/2025 17:16:19 PAGE 2   
+
+  54   1        if(VshowTIM==-1)
+  55   1          {
+  56   2          MakeFastStrobe(Color);
+  57   2          VshowTIM=0; 
+  58   2          }
+  59   1        //Õý³£Ö¸Ê¾
+  60   1        LEDMode=(VshowTIM%4)>1?Color:LED_OFF; //ÖÆÔìºìÉ«ÉÁË¸Ö¸Ê¾¶ÔÓ¦Î»µÄµçÑ¹
+  61   1        //ÏÔÊ¾½áÊø
+  62   1        if(VshowTIM<=0) 
+  63   1          {
+  64   2          LEDMode=LED_OFF;
+  65   2          VshowTIM=10;
+  66   2          VshowFSMState=NextStep; //µÈ´ýÒ»»á
+  67   2          }
+  68   1        }
+  69          //µçÑ¹ÏÔÊ¾×´Ì¬»ú¸ù¾Ý¶ÔÓ¦µÄµçÑ¹Î»Êý¼ÆËã³öÉÁË¸¶¨Ê±Æ÷µÄÅäÖÃÖµ
+  70          static void VshowFSMGenTIMValue(int Vsample,BattVshowFSMDef NextStep)
+  71            {
+  72   1        if(VshowTIM>0)return; //Ê±¼äÎ´µ½²»ÔÊÐíÅäÖÃ
+  73   1        if(Vsample==0)VshowTIM=-1; //0=Ë²¼äÉÁÒ»ÏÂ
+  74   1        else VshowTIM=(4*Vsample)-1; //ÅäÖÃÏÔÊ¾µÄÊ±³¤
+  75   1        VshowFSMState=NextStep; //Ö´ÐÐÏÂÒ»²½ÏÔÊ¾
+  76   1        }
+  77            
+  78          //¸ù¾Ýµç³Ø×´Ì¬»úÉèÖÃLEDÖ¸Ê¾µç³ØµçÁ¿
+  79          static void SetPowerLEDBasedOnVbatt(void) 
+  80            {
+  81   1        switch(BattState)
+  82   1          {
+  83   2           case Battery_Plenty:LEDMode=LED_Green;break; //µç³ØµçÁ¿³ä×ãÂÌÉ«³£ÁÁ
+  84   2           case Battery_Mid:LEDMode=LED_Amber;break; //µç³ØµçÁ¿ÖÐµÈ»ÆÉ«³£ÁÁ
+  85   2           case Battery_Low:LEDMode=LED_Red;break;//µç³ØµçÁ¿²»×ã
+  86   2           case Battery_VeryLow:LEDMode=LED_RedBlink;break; //µç³ØµçÁ¿ÑÏÖØ²»×ãºìÉ«ÂýÉÁ
+  87   2          }
+  88   1        }
+  89          
+  90          //µç³ØÏêÏ¸µçÑ¹ÏÔÊ¾µÄ×´Ì¬»ú´¦Àí
+  91          static void BatVshowFSM(void)
+  92            {
+  93   1        //µçÁ¿ÏÔÊ¾×´Ì¬»ú
+  94   1        switch(VshowFSMState)
+  95   1          {
+  96   2          case BattVdis_PrepareDis: //×¼±¸ÏÔÊ¾
+  97   2            if(VshowTIM)break;
+  98   2            VshowTIM=14; //ÑÓ³Ù1.75Ãë
+  99   2            VshowFSMState=BattVdis_DelayBeforeDisplay; //ÏÔÊ¾Í·²¿
+ 100   2            break;
+ 101   2          //ÑÓ³Ù²¢ÏÔÊ¾¿ªÍ·
+ 102   2          case BattVdis_DelayBeforeDisplay:
+ 103   2            if(VshowTIM>12)LEDMode=LED_Green;
+ 104   2            else if(VshowTIM>10)LEDMode=LED_Amber;    
+ 105   2            else if(VshowTIM>8)LEDMode=LED_Red; 
+ 106   2            else LEDMode=LED_OFF; //ºì»ÆÂÌÉÁË¸Ö®ºóµÈ´ý
+ 107   2            //Í·²¿ÏÔÊ¾½áÊøºó¿ªÊ¼ÕýÊ½ÏÔÊ¾µçÑ¹
+ 108   2            if(VshowTIM>0)break; //Ê±¼äÎ´µ½
+ 109   2            VbattSample=Data.RawBattVolt; //½øÐÐµçÑ¹È¡Ñù
+ 110   2            if(((int)VbattSample)/100)
+ 111   2              {
+ 112   3              LEDMode=LED_RedBlinkThird;
+ 113   3              VshowFSMState=BattVdis_ShowChargeLvl; //µçÑ¹³¬³öÏÔÊ¾·¶Î§£¨ÓÃºìÉ«ÉÁÈý´ÎÖ¸Ê¾£©
+ 114   3              break;
+ 115   3              }
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   04/29/2025 17:16:19 PAGE 3   
+
+ 116   2            VshowFSMGenTIMValue((int)VbattSample/10,BattVdis_Show10V); //ÅäÖÃ¼ÆÊ±Æ÷¿ªÊ¼ÏÔÊ¾
+ 117   2            break;
+ 118   2          //ÏÔÊ¾Ê®Î»
+ 119   2          case BattVdis_Show10V:
+ 120   2            VshowGenerateSideStrobe(LED_Red,BattVdis_Gap10to1V); //µ÷ÓÃ´¦Àíº¯ÊýÉú³ÉºìÉ«²à²¿ÉÁË¸
+ 121   2            break;
+ 122   2          //Ê®Î»ºÍ¸öÎ»Ö®¼äµÄ¼ä¸ô
+ 123   2          case BattVdis_Gap10to1V:
+ 124   2            VshowFSMGenTIMValue((int)VbattSample%10,BattVdis_Show1V); //ÅäÖÃ¼ÆÊ±Æ÷¿ªÊ¼ÏÔÊ¾ÏÂÒ»×é  
+ 125   2            break;  
+ 126   2          //ÏÔÊ¾¸öÎ»
+ 127   2          case BattVdis_Show1V:
+ 128   2            VshowGenerateSideStrobe(LED_Amber,BattVdis_Gap1to0_1V); //µ÷ÓÃ´¦Àíº¯ÊýÉú³É»ÆÉ«²à²¿ÉÁË¸
+ 129   2            break;
+ 130   2          //¸öÎ»ºÍÊ®·ÖÎ»Ö®¼äµÄ¼ä¸ô    
+ 131   2          case BattVdis_Gap1to0_1V: 
+ 132   2            VshowFSMGenTIMValue((int)(VbattSample*(float)10)%10,BattVdis_Show0_1V);
+ 133   2            break;
+ 134   2          //ÏÔÊ¾Ð¡ÊýµãºóÒ»Î»(0.1V)
+ 135   2          case BattVdis_Show0_1V:
+ 136   2            VshowGenerateSideStrobe(LED_Green,BattVdis_WaitShowChargeLvl); //µ÷ÓÃ´¦Àíº¯ÊýÉú³ÉÂÌÉ«²à²¿ÉÁË¸
+ 137   2            break;
+ 138   2          //µÈ´ýÒ»¶ÎÊ±¼äºóÏÔÊ¾µ±Ç°µçÁ¿
+ 139   2          case BattVdis_WaitShowChargeLvl:
+ 140   2            if(VshowTIM>0)break;
+ 141   2            BattShowTimer=CurrentMode->ModeIdx!=Mode_OFF?0:12; //Æô¶¯×ÜÌåµçÁ¿ÏÔÊ¾
+ 142   2            VshowFSMState=BattVdis_ShowChargeLvl; //µÈ´ýµçÁ¿ÏÔÊ¾×´Ì¬½áÊø
+ 143   2            break;
+ 144   2          //µÈ´ý×ÜÌåµçÁ¿ÏÔÊ¾½áÊø
+ 145   2          case BattVdis_ShowChargeLvl:
+ 146   2            if(BattShowTimer)SetPowerLEDBasedOnVbatt(); //ÏÔÊ¾µçÁ¿
+ 147   2            else if(!getSideKeyNClickAndHoldEvent())VshowFSMState=BattVdis_Waiting; //ÓÃ»§ÈÔÈ»°´ÏÂ°´¼ü£¬µÈ´ýÓÃ»§ËÉ¿
+             -ª,ËÉ¿ªºó»Øµ½µÈ´ý½×¶Î
+ 148   2            break;
+ 149   2          }
+ 150   1        }
+ 151          //µç³ØµçÁ¿×´Ì¬»ú
+ 152          static void BatteryStateFSM(void)
+ 153            {
+ 154   1        float Thres;
+ 155   1        //½øÐÐ¼«ÁÁãÐÖµ¼ÆËã
+ 156   1        if(CurrentMode->ModeIdx!=Mode_Turbo)Thres=3.7;
+ 157   1        else Thres=3.5;
+ 158   1        //×´Ì¬»ú´¦Àí  
+ 159   1        switch(BattState) 
+ 160   1           {
+ 161   2           //µç³ØµçÁ¿³ä×ã
+ 162   2           case Battery_Plenty: 
+ 163   2              if(Battery<Thres)BattState=Battery_Mid; //µç³ØµçÑ¹Ð¡ÓÚ3.7£¬»Øµ½µçÁ¿½ÏµÍ×´Ì¬
+ 164   2              break;
+ 165   2           //µç³ØµçÁ¿½ÏÎª³ä×ã
+ 166   2           case Battery_Mid:
+ 167   2              if(Battery>(Thres+0.2))BattState=Battery_Plenty; //µç³ØµçÑ¹´óÓÚ3.8£¬»Øµ½³ä×ã×´Ì¬
+ 168   2              if(Battery<3.2)BattState=Battery_Low; //µç³ØµçÑ¹µÍÓÚ3.2ÔòÇÐ»»µ½µçÁ¿µÍµÄ×´Ì¬
+ 169   2              break;
+ 170   2           //µç³ØµçÁ¿²»×ã
+ 171   2           case Battery_Low:
+ 172   2              if(Battery>3.5)BattState=Battery_Mid; //µç³ØµçÑ¹¸ßÓÚ3.5£¬ÇÐ»»µ½µçÁ¿ÖÐµÈµÄ×´Ì¬
+ 173   2              if(Battery<2.9)BattState=Battery_VeryLow; //µç³ØµçÑ¹µÍÓÚ2.8£¬±¨¸æÑÏÖØ²»×ã
+ 174   2              break;
+ 175   2           //µç³ØµçÁ¿ÑÏÖØ²»×ã
+ 176   2           case Battery_VeryLow:
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   04/29/2025 17:16:19 PAGE 4   
+
+ 177   2              if(Battery>3.2)BattState=Battery_Low; //µç³ØµçÑ¹»ØÉýµ½3.0£¬Ìø×ªµ½µçÁ¿²»×ã½×¶Î
+ 178   2              break;
+ 179   2           }
+ 180   1        }
+ 181          
+ 182          //¸´Î»µç³ØµçÑ¹¼ì²â»º´æ
+ 183          static void ResetBattAvg(void)  
+ 184            {
+ 185   1        BattVolt.Min=32766;
+ 186   1        BattVolt.Max=-32766; //¸´Î»×î´ó×îÐ¡²¶»ñÆ÷
+ 187   1        BattVolt.Count=0;
+ 188   1        BattVolt.AvgBuf=0; //Çå³ýÆ½¾ù¼ÆÊýÆ÷ºÍ»º´æ
+ 189   1        }
+ 190          
+ 191          //ÔÚÆô¶¯Ê±ÏÔÊ¾µç³ØµçÑ¹
+ 192          void DisplayVBattAtStart(void)
+ 193            {
+ 194   1        char i;
+ 195   1        //³õÊ¼»¯Æ½¾ùÖµ»º´æ,¸´Î»±êÖ¾Î»
+ 196   1        ResetBattAvg();
+ 197   1        //¸´Î»µç³ØµçÑ¹×´Ì¬ºÍµç³ØÏÔÊ¾×´Ì¬»ú
+ 198   1        VshowFSMState=BattVdis_Waiting;   
+ 199   1        for(i=0;i<6;i++)
+ 200   1          {
+ 201   2          SystemTelemHandler();
+ 202   2          Battery=Data.BatteryVoltage; //»ñÈ¡²¢¸üÐÂµç³ØµçÑ¹
+ 203   2          BatteryStateFSM(); //·´¸´Ñ­»·Ö´ÐÐ×´Ì¬»ú¸üÐÂµ½×îÖÕµÄµç³Ø×´Ì¬
+ 204   2          }
+ 205   1        //Æô¶¯µç³ØµçÁ¿ÏÔÊ¾(½öÎÞ´íÎóµÄÇé¿öÏÂ)
+ 206   1        if(CurrentMode->ModeIdx!=Mode_OFF)return;
+ 207   1        BattShowTimer=12;
+ 208   1        }
+ 209          //µç³ØµçÁ¿ÏÔÊ¾ÑÓÊ±µÄ´¦Àí
+ 210          void BattDisplayTIM(void)
+ 211            {
+ 212   1        long buf;
+ 213   1        //µçÁ¿Æ½¾ùÄ£¿é¼ÆËã
+ 214   1        if(BattVolt.Count<VBattAvgCount)    
+ 215   1          {
+ 216   2          buf=(long)(Data.BatteryVoltage*1000);
+ 217   2          BattVolt.Count++;
+ 218   2          BattVolt.AvgBuf+=buf;
+ 219   2          if(BattVolt.Min>buf)BattVolt.Min=buf;
+ 220   2          if(BattVolt.Max<buf)BattVolt.Max=buf; //¼«Öµ¶ÁÈ¡
+ 221   2          }
+ 222   1        else //Æ½¾ù´ÎÊýµ½£¬¸üÐÂµçÑ¹
+ 223   1          {
+ 224   2          BattVolt.AvgBuf-=(long)BattVolt.Min+(long)BattVolt.Max; //È¥µô×î¸ß×îµÍ
+ 225   2          BattVolt.AvgBuf/=(long)(BattVolt.Count-2); //ÇóÆ½¾ùÖµ
+ 226   2          Battery=(float)BattVolt.AvgBuf/(float)1000; //µÃµ½×îÖÕµÄµç³ØµçÑ¹
+ 227   2          ResetBattAvg(); //¸´Î»»º´æ
+ 228   2          }
+ 229   1        //µÍµçÑ¹ÌáÊ¾ÉÁË¸¼ÆÊ±Æ÷
+ 230   1        if(LowVoltStrobeTIM==LowVoltStrobeGap*8)LowVoltStrobeTIM=1;//Ê±¼äµ½Çå³ýÊýÖµÖØÐÂ¼ÆÊ±
+ 231   1        else if(LowVoltStrobeTIM)LowVoltStrobeTIM++;
+ 232   1        //µç³ØµçÑ¹ÏÔÊ¾µÄ¼ÆÊ±Æ÷´¦Àí  
+ 233   1        if(VshowTIM)VshowTIM--;
+ 234   1        //µç³ØÏÔÊ¾¶¨Ê±Æ÷
+ 235   1        if(BattShowTimer)BattShowTimer--;
+ 236   1        }
+ 237          
+ 238          //µç³Ø²ÎÊý²âÁ¿ºÍÖ¸Ê¾µÆ¿ØÖÆ
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   04/29/2025 17:16:19 PAGE 5   
+
+ 239          void BatteryTelemHandler(void)
+ 240            {
+ 241   1        int AlertThr,VBatt;
+ 242   1        //¸ù¾Ýµç³ØµçÑ¹¿ØÖÆflagÊµÏÖµÍµçÑ¹½µµµºÍ¹Ø»ú±£»¤
+ 243   1        if(CurrentMode->ModeIdx==Mode_Ramp)AlertThr=SysCfg.RampBattThres; //ÎÞ¼«µ÷¹âÄ£Ê½ÏÂ£¬Ê¹ÓÃ½á¹¹ÌåÄÚµÄ¶¯Ì¬ãÐÖ
+             -µ
+ 244   1        else AlertThr=CurrentMode->LowVoltThres; //´Óµ±Ç°Ä¿±êµ²Î»¶ÁÈ¡Ä£Ê½Öµ  
+ 245   1        VBatt=(int)(Battery*1000); //µÃµ½µç³ØµçÑ¹(mV)
+ 246   1        IsBatteryFault=VBatt>2700?0:1; //¹ÊÕÏbit
+ 247   1        if(IsBatteryFault)IsBatteryAlert=0; //¹ÊÕÏbitÖÃÆðºóÇ¿ÖÆÇå³ý¾¯±¨bit
+ 248   1        else if(Data.FBInjectVolt<0.2&&VBatt<3750&&Data.OutputVoltage>16)IsBatteryAlert=1; //µç³ØµçÑ¹µÍÓÚ12V£¬FB×
+             -¢ÈëÔË·ÅÊä³öÀ­µ½¸º¹ìÇÒÊä³ö´óÓÚ16V£¬ËµÃ÷ÊäÈëÏÞÁ÷´¥·¢£¬´ËÊ±Ç¿ÖÆµôµµ  
+ 249   1        else IsBatteryAlert=VBatt>AlertThr?0:1; //¾¯±¨bit
+ 250   1        //µç³ØµçÁ¿Ö¸Ê¾×´Ì¬»ú
+ 251   1        BatteryStateFSM();
+ 252   1        //LED¿ØÖÆ
+ 253   1        if(IsOneTimeStrobe())return; //ÎªÁË±ÜÃâ¸ÉÈÅÖ»¹¤×÷Ò»´ÎµÄÆµÉÁÖ¸Ê¾£¬²»Ö´ÐÐ¿ØÖÆ 
+ 254   1        if(ErrCode!=Fault_None)DisplayErrorIDHandler(); //ÓÐ¹ÊÕÏ·¢Éú£¬ÏÔÊ¾´íÎó
+ 255   1        else if(VshowFSMState!=BattVdis_Waiting)BatVshowFSM();//µç³ØµçÑ¹ÏÔÊ¾Æô¶¯£¬Ö´ÐÐ×´Ì¬»ú
+ 256   1        else if(LocLEDState==LocateLED_Sel)LEDMode=LocateLED_ShowType(); //½øÈëLED±à¼­
+ 257   1        else if(CurrentMode->ModeIdx!=Mode_OFF||BattShowTimer)SetPowerLEDBasedOnVbatt(); //ÓÃ»§³¤°´°´¼ü²éÑ¯µçÁ¿»ò
+             -ÕßÊÖµç¿ª»ú£¬Ö¸Ê¾µçÁ¿
+ 258   1        else LEDMode=LED_OFF; //ÊÖµç´¦ÓÚ¹Ø±Õ×´Ì¬£¬ÇÒÃ»ÓÐ°´¼ü°´ÏÂµÄ¶¯¾²£¬¹ÊLEDÉèÖÃÎª¹Ø±Õ
+ 259   1        }
+ 260            
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1411    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     20    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3      15
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

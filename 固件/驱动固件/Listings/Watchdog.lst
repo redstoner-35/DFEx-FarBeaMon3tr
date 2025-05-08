@@ -1,0 +1,94 @@
+C51 COMPILER V9.60.0.0   WATCHDOG                                                          11/29/2024 11:07:01 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE WATCHDOG
+OBJECT MODULE PLACED IN .\Objects\Watchdog.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Hardware\Watchdog.c OMF2 OPTIMIZE(9,SPEED) BROWSE INCDIR(.\include;.\Std
+                    -Driver\inc;.\Hardware) DEBUG PRINT(.\Listings\Watchdog.lst) TABS(2) OBJECT(.\Objects\Watchdog.obj)
+
+line level    source
+
+   1          #include "cms8s6990.h"
+   2          #include "Watchdog.h"
+   3          
+   4          //看门狗初始化
+   5          #pragma OT(0)      //这部分代码对时序敏感需要采用0级别优化
+   6          void WDog_Init(void)
+   7            {
+   8   1        unsigned char buf;
+   9   1        //设置看门狗溢出时间为48MHz/2^24=0.3495S
+  10   1        buf=CKCON&0x1F;
+  11   1        buf|=0xC0;  //令WTS[2:0]=110,选择2^24分频比
+  12   1        CKCON = buf;
+  13   1        //启动看门狗
+  14   1        EA = 0;     //关闭中断
+  15   1        _nop_();
+  16   1        TA = 0xAA;
+  17   1        TA = 0x55;
+  18   1        WDCON |= 0x02; //令WDTRE=1，看门狗启动
+  19   1        _nop_();
+  20   1        EA = 1;  //重新打开中断
+  21   1        }
+  22          
+  23          //关闭看门狗
+  24          #pragma OT(0)      //这部分代码对时序敏感需要采用0级别优化
+  25          void WDog_DeInit(void)
+  26            {
+  27   1        EA = 0;     //关闭中断
+  28   1        _nop_();
+  29   1        TA = 0xAA;
+  30   1        TA = 0x55;
+  31   1        WDCON &= 0xFD; //令WDTRE=0，看门狗禁止
+  32   1        _nop_();
+  33   1        EA = 1;  //重新打开中断
+  34   1        }
+  35            
+  36          //喂狗
+  37          #pragma OT(0)      //这部分代码对时序敏感需要采用0级别优化
+  38          void WDog_Feed(void)
+  39            {
+  40   1        EA = 0;     //关闭中断
+  41   1        _nop_();
+  42   1        TA = 0xAA;
+  43   1        TA = 0x55;
+  44   1        WDCON |= 0x01; //令WDTCLR=1清除计数器
+  45   1        _nop_();
+  46   1        EA = 1;  //重新打开中断
+  47   1        }
+  48            
+  49          //获取是否是看门狗导致的复位
+  50          #pragma OT(0)      //这部分代码对时序敏感需要采用0级别优化
+  51          bit GetIfWDogCauseRST(void)
+  52            {
+  53   1        unsigned char buf;
+  54   1        //初始化  
+C51 COMPILER V9.60.0.0   WATCHDOG                                                          11/29/2024 11:07:01 PAGE 2   
+
+  55   1        EA = 0;     //关闭中断
+  56   1        _nop_();
+  57   1        TA = 0xAA;
+  58   1        TA = 0x55;
+  59   1        buf=WDCON; //读取看门狗寄存器
+  60   1        _nop_();
+  61   1        EA = 1;  //重新打开中断
+  62   1        //返回结果
+  63   1        return buf&0x04?1:0;
+  64   1        }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     85    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

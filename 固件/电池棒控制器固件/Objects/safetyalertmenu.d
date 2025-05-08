@@ -1,0 +1,9 @@
+.\objects\safetyalertmenu.o: Menu\SafetyAlertMenu.c
+.\objects\safetyalertmenu.o: .\User\inc\Config.h
+.\objects\safetyalertmenu.o: .\User\inc\IP2366_REG.h
+.\objects\safetyalertmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\safetyalertmenu.o: .\User\inc\LCD_Init.h
+.\objects\safetyalertmenu.o: .\User\inc\Key.h
+.\objects\safetyalertmenu.o: .\GUI\GUI.h
+.\objects\safetyalertmenu.o: .\User\inc\lcd.h
+.\objects\safetyalertmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

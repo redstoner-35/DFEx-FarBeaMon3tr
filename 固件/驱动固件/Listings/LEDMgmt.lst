@@ -1,0 +1,178 @@
+C51 COMPILER V9.60.0.0   LEDMGMT                                                           04/29/2025 17:16:19 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LEDMGMT
+OBJECT MODULE PLACED IN .\Objects\LEDMgmt.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Hardware\LEDMgmt.c OMF2 OPTIMIZE(9,SPEED) BROWSE MODDP2 INCDIR(.\StdDriv
+                    -er\inc;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System) DEFINE(EnableStdGPIO) DEBUG 
+                    -PRINT(.\Listings\LEDMgmt.lst) TABS(2) OBJECT(.\Objects\LEDMgmt.obj)
+
+line level    source
+
+   1          #include "delay.h"
+   2          #include "LEDMgmt.h"
+   3          #include "GPIO.h"
+   4          #include "PinDefs.h"
+   5          #include "cms8s6990.h"
+   6          
+   7          //全局变量
+   8          volatile LEDStateDef LEDMode; 
+   9          static char timer;
+  10          bit IsHalfBrightness;
+  11          
+  12          //函数
+  13          bit ShowThermalStepDown(void);  //显示温度控制启动  
+  14          bit DisplayTacModeEnabled(void); //显示战术模式启动
+  15          
+  16          //设置LED亮度
+  17          static void SetLEDBrightNess(void)
+  18            {
+  19   1        //设置占空比寄存器
+  20   1        PWMD2H=IsHalfBrightness?(LEDBrightnessHalf>>8)&0xFF:(LEDBrightnessFull>>8)&0xFF;
+  21   1        PWMD2L=IsHalfBrightness?LEDBrightnessHalf&0xFF:LEDBrightnessFull&0xFF; 
+  22   1        PWMD3H=IsHalfBrightness?(LEDBrightnessHalf>>8)&0xFF:(LEDBrightnessFull>>8)&0xFF;
+  23   1        PWMD3L=IsHalfBrightness?LEDBrightnessHalf&0xFF:LEDBrightnessFull&0xFF;  
+  24   1        //应用占空比
+  25   1        PWMLOADEN|=0x0C; //加载通道0的PWM值
+  26   1        }
+  27            
+  28          //LED配置函数
+  29          void LED_Init(void)
+  30            {
+  31   1        GPIOCfgDef LEDInitCfg;
+  32   1        //设置结构体
+  33   1        LEDInitCfg.Mode=GPIO_Out_PP;
+  34   1        LEDInitCfg.Slew=GPIO_Slow_Slew;   
+  35   1        LEDInitCfg.DRVCurrent=GPIO_High_Current; //配置为低斜率大电流的推挽输出
+  36   1        //初始化模式设置
+  37   1        LEDMode=LED_OFF;
+  38   1        //配置PWM发生器
+  39   1        PWM23PSC=0x01;  //打开预分频器和计数器时钟 
+  40   1        PWM2DIV=0xff;   
+  41   1        PWM3DIV=0xff;   //令Fpwmcnt=Fsys=48MHz(不分频)  
+  42   1        //配置周期数据
+  43   1        PWMP2H=0x09;
+  44   1        PWMP2L=0x5F; 
+  45   1        PWMP3H=0x09;
+  46   1        PWMP3L=0x5F; //CNT=(48MHz/20Khz)-1=2399
+  47   1        //启用PWM
+  48   1        PWMCNTE|=0x0C; //使能通道2 3的计数器，PWM开始运作
+  49   1        //配置占空比数据
+  50   1        SetLEDBrightNess();
+  51   1        while(PWMLOADEN&0x0C); //等待PWM完成应用
+  52   1        //复位IO
+  53   1        GPIO_WriteBit(GreenLEDIOG,GreenLEDIOx,0); 
+C51 COMPILER V9.60.0.0   LEDMGMT                                                           04/29/2025 17:16:19 PAGE 2   
+
+  54   1        GPIO_WriteBit(RedLEDIOG,RedLEDIOx,0); 
+  55   1        //配置GPIO（将配置GPIO拉到最后是因为避免PWM发生器工作异常引起闪烁）
+  56   1        GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg); //红色LED(推挽输出)
+  57   1        GPIO_ConfigGPIOMode(GreenLEDIOG,GPIOMask(GreenLEDIOx),&LEDInitCfg); //绿色LED(推挽输出)
+  58   1        GPIO_SetMUXMode(RedLEDIOG,RedLEDIOx,GPIO_AF_PWMCH2);
+  59   1        GPIO_SetMUXMode(GreenLEDIOG,GreenLEDIOx,GPIO_AF_PWMCH3); //为了控制侧按LED的亮度改为PWM模式
+  60   1        } 
+  61            
+  62          //设置LED亮度 
+  63          static void SetLEDONOFF(bit RLED,bit GLED)
+  64            {
+  65   1        unsigned char buf;
+  66   1        buf=PWMMASKE;
+  67   1        if(RLED)buf&=0xFB;
+  68   1        else buf|=0x04; //控制PWM通道2是否正常输出来打开关闭红色LED
+  69   1        if(GLED)buf&=0xF7;
+  70   1        else buf|=0x08; //控制PWM通道3是否正常输出来打开关闭绿色LED
+  71   1        PWMMASKE=buf;
+  72   1        }   
+  73          
+  74          //LED控制函数
+  75          void LEDControlHandler(void)
+  76            {
+  77   1        char buf;
+  78   1        bit IsLEDON,RLED=0,GLED=0;
+  79   1        //执行特殊的逻辑（战术模式指示等）
+  80   1        if(LEDMode<LED_RedBlinkFifth) //非一次性状态，进行降档和战术模式指示判断
+  81   1          {
+  82   2          if(DisplayTacModeEnabled()) //战术显示启动，降低LED亮度
+  83   2            {
+  84   3            IsHalfBrightness=1;
+  85   3            GLED=1;  //战术模式的指示使用半亮度配置，点亮绿灯作为提示
+  86   3            RLED=1; //标记需要跳过状态机运行
+  87   3            }
+  88   2          else if(ShowThermalStepDown())RLED=1; //标记需要跳过状态机运行
+  89   2          }
+  90   1        //根据index设置LED状态
+  91   1        if(!RLED)switch(LEDMode)
+  92   1          {
+  93   2          case LED_OFF:timer=0;break; //LED关闭
+  94   2          case LED_Amber:RLED=1;GLED=1;break;//黄色LED
+  95   2          case LED_Green:GLED=1;break;//绿色LED
+  96   2          case LED_Red:RLED=1;break;//红色LED
+  97   2          case LED_RedBlink_Fast: //红色快闪  
+  98   2          case LED_RedBlink: //红色闪烁
+  99   2            buf=timer&0x7F; //读取当前定时器的控制位
+ 100   2            if(buf<(LEDMode==LED_RedBlink?3:0))
+ 101   2              {
+ 102   3              buf++;
+ 103   3              timer&=0x80;
+ 104   3              timer|=buf; //时间没到，继续计时
+ 105   3              }
+ 106   2            else timer=timer&0x80?0x00:0x80; //翻转bit 7并重置定时器
+ 107   2            RLED=timer&0x80?1:0; //根据bit 7载入LED控制位
+ 108   2            break;
+ 109   2          case LED_GreenBlinkThird:
+ 110   2          case LED_RedBlinkThird: //LED红色闪烁3次
+ 111   2          case LED_RedBlinkFifth: //LED红色闪烁5次
+ 112   2            timer&=0x7F; //去掉最上面的位
+ 113   2            if(timer>((LEDMode==LED_RedBlinkThird||LEDMode==LED_GreenBlinkThird)?6:10))LEDMode=LED_OFF; //时间到
+             -，关闭识别
+ 114   2            else //继续计时
+C51 COMPILER V9.60.0.0   LEDMGMT                                                           04/29/2025 17:16:19 PAGE 3   
+
+ 115   2              {
+ 116   3              IsLEDON=(timer%2)?1:0; //通过余2判断实现检测
+ 117   3              if(LEDMode==LED_GreenBlinkThird)GLED=IsLEDON;
+ 118   3              else RLED=IsLEDON;
+ 119   3              timer++;
+ 120   3              }   
+ 121   2            break;
+ 122   2          }
+ 123   1        //特殊指示操作需要跳过状态机，清零RLED标记位
+ 124   1        else RLED=0;
+ 125   1        //设置LED亮度
+ 126   1        SetLEDBrightNess();
+ 127   1        SetLEDONOFF(RLED,GLED);
+ 128   1        }
+ 129            
+ 130          //制造一次快闪
+ 131          void MakeFastStrobe(LEDStateDef LEDMode)
+ 132            {
+ 133   1        //打开LED
+ 134   1        switch(LEDMode)
+ 135   1          {
+ 136   2          case LED_Green:SetLEDONOFF(0,1);break;//绿色LED
+ 137   2          case LED_Red:SetLEDONOFF(1,0);break;//红色LED
+ 138   2          case LED_Amber:SetLEDONOFF(1,1);break;//黄色LED
+ 139   2          default:return; //非法值
+ 140   2          }
+ 141   1        delay_ms(20);
+ 142   1        //关闭LED
+ 143   1        SetLEDONOFF(0,0);
+ 144   1        } 
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    529    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1       5
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

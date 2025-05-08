@@ -1,0 +1,133 @@
+C51 COMPILER V9.60.0.0   LOCATELED                                                         05/01/2025 09:19:37 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LOCATELED
+OBJECT MODULE PLACED IN .\Objects\LocateLED.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Logic\LocateLED.c OMF2 OPTIMIZE(9,SPEED) BROWSE MODDP2 INCDIR(.\StdDrive
+                    -r\inc;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System) DEFINE(EnableStdGPIO) DEBUG P
+                    -RINT(.\Listings\LocateLED.lst) TABS(2) OBJECT(.\Objects\LocateLED.obj)
+
+line level    source
+
+   1          #include "delay.h"
+   2          #include "LEDMgmt.h"
+   3          #include "GPIO.h"
+   4          #include "LocateLED.h"
+   5          #include "SideKey.h"
+   6          #include "SysConfig.h"
+   7          #include "ModeControl.h"
+   8          #include "PinDefs.h"
+   9          #include "cms8s6990.h"
+  10          
+  11          //全局变量
+  12          xdata LocLEDEditDef LocLEDState=LocateLED_NotEdit;
+  13          static xdata char LocLEDTIM;
+  14          static u8 LocSetTimeOutTIM=0;
+  15          
+  16          //定位LED设置最大超时时间
+  17          #define LocateLEDTimeOut 30
+  18          
+  19          //定位LED显示计时器
+  20          void LocateLED_TIMHandler(void)
+  21            {
+  22   1        if(LocLEDTIM>0)LocLEDTIM--;
+  23   1        if(LocSetTimeOutTIM>0)LocSetTimeOutTIM--;
+  24   1        }
+  25          
+  26          //显示当前系统配置的定位LED类型
+  27          LEDStateDef LocateLED_ShowType(void)
+  28            {
+  29   1        IsHalfBrightness=SysCfg.LocatorCfg?1:0;
+  30   1        //设置状态  
+  31   1        switch(SysCfg.LocatorCfg)
+  32   1          {
+  33   2          case Locator_OFF: //红色每隔一段时间快闪表示关闭
+  34   2            if(!LocLEDTIM)
+  35   2              {
+  36   3              MakeFastStrobe(LED_Red);
+  37   3              LocLEDTIM=6;
+  38   3              }
+  39   2            break;
+  40   2          case Locator_Green:return LED_Green; //绿灯
+  41   2          case Locator_Red:return LED_Red; //红灯
+  42   2          case Locator_Amber:return LED_Amber; //黄灯   
+  43   2          }
+  44   1        //其余状态返回OFF
+  45   1        return LED_OFF;
+  46   1        }
+  47          
+  48          //使能定位LED
+  49          void LocateLED_Enable(void)
+  50            {
+  51   1        GPIOCfgDef LEDInitCfg;
+  52   1        //设置结构体
+  53   1        LEDInitCfg.Mode=GPIO_IPU;
+C51 COMPILER V9.60.0.0   LOCATELED                                                         05/01/2025 09:19:37 PAGE 2   
+
+  54   1        LEDInitCfg.Slew=GPIO_Slow_Slew;   
+  55   1        LEDInitCfg.DRVCurrent=GPIO_High_Current; //配置为上拉输入
+  56   1        //配置绿灯GPIO  
+  57   1        if(SysCfg.LocatorCfg&0x01)GPIO_ConfigGPIOMode(GreenLEDIOG,GPIOMask(GreenLEDIOx),&LEDInitCfg);
+  58   1        GPIO_SetMUXMode(GreenLEDIOG,GreenLEDIOx,GPIO_AF_GPIO);  
+  59   1        //配置红灯GPIO
+  60   1        if(SysCfg.LocatorCfg&0x02)GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg); 
+  61   1        GPIO_SetMUXMode(RedLEDIOG,RedLEDIOx,GPIO_AF_GPIO);  
+  62   1        }
+  63          
+  64          //定位LED状态编辑
+  65          char LocateLED_Edit(char ClickCount)
+  66            {
+  67   1        switch(LocLEDState)
+  68   1          {
+  69   2          //默认状态
+  70   2          case LocateLED_NotEdit:
+  71   2            //关机状态7击按键进入编辑
+  72   2            if(ClickCount!=7)return 0;      
+  73   2            LocLEDTIM=0;
+  74   2            LocSetTimeOutTIM=8*LocateLEDTimeOut;
+  75   2            LocLEDState=LocateLED_Sel;
+  76   2            break;
+  77   2          //编辑过程
+  78   2          case LocateLED_Sel:
+  79   2            if(ClickCount)SysCfg.LocatorCfg=SysCfg.LocatorCfg<3?SysCfg.LocatorCfg+1:0; //反复切换index
+  80   2            if(!LocSetTimeOutTIM)
+  81   2              {
+  82   3              //设置菜单超时，不保存并退出
+  83   3              LocLEDState=LocateLED_NotEdit;
+  84   3              LEDMode=LED_RedBlinkFifth;      //红色LED闪五次表示编辑异常结束
+  85   3              }
+  86   2            if(!getSideKeyHoldEvent())break; //如果检测到长按则保存并退出     
+  87   2            DisplayLockedTIM=4; //锁定指示闪一下
+  88   2            LocLEDState=LocateLED_WaitKeyRelease;
+  89   2            SaveSysConfig(0);
+  90   2            break;
+  91   2          //等待按键放开
+  92   2          case LocateLED_WaitKeyRelease:
+  93   2            if(getSideKeyHoldEvent())break;  //等待按键放开
+  94   2            getSideKeyLongPressEvent();  
+  95   2            LocLEDState=LocateLED_NotEdit; //获取一遍长按事件避免长按退出保存的时候开机到月光 
+  96   2            break;
+  97   2          }   
+  98   1        //其余事件，返回1
+  99   1        return 1; 
+ 100   1        }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    267    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      2    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V9.60.0.0   LOCATELED                                                         05/01/2025 09:19:37 PAGE 3   
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,15 @@
+.\objects\manustartbalancemenu.o: Menu\ManuStartBalanceMenu.c
+.\objects\manustartbalancemenu.o: .\GUI\GUI.h
+.\objects\manustartbalancemenu.o: .\User\inc\lcd.h
+.\objects\manustartbalancemenu.o: .\User\inc\LCD_Init.h
+.\objects\manustartbalancemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\manustartbalancemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\manustartbalancemenu.o: .\User\inc\Config.h
+.\objects\manustartbalancemenu.o: .\User\inc\IP2366_REG.h
+.\objects\manustartbalancemenu.o: .\User\inc\ADC.h
+.\objects\manustartbalancemenu.o: .\User\inc\LogSystem.h
+.\objects\manustartbalancemenu.o: .\User\inc\CapTest.h
+.\objects\manustartbalancemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+.\objects\manustartbalancemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+.\objects\manustartbalancemenu.o: .\User\inc\Key.h
+.\objects\manustartbalancemenu.o: .\User\inc\BalanceMgmt.h

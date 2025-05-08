@@ -1,0 +1,1 @@
+"Logic\Sleep.c" OMF2 OPTIMIZE (9,SPEED) BROWSE MODDP2 INCDIR(.\StdDriver\inc;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System) DEFINE (EnableStdGPIO) DEBUG PRINT(.\Listings\Sleep.lst) TABS (2) OBJECT(.\Objects\Sleep.obj)

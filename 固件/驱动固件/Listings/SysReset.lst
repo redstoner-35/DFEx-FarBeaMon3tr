@@ -1,0 +1,52 @@
+C51 COMPILER V9.60.0.0   SYSRESET                                                          04/29/2025 17:16:19 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SYSRESET
+OBJECT MODULE PLACED IN .\Objects\SysReset.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Hardware\SysReset.c OMF2 OPTIMIZE(9,SPEED) BROWSE MODDP2 INCDIR(.\StdDri
+                    -ver\inc;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System) DEFINE(EnableStdGPIO) DEBUG
+                    - PRINT(.\Listings\SysReset.lst) TABS(2) OBJECT(.\Objects\SysReset.obj)
+
+line level    source
+
+   1          #include "cms8s6990.h"
+   2          #include "SysReset.h"
+   3          
+   4          //生成系统复位
+   5          void TriggerSoftwareReset(void)
+   6            {
+   7   1        EA=0;
+   8   1        _nop_();
+   9   1        TA=0xAA;
+  10   1        TA=0x55;  //往TA寄存器写55AA解锁
+  11   1        WDCON=0x80;  //令WDTCON[7]=1，触发系统复位
+  12   1        while(1);
+  13   1        }
+  14          
+  15          //清除软件复位标志位
+  16          void ClearSoftwareResetFlag(void)
+  17            {
+  18   1        EA=0;
+  19   1        _nop_();
+  20   1        TA=0xAA;
+  21   1        TA=0x55;  //往TA寄存器写55AA解锁
+  22   1        WDCON&=0x7F;  //令WDTCON[7]=0，触发系统复位
+  23   1        }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     27    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,950 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;/*-----------------------------------------------------
+                       ----------------------------------------------------*/
+    2 00000000         ;/* Holtek Semiconductor Inc.                           
+                                                                           */
+    3 00000000         ;/*                                                     
+                                                                           */
+    4 00000000         ;/* Copyright (C) Holtek Semiconductor Inc.             
+                                                                           */
+    5 00000000         ;/* All rights reserved.                                
+                                                                           */
+    6 00000000         ;/*                                                     
+                                                                           */
+    7 00000000         ;/*-----------------------------------------------------
+                       ------------------------------------------------------
+    8 00000000         ;  File Name        : ht32_op.s
+    9 00000000         ;  Version          : V1.05
+   10 00000000         ;  Date             : 2022-11-07
+   11 00000000         ;  Description      : HT32 Series Flash Option Bytes Blo
+                       ck.
+   12 00000000         ;-------------------------------------------------------
+                       ----------------------------------------------------*/
+   13 00000000         
+   14 00000000         ;/******************************************************
+                       **********************                              */
+   15 00000000         ;/* <<< Use Configuration Wizard in Context Menu >>>    
+                                                                           */
+   16 00000000         ;/******************************************************
+                       **********************                              */
+   17 00000000         
+   18 00000000         ;// <e> Program Option Byte
+   19 00000000         ;// <i> Program Option Byte settings into Flash (Must en
+                       able for write any one of the following settings into Op
+                       tion Byte Flash).
+   20 00000000         ;// <i> -- Page Erase/Program Protection (OB_PPn)
+   21 00000000         ;// <i> -- Security Protection (OB_CP)
+   22 00000000         ;// <i> -- Watchdog Timer Auto Enable (OB_WDT)
+   23 00000000         ;// <i> -- Bootloader Waiting Time.
+   24 00000000 00000000 
+                       FLASH_OPT
+                               EQU              0
+   25 00000000         ;// </e>
+   26 00000000         
+   27 00000000         ;// <h> ------------------------------------------------
+                       ------------------------------------------------------
+   28 00000000         ;// </h>
+   29 00000000         ;// <h> -- Main Flash Page Erase/Program Protection (OB_
+                       PP0 bits)
+   30 00000000         ;// <i> Enable page erase/program protection to prevent 
+                       unwanted change of Flash contents.
+   31 00000000         ;// <i> One bit for n pages. Check FMC chapter of User M
+                       anual for detailed.
+   32 00000000         ;//   <o0.0 >  Enable Page Erase/Program Protection 0  -
+                        OB_PP[0]
+   33 00000000         ;//   <o0.1 >  Enable Page Erase/Program Protection 1  -
+                        OB_PP[1]
+   34 00000000         ;//   <o0.2 >  Enable Page Erase/Program Protection 2  -
+                        OB_PP[2]
+   35 00000000         ;//   <o0.3 >  Enable Page Erase/Program Protection 3  -
+                        OB_PP[3]
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   36 00000000         ;//   <o0.4 >  Enable Page Erase/Program Protection 4  -
+                        OB_PP[4]
+   37 00000000         ;//   <o0.5 >  Enable Page Erase/Program Protection 5  -
+                        OB_PP[5]
+   38 00000000         ;//   <o0.6 >  Enable Page Erase/Program Protection 6  -
+                        OB_PP[6]
+   39 00000000         ;//   <o0.7 >  Enable Page Erase/Program Protection 7  -
+                        OB_PP[7]
+   40 00000000         ;//   <o0.8 >  Enable Page Erase/Program Protection 8  -
+                        OB_PP[8]
+   41 00000000         ;//   <o0.9 >  Enable Page Erase/Program Protection 9  -
+                        OB_PP[9]
+   42 00000000         ;//   <o0.10 > Enable Page Erase/Program Protection 10 -
+                        OB_PP[10]
+   43 00000000         ;//   <o0.11 > Enable Page Erase/Program Protection 11 -
+                        OB_PP[11]
+   44 00000000         ;//   <o0.12 > Enable Page Erase/Program Protection 12 -
+                        OB_PP[12]
+   45 00000000         ;//   <o0.13 > Enable Page Erase/Program Protection 13 -
+                        OB_PP[13]
+   46 00000000         ;//   <o0.14 > Enable Page Erase/Program Protection 14 -
+                        OB_PP[14]
+   47 00000000         ;//   <o0.15 > Enable Page Erase/Program Protection 15 -
+                        OB_PP[15]
+   48 00000000         ;//   <o0.16 > Enable Page Erase/Program Protection 16 -
+                        OB_PP[16]
+   49 00000000         ;//   <o0.17 > Enable Page Erase/Program Protection 17 -
+                        OB_PP[17]
+   50 00000000         ;//   <o0.18 > Enable Page Erase/Program Protection 18 -
+                        OB_PP[18]
+   51 00000000         ;//   <o0.19 > Enable Page Erase/Program Protection 19 -
+                        OB_PP[19]
+   52 00000000         ;//   <o0.20 > Enable Page Erase/Program Protection 20 -
+                        OB_PP[20]
+   53 00000000         ;//   <o0.21 > Enable Page Erase/Program Protection 21 -
+                        OB_PP[21]
+   54 00000000         ;//   <o0.22 > Enable Page Erase/Program Protection 22 -
+                        OB_PP[22]
+   55 00000000         ;//   <o0.23 > Enable Page Erase/Program Protection 23 -
+                        OB_PP[23]
+   56 00000000         ;//   <o0.24 > Enable Page Erase/Program Protection 24 -
+                        OB_PP[24]
+   57 00000000         ;//   <o0.25 > Enable Page Erase/Program Protection 25 -
+                        OB_PP[25]
+   58 00000000         ;//   <o0.26 > Enable Page Erase/Program Protection 26 -
+                        OB_PP[26]
+   59 00000000         ;//   <o0.27 > Enable Page Erase/Program Protection 27 -
+                        OB_PP[27]
+   60 00000000         ;//   <o0.28 > Enable Page Erase/Program Protection 28 -
+                        OB_PP[28]
+   61 00000000         ;//   <o0.29 > Enable Page Erase/Program Protection 29 -
+                        OB_PP[29]
+   62 00000000         ;//   <o0.30 > Enable Page Erase/Program Protection 30 -
+                        OB_PP[30]
+   63 00000000         ;//   <o0.31 > Enable Page Erase/Program Protection 31 -
+                        OB_PP[31]
+   64 00000000         ;// </h>
+   65 00000000         ;// <h> -- Main Flash Page Erase/Program Protection (OB_
+                       PP1 bits)
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   66 00000000         ;// <i> Enable page erase/program protection to prevent 
+                       unwanted change of Flash contents.
+   67 00000000         ;// <i> One bit for n pages. Check FMC chapter of User M
+                       anual for detailed.
+   68 00000000         ;//   <o1.0 >  Enable Page Erase/Program Protection 32 -
+                        OB_PP[32]
+   69 00000000         ;//   <o1.1 >  Enable Page Erase/Program Protection 33 -
+                        OB_PP[33]
+   70 00000000         ;//   <o1.2 >  Enable Page Erase/Program Protection 34 -
+                        OB_PP[34]
+   71 00000000         ;//   <o1.3 >  Enable Page Erase/Program Protection 35 -
+                        OB_PP[35]
+   72 00000000         ;//   <o1.4 >  Enable Page Erase/Program Protection 36 -
+                        OB_PP[36]
+   73 00000000         ;//   <o1.5 >  Enable Page Erase/Program Protection 37 -
+                        OB_PP[37]
+   74 00000000         ;//   <o1.6 >  Enable Page Erase/Program Protection 38 -
+                        OB_PP[38]
+   75 00000000         ;//   <o1.7 >  Enable Page Erase/Program Protection 39 -
+                        OB_PP[39]
+   76 00000000         ;//   <o1.8 >  Enable Page Erase/Program Protection 40 -
+                        OB_PP[40]
+   77 00000000         ;//   <o1.9 >  Enable Page Erase/Program Protection 41 -
+                        OB_PP[41]
+   78 00000000         ;//   <o1.10 > Enable Page Erase/Program Protection 42 -
+                        OB_PP[42]
+   79 00000000         ;//   <o1.11 > Enable Page Erase/Program Protection 43 -
+                        OB_PP[43]
+   80 00000000         ;//   <o1.12 > Enable Page Erase/Program Protection 44 -
+                        OB_PP[44]
+   81 00000000         ;//   <o1.13 > Enable Page Erase/Program Protection 45 -
+                        OB_PP[45]
+   82 00000000         ;//   <o1.14 > Enable Page Erase/Program Protection 46 -
+                        OB_PP[46]
+   83 00000000         ;//   <o1.15 > Enable Page Erase/Program Protection 47 -
+                        OB_PP[47]
+   84 00000000         ;//   <o1.16 > Enable Page Erase/Program Protection 48 -
+                        OB_PP[48]
+   85 00000000         ;//   <o1.17 > Enable Page Erase/Program Protection 49 -
+                        OB_PP[49]
+   86 00000000         ;//   <o1.18 > Enable Page Erase/Program Protection 50 -
+                        OB_PP[50]
+   87 00000000         ;//   <o1.19 > Enable Page Erase/Program Protection 51 -
+                        OB_PP[51]
+   88 00000000         ;//   <o1.20 > Enable Page Erase/Program Protection 52 -
+                        OB_PP[52]
+   89 00000000         ;//   <o1.21 > Enable Page Erase/Program Protection 53 -
+                        OB_PP[53]
+   90 00000000         ;//   <o1.22 > Enable Page Erase/Program Protection 54 -
+                        OB_PP[54]
+   91 00000000         ;//   <o1.23 > Enable Page Erase/Program Protection 55 -
+                        OB_PP[55]
+   92 00000000         ;//   <o1.24 > Enable Page Erase/Program Protection 56 -
+                        OB_PP[56]
+   93 00000000         ;//   <o1.25 > Enable Page Erase/Program Protection 57 -
+                        OB_PP[57]
+   94 00000000         ;//   <o1.26 > Enable Page Erase/Program Protection 58 -
+                        OB_PP[58]
+   95 00000000         ;//   <o1.27 > Enable Page Erase/Program Protection 59 -
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+                        OB_PP[59]
+   96 00000000         ;//   <o1.28 > Enable Page Erase/Program Protection 60 -
+                        OB_PP[60]
+   97 00000000         ;//   <o1.29 > Enable Page Erase/Program Protection 61 -
+                        OB_PP[61]
+   98 00000000         ;//   <o1.30 > Enable Page Erase/Program Protection 62 -
+                        OB_PP[62]
+   99 00000000         ;//   <o1.31 > Enable Page Erase/Program Protection 63 -
+                        OB_PP[63]
+  100 00000000         ;// </h>
+  101 00000000         ;// <h> -- Main Flash Page Erase/Program Protection (OB_
+                       PP2 bits)
+  102 00000000         ;// <i> Enable page erase/program protection to prevent 
+                       unwanted change of Flash contents.
+  103 00000000         ;// <i> One bit for n pages. Check FMC chapter of User M
+                       anual for detailed.
+  104 00000000         ;//   <o2.0 >  Enable Page Erase/Program Protection 64 -
+                        OB_PP[64]
+  105 00000000         ;//   <o2.1 >  Enable Page Erase/Program Protection 65 -
+                        OB_PP[65]
+  106 00000000         ;//   <o2.2 >  Enable Page Erase/Program Protection 66 -
+                        OB_PP[66]
+  107 00000000         ;//   <o2.3 >  Enable Page Erase/Program Protection 67 -
+                        OB_PP[67]
+  108 00000000         ;//   <o2.4 >  Enable Page Erase/Program Protection 68 -
+                        OB_PP[68]
+  109 00000000         ;//   <o2.5 >  Enable Page Erase/Program Protection 69 -
+                        OB_PP[69]
+  110 00000000         ;//   <o2.6 >  Enable Page Erase/Program Protection 70 -
+                        OB_PP[70]
+  111 00000000         ;//   <o2.7 >  Enable Page Erase/Program Protection 71 -
+                        OB_PP[71]
+  112 00000000         ;//   <o2.8 >  Enable Page Erase/Program Protection 72 -
+                        OB_PP[72]
+  113 00000000         ;//   <o2.9 >  Enable Page Erase/Program Protection 73 -
+                        OB_PP[73]
+  114 00000000         ;//   <o2.10 > Enable Page Erase/Program Protection 74 -
+                        OB_PP[74]
+  115 00000000         ;//   <o2.11 > Enable Page Erase/Program Protection 75 -
+                        OB_PP[75]
+  116 00000000         ;//   <o2.12 > Enable Page Erase/Program Protection 76 -
+                        OB_PP[76]
+  117 00000000         ;//   <o2.13 > Enable Page Erase/Program Protection 77 -
+                        OB_PP[77]
+  118 00000000         ;//   <o2.14 > Enable Page Erase/Program Protection 78 -
+                        OB_PP[78]
+  119 00000000         ;//   <o2.15 > Enable Page Erase/Program Protection 79 -
+                        OB_PP[79]
+  120 00000000         ;//   <o2.16 > Enable Page Erase/Program Protection 80 -
+                        OB_PP[80]
+  121 00000000         ;//   <o2.17 > Enable Page Erase/Program Protection 81 -
+                        OB_PP[81]
+  122 00000000         ;//   <o2.18 > Enable Page Erase/Program Protection 82 -
+                        OB_PP[82]
+  123 00000000         ;//   <o2.19 > Enable Page Erase/Program Protection 83 -
+                        OB_PP[83]
+  124 00000000         ;//   <o2.20 > Enable Page Erase/Program Protection 84 -
+                        OB_PP[84]
+  125 00000000         ;//   <o2.21 > Enable Page Erase/Program Protection 85 -
+
+
+
+ARM Macro Assembler    Page 5 
+
+
+                        OB_PP[85]
+  126 00000000         ;//   <o2.22 > Enable Page Erase/Program Protection 86 -
+                        OB_PP[86]
+  127 00000000         ;//   <o2.23 > Enable Page Erase/Program Protection 87 -
+                        OB_PP[87]
+  128 00000000         ;//   <o2.24 > Enable Page Erase/Program Protection 88 -
+                        OB_PP[88]
+  129 00000000         ;//   <o2.25 > Enable Page Erase/Program Protection 89 -
+                        OB_PP[89]
+  130 00000000         ;//   <o2.26 > Enable Page Erase/Program Protection 90 -
+                        OB_PP[90]
+  131 00000000         ;//   <o2.27 > Enable Page Erase/Program Protection 91 -
+                        OB_PP[91]
+  132 00000000         ;//   <o2.28 > Enable Page Erase/Program Protection 92 -
+                        OB_PP[92]
+  133 00000000         ;//   <o2.29 > Enable Page Erase/Program Protection 93 -
+                        OB_PP[93]
+  134 00000000         ;//   <o2.30 > Enable Page Erase/Program Protection 94 -
+                        OB_PP[94]
+  135 00000000         ;//   <o2.31 > Enable Page Erase/Program Protection 95 -
+                        OB_PP[95]
+  136 00000000         ;// </h>
+  137 00000000         ;// <h> -- Main Flash Page Erase/Program Protection (OB_
+                       PP3 bits)
+  138 00000000         ;// <i> Enable page erase/program protection to prevent 
+                       unwanted change of Flash contents.
+  139 00000000         ;// <i> One bit for n pages. Check FMC chapter of User M
+                       anual for detailed.
+  140 00000000         ;//   <o3.0 >  Enable Page Erase/Program Protection 96  
+                       - OB_PP[96]
+  141 00000000         ;//   <o3.1 >  Enable Page Erase/Program Protection 97  
+                       - OB_PP[97]
+  142 00000000         ;//   <o3.2 >  Enable Page Erase/Program Protection 98  
+                       - OB_PP[98]
+  143 00000000         ;//   <o3.3 >  Enable Page Erase/Program Protection 99  
+                       - OB_PP[99]
+  144 00000000         ;//   <o3.4 >  Enable Page Erase/Program Protection 100 
+                       - OB_PP[100]
+  145 00000000         ;//   <o3.5 >  Enable Page Erase/Program Protection 101 
+                       - OB_PP[101]
+  146 00000000         ;//   <o3.6 >  Enable Page Erase/Program Protection 102 
+                       - OB_PP[102]
+  147 00000000         ;//   <o3.7 >  Enable Page Erase/Program Protection 103 
+                       - OB_PP[103]
+  148 00000000         ;//   <o3.8 >  Enable Page Erase/Program Protection 104 
+                       - OB_PP[104]
+  149 00000000         ;//   <o3.9 >  Enable Page Erase/Program Protection 105 
+                       - OB_PP[105]
+  150 00000000         ;//   <o3.10 > Enable Page Erase/Program Protection 106 
+                       - OB_PP[106]
+  151 00000000         ;//   <o3.11 > Enable Page Erase/Program Protection 107 
+                       - OB_PP[107]
+  152 00000000         ;//   <o3.12 > Enable Page Erase/Program Protection 108 
+                       - OB_PP[108]
+  153 00000000         ;//   <o3.13 > Enable Page Erase/Program Protection 109 
+                       - OB_PP[109]
+  154 00000000         ;//   <o3.14 > Enable Page Erase/Program Protection 110 
+                       - OB_PP[110]
+  155 00000000         ;//   <o3.15 > Enable Page Erase/Program Protection 111 
+
+
+
+ARM Macro Assembler    Page 6 
+
+
+                       - OB_PP[111]
+  156 00000000         ;//   <o3.16 > Enable Page Erase/Program Protection 112 
+                       - OB_PP[112]
+  157 00000000         ;//   <o3.17 > Enable Page Erase/Program Protection 113 
+                       - OB_PP[113]
+  158 00000000         ;//   <o3.18 > Enable Page Erase/Program Protection 114 
+                       - OB_PP[114]
+  159 00000000         ;//   <o3.19 > Enable Page Erase/Program Protection 115 
+                       - OB_PP[115]
+  160 00000000         ;//   <o3.20 > Enable Page Erase/Program Protection 116 
+                       - OB_PP[116]
+  161 00000000         ;//   <o3.21 > Enable Page Erase/Program Protection 117 
+                       - OB_PP[117]
+  162 00000000         ;//   <o3.22 > Enable Page Erase/Program Protection 118 
+                       - OB_PP[118]
+  163 00000000         ;//   <o3.23 > Enable Page Erase/Program Protection 119 
+                       - OB_PP[119]
+  164 00000000         ;//   <o3.24 > Enable Page Erase/Program Protection 120 
+                       - OB_PP[120]
+  165 00000000         ;//   <o3.25 > Enable Page Erase/Program Protection 121 
+                       - OB_PP[121]
+  166 00000000         ;//   <o3.26 > Enable Page Erase/Program Protection 122 
+                       - OB_PP[122]
+  167 00000000         ;//   <o3.27 > Enable Page Erase/Program Protection 123 
+                       - OB_PP[123]
+  168 00000000         ;//   <o3.28 > Enable Page Erase/Program Protection 124 
+                       - OB_PP[124]
+  169 00000000         ;//   <o3.29 > Enable Page Erase/Program Protection 125 
+                       - OB_PP[125]
+  170 00000000         ;//   <o3.30 > Enable Page Erase/Program Protection 126 
+                       - OB_PP[126]
+  171 00000000         ;//   <o3.31 > Enable Page Erase/Program Protection 127 
+                       - OB_PP[127]
+  172 00000000         ;// </h>
+  173 00000000         
+  174 00000000         ;// <o4.0> -- Enable Security Protection of Flash (OB_CP
+                       [0])
+  175 00000000         ;//   <i> Enable security protection to prevent illegal 
+                       Flash code/data access
+  176 00000000         ;// <o4.1> -- Enable Option Byte Erase/Program Protectio
+                       n (OB_CP[1])
+  177 00000000         ;//   <i> Enable Option Byte erase/program protection to
+                        prevent unwanted change of Option Byte
+  178 00000000         ;// <o0> -- Option Byte value: OB_PP0 (0x1FF00000)
+  179 00000000         ;// <o1> -- Option Byte value: OB_PP1 (0x1FF00004)
+  180 00000000         ;// <o2> -- Option Byte value: OB_PP2 (0x1FF00008)
+  181 00000000         ;// <o3> -- Option Byte value: OB_PP3 (0x1FF0000C)
+  182 00000000         ;// <o4> -- Option Byte value: OB_CP  (0x1FF00010)
+  183 00000000         ;// <h> -- !!! Note: One OB_PP bit for setting n Pages. 
+                       Check FMC chapter of User Manual for detailed.
+  184 00000000         ;// </h>
+  185 00000000         ;// <h> ------------------------------------------------
+                       ------------------------------------------------------
+  186 00000000         ;// </h>
+  187 00000000 00000000 
+                       OB_PP0  EQU              0x00000000
+  188 00000000 00000000 
+                       OB_PP1  EQU              0x00000000
+  189 00000000 00000000 
+
+
+
+ARM Macro Assembler    Page 7 
+
+
+                       OB_PP2  EQU              0x00000000
+  190 00000000 00000000 
+                       OB_PP3  EQU              0x00000000
+  191 00000000 00000000 
+                       OB_CP   EQU              0x00000000
+  192 00000000         
+  193 00000000         ;// <e0> Bootloader Waiting Time (0x1FF0002C)
+  194 00000000         ;//  <i> Enable bootloader waiting time by write timeout
+                        value to 0x1FF0002C.
+  195 00000000         ;// <o1> Bootloader Waiting Time (ms) <1500-14200:50>
+  196 00000000         ;//  <i> Bootloader waiting time based on ms. Range 1500
+                        ~ 14200 ms, Steps: 50)
+  197 00000000 00000000 
+                       BOOT_OPT
+                               EQU              0
+  198 00000000 000005DC 
+                       BOOTOPTV
+                               EQU              1500
+  199 00000000         ;// </e>
+  200 00000000         
+  201 00000000         ;// <e> Watchdog Timer Auto Enable (0x1FF003F0 or 0x1FF0
+                       002C)
+  202 00000000         ;// <i> WDT will be enabled immediately when the MCU pow
+                       er on reset or system reset occurs. The WDT then can be 
+                       disabled by firmware.
+  203 00000000         ;// <i> The default timeout period of WDT is 8 second (C
+                       lock source = 32 kHz LSI, Prescaler = 1/64, 12-bit count
+                       er).
+  204 00000000         ;// <i> !!! Notice !!!
+  205 00000000         ;// <i>   The device below does not support Watchdog Tim
+                       er Enable by Flash Option Bytes.
+  206 00000000         ;// <i>   Not Supported Device List:
+  207 00000000         ;// <i>     HT32F1755, HT32F1765
+  208 00000000         ;// <i>     HT32F1653, HT32F1654, HT32F1655, HT32F1656
+  209 00000000         ;// <i>     HT32F12345, HT32F12366
+  210 00000000         ;// <i>     HT32F52220, HT32F52230, HT32F52231, HT32F522
+                       41, HT32F52243, HT32F52253
+  211 00000000         ;// <i>     HT32F52331, HT32F52341, HT32F52342, HT32F523
+                       52
+  212 00000000         ;// <i>     HT32F5826
+  213 00000000         ;// <i> Address of OB_WDT:
+  214 00000000         ;// <i>   0x1FF003F0: HT32F50220, HT32F50230, HT32F50231
+                       , HT32F50241, HT32F0008.
+  215 00000000         ;// <i>   0x1FF0002C: Others except device in the Not Su
+                       pported Device List and above 5 devices.
+  216 00000000 00000000 
+                       WDT_OPT EQU              0
+  217 00000000         ;// </e>
+  218 00000000         
+  219 00000000         ;// <e0> Writer Checksum (0x1FF00030 ~ 0x1FF0003B)
+  220 00000000         ;//   <o1> Writer Checksum: Code (0x1FF00030)
+  221 00000000         ;//   <o2> Writer Checksum: Data (0x1FF00034)
+  222 00000000         ;//   <o3> Writer Checksum: Code + Option (0x1FF00038)
+  223 00000000 00000000 
+                       WRITERCK_OPT
+                               EQU              0
+  224 00000000 FFFFFFFF 
+                       WRITERCK_CODE
+                               EQU              0xFFFFFFFF
+
+
+
+ARM Macro Assembler    Page 8 
+
+
+  225 00000000 FFFFFFFF 
+                       WRITERCK_DATA
+                               EQU              0xFFFFFFFF
+  226 00000000 FFFFFFFF 
+                       WRITERCK_CODEOP
+                               EQU              0xFFFFFFFF
+  227 00000000         ;// </e>
+  228 00000000         
+  229 00000000         
+  230 00000000         ;/*-----------------------------------------------------
+                       ----------------------------------------------------*/
+  231 00000000         ;/* DO NOT MODIFY                                       
+                                                                           */
+  232 00000000         ;/*-----------------------------------------------------
+                       ----------------------------------------------------*/
+  233 00000000 00000001 
+                       HT32F1653_54_55_56
+                               EQU              1
+  234 00000000 00000002 
+                       HT32F12365_66
+                               EQU              2
+  235 00000000 00000003 
+                       HT32F12345
+                               EQU              3
+  236 00000000 00000001 
+                       HT32F52220_30
+                               EQU              1
+  237 00000000 00000002 
+                       HT32F52231_41
+                               EQU              2
+  238 00000000 00000003 
+                       HT32F52331_41
+                               EQU              3
+  239 00000000 00000004 
+                       HT32F52342_52
+                               EQU              4
+  240 00000000 00000005 
+                       HT32F52243_53
+                               EQU              5
+  241 00000000 00000006 
+                       HT32F0008
+                               EQU              6
+  242 00000000 00000007 
+                       HT32F50220_30
+                               EQU              7
+  243 00000000 00000008 
+                       HT32F50231_41
+                               EQU              8
+  244 00000000         
+  245 00000000 FFFFFFFF 
+                       OPT_RES EQU              0xFFFFFFFF
+  246 00000000         
+  247 00000000 FFFFFFFF 
+                       nOB_PP0 EQU              OB_PP0:EOR:0xFFFFFFFF
+  248 00000000 FFFFFFFF 
+                       nOB_PP1 EQU              OB_PP1:EOR:0xFFFFFFFF
+  249 00000000 FFFFFFFF 
+                       nOB_PP2 EQU              OB_PP2:EOR:0xFFFFFFFF
+  250 00000000 FFFFFFFF 
+
+
+
+ARM Macro Assembler    Page 9 
+
+
+                       nOB_PP3 EQU              OB_PP3:EOR:0xFFFFFFFF
+  251 00000000 FFFFFFFF 
+                       nOB_CP  EQU              OB_CP:EOR:0xFFFFFFFF
+  252 00000000         
+  253 00000000                 IF               OB_PP0 = 0 && OB_PP1 = 0 && OB_
+PP2 = 0 && OB_PP3 = 0 &&  OB_CP = 0
+  254 00000000 FFFFFFFF 
+                       OPT_CK  EQU              0xFFFFFFFF
+  255 00000000                 ELSE
+  257                          ENDIF
+  258 00000000         
+  259 00000000                 IF               BOOT_OPT = 1
+  262 00000000 FFFFFFFF 
+                       OPT_BOOT_WAIT
+                               EQU              0xFFFFFFFF
+  263 00000000                 ENDIF
+  264 00000000         
+  265 00000000                 IF               WDT_OPT = 1
+  276                          ENDIF
+  277 00000000         
+  278 00000000                 IF               WDT_OPT = 1
+  281 00000000 FFFFFFFF 
+                       OB_WDT  EQU              0xFFFFFFFF
+  282 00000000                 ENDIF
+  283 00000000         
+  294 00000000                 IF               (USE_HT32_CHIP=HT32F1653_54_55_
+56) ||         (USE_HT32_CHIP=HT32F12345)         ||         (USE_HT32_CHIP=H
+T32F12365_66)      ||         (USE_HT32_CHIP=HT32F52220_30)      ||         (
+USE_HT32_CHIP=HT32F52231_41)      ||         (USE_HT32_CHIP=HT32F52331_41)    
+  ||         (USE_HT32_CHIP=HT32F52342_52)      ||         (USE_HT32_CHIP=HT3
+2F52243_53)      ||         (USE_HT32_CHIP=HT32F50220_30)      ||         (US
+E_HT32_CHIP=HT32F50231_41)      ||         (USE_HT32_CHIP=HT32F0008)
+  295 00000000 FFFFFFFF 
+                       OPT_2C  EQU              OPT_BOOT_WAIT
+  296 00000000                 ELSE
+  314                          ENDIF
+  315 00000000         
+  316 00000000                 IF               WRITERCK_OPT = 1
+  321 00000000 FFFFFFFF 
+                       OPTCK_CODE
+                               EQU              0xFFFFFFFF
+  322 00000000 FFFFFFFF 
+                       OPTCK_DATA
+                               EQU              0xFFFFFFFF
+  323 00000000 FFFFFFFF 
+                       OPTCK_CODEOP
+                               EQU              0xFFFFFFFF
+  324 00000000                 ENDIF
+  325 00000000         
+  326 00000000                 IF               FLASH_OPT = 1
+  353                          ENDIF
+  354 00000000         
+  355 00000000         ;// <e> Program User's Flash Data (userdata.dat) (0x1FF0
+                       0050 ~ 0x1FF003EF/0x1FF002FF)
+  356 00000000         ;// <i> Address range: from 0x1FF00050 to 0x1FF003EF/0x1
+                       FF002FF (Max 928/432 Bytes)
+  357 00000000 00000000 
+                       FLASH_DATA
+                               EQU              0
+
+
+
+ARM Macro Assembler    Page 10 
+
+
+  358 00000000         ;// </e>
+  359 00000000                 IF               FLASH_DATA = 1
+  362                          ENDIF
+  363 00000000         
+  364 00000000                 END
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M0+ --apcs=inter
+work --depend=.\objects\ht32_op.d -o.\objects\ht32_op.o -I.\RTE\_CMSPanel -IC:\
+Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx -IC:\Keil_v5\
+ARM\CMSIS\Include --predefine="__UVISION_VERSION SETA 527" --predefine="USE_HT3
+2F52342_52 SETA 1" --predefine="USE_HT32_CHIP SETA 4" --list=.\listings\ht32_op
+.lst Config\ht32_op.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Absolute symbols
+
+BOOTOPTV 000005DC
+
+Symbol: BOOTOPTV
+   Definitions
+      At line 198 in file Config\ht32_op.s
+   Uses
+      None
+Comment: BOOTOPTV unused
+BOOT_OPT 00000000
+
+Symbol: BOOT_OPT
+   Definitions
+      At line 197 in file Config\ht32_op.s
+   Uses
+      At line 259 in file Config\ht32_op.s
+Comment: BOOT_OPT used once
+FLASH_DATA 00000000
+
+Symbol: FLASH_DATA
+   Definitions
+      At line 357 in file Config\ht32_op.s
+   Uses
+      At line 359 in file Config\ht32_op.s
+Comment: FLASH_DATA used once
+FLASH_OPT 00000000
+
+Symbol: FLASH_OPT
+   Definitions
+      At line 24 in file Config\ht32_op.s
+   Uses
+      At line 326 in file Config\ht32_op.s
+Comment: FLASH_OPT used once
+HT32F0008 00000006
+
+Symbol: HT32F0008
+   Definitions
+      At line 241 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F0008 used once
+HT32F12345 00000003
+
+Symbol: HT32F12345
+   Definitions
+      At line 235 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F12345 used once
+HT32F12365_66 00000002
+
+Symbol: HT32F12365_66
+   Definitions
+      At line 234 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F12365_66 used once
+HT32F1653_54_55_56 00000001
+
+Symbol: HT32F1653_54_55_56
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Absolute symbols
+
+   Definitions
+      At line 233 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F1653_54_55_56 used once
+HT32F50220_30 00000007
+
+Symbol: HT32F50220_30
+   Definitions
+      At line 242 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F50220_30 used once
+HT32F50231_41 00000008
+
+Symbol: HT32F50231_41
+   Definitions
+      At line 243 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F50231_41 used once
+HT32F52220_30 00000001
+
+Symbol: HT32F52220_30
+   Definitions
+      At line 236 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F52220_30 used once
+HT32F52231_41 00000002
+
+Symbol: HT32F52231_41
+   Definitions
+      At line 237 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F52231_41 used once
+HT32F52243_53 00000005
+
+Symbol: HT32F52243_53
+   Definitions
+      At line 240 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F52243_53 used once
+HT32F52331_41 00000003
+
+Symbol: HT32F52331_41
+   Definitions
+      At line 238 in file Config\ht32_op.s
+   Uses
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F52331_41 used once
+HT32F52342_52 00000004
+
+Symbol: HT32F52342_52
+   Definitions
+      At line 239 in file Config\ht32_op.s
+   Uses
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Absolute symbols
+
+      At line 294 in file Config\ht32_op.s
+Comment: HT32F52342_52 used once
+OB_CP 00000000
+
+Symbol: OB_CP
+   Definitions
+      At line 191 in file Config\ht32_op.s
+   Uses
+      At line 251 in file Config\ht32_op.s
+      At line 253 in file Config\ht32_op.s
+
+OB_PP0 00000000
+
+Symbol: OB_PP0
+   Definitions
+      At line 187 in file Config\ht32_op.s
+   Uses
+      At line 247 in file Config\ht32_op.s
+      At line 253 in file Config\ht32_op.s
+
+OB_PP1 00000000
+
+Symbol: OB_PP1
+   Definitions
+      At line 188 in file Config\ht32_op.s
+   Uses
+      At line 248 in file Config\ht32_op.s
+      At line 253 in file Config\ht32_op.s
+
+OB_PP2 00000000
+
+Symbol: OB_PP2
+   Definitions
+      At line 189 in file Config\ht32_op.s
+   Uses
+      At line 249 in file Config\ht32_op.s
+      At line 253 in file Config\ht32_op.s
+
+OB_PP3 00000000
+
+Symbol: OB_PP3
+   Definitions
+      At line 190 in file Config\ht32_op.s
+   Uses
+      At line 250 in file Config\ht32_op.s
+      At line 253 in file Config\ht32_op.s
+
+OB_WDT FFFFFFFF
+
+Symbol: OB_WDT
+   Definitions
+      At line 281 in file Config\ht32_op.s
+   Uses
+      None
+Comment: OB_WDT unused
+OPTCK_CODE FFFFFFFF
+
+Symbol: OPTCK_CODE
+   Definitions
+
+
+
+ARM Macro Assembler    Page 4 Alphabetic symbol ordering
+Absolute symbols
+
+      At line 321 in file Config\ht32_op.s
+   Uses
+      None
+Comment: OPTCK_CODE unused
+OPTCK_CODEOP FFFFFFFF
+
+Symbol: OPTCK_CODEOP
+   Definitions
+      At line 323 in file Config\ht32_op.s
+   Uses
+      None
+Comment: OPTCK_CODEOP unused
+OPTCK_DATA FFFFFFFF
+
+Symbol: OPTCK_DATA
+   Definitions
+      At line 322 in file Config\ht32_op.s
+   Uses
+      None
+Comment: OPTCK_DATA unused
+OPT_2C FFFFFFFF
+
+Symbol: OPT_2C
+   Definitions
+      At line 295 in file Config\ht32_op.s
+   Uses
+      None
+Comment: OPT_2C unused
+OPT_BOOT_WAIT FFFFFFFF
+
+Symbol: OPT_BOOT_WAIT
+   Definitions
+      At line 262 in file Config\ht32_op.s
+   Uses
+      At line 295 in file Config\ht32_op.s
+Comment: OPT_BOOT_WAIT used once
+OPT_CK FFFFFFFF
+
+Symbol: OPT_CK
+   Definitions
+      At line 254 in file Config\ht32_op.s
+   Uses
+      None
+Comment: OPT_CK unused
+OPT_RES FFFFFFFF
+
+Symbol: OPT_RES
+   Definitions
+      At line 245 in file Config\ht32_op.s
+   Uses
+      None
+Comment: OPT_RES unused
+WDT_OPT 00000000
+
+Symbol: WDT_OPT
+   Definitions
+      At line 216 in file Config\ht32_op.s
+   Uses
+      At line 265 in file Config\ht32_op.s
+
+
+
+ARM Macro Assembler    Page 5 Alphabetic symbol ordering
+Absolute symbols
+
+      At line 278 in file Config\ht32_op.s
+
+WRITERCK_CODE FFFFFFFF
+
+Symbol: WRITERCK_CODE
+   Definitions
+      At line 224 in file Config\ht32_op.s
+   Uses
+      None
+Comment: WRITERCK_CODE unused
+WRITERCK_CODEOP FFFFFFFF
+
+Symbol: WRITERCK_CODEOP
+   Definitions
+      At line 226 in file Config\ht32_op.s
+   Uses
+      None
+Comment: WRITERCK_CODEOP unused
+WRITERCK_DATA FFFFFFFF
+
+Symbol: WRITERCK_DATA
+   Definitions
+      At line 225 in file Config\ht32_op.s
+   Uses
+      None
+Comment: WRITERCK_DATA unused
+WRITERCK_OPT 00000000
+
+Symbol: WRITERCK_OPT
+   Definitions
+      At line 223 in file Config\ht32_op.s
+   Uses
+      At line 316 in file Config\ht32_op.s
+Comment: WRITERCK_OPT used once
+nOB_CP FFFFFFFF
+
+Symbol: nOB_CP
+   Definitions
+      At line 251 in file Config\ht32_op.s
+   Uses
+      None
+Comment: nOB_CP unused
+nOB_PP0 FFFFFFFF
+
+Symbol: nOB_PP0
+   Definitions
+      At line 247 in file Config\ht32_op.s
+   Uses
+      None
+Comment: nOB_PP0 unused
+nOB_PP1 FFFFFFFF
+
+Symbol: nOB_PP1
+   Definitions
+      At line 248 in file Config\ht32_op.s
+   Uses
+      None
+Comment: nOB_PP1 unused
+nOB_PP2 FFFFFFFF
+
+
+
+ARM Macro Assembler    Page 6 Alphabetic symbol ordering
+Absolute symbols
+
+
+Symbol: nOB_PP2
+   Definitions
+      At line 249 in file Config\ht32_op.s
+   Uses
+      None
+Comment: nOB_PP2 unused
+nOB_PP3 FFFFFFFF
+
+Symbol: nOB_PP3
+   Definitions
+      At line 250 in file Config\ht32_op.s
+   Uses
+      None
+Comment: nOB_PP3 unused
+38 symbols
+371 symbols in table

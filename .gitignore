@@ -1,0 +1,12 @@
+固件\电池棒控制器固件\Objects
+固件\电池棒控制器固件\Listings
+固件\驱动固件\Objects
+固件\驱动固件\Listings
+MainPCB/History
+MainPCB/__Previews
+SideKeyPCB/History
+SideKeyPCB/__Previews
+*.uvproj
+*.uvopt
+*.uvgui
+*.redstoner_35

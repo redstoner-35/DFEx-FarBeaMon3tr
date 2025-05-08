@@ -1,0 +1,12 @@
+.\objects\vrechargemenu.o: Menu\VRechargeMenu.c
+.\objects\vrechargemenu.o: .\User\inc\Config.h
+.\objects\vrechargemenu.o: .\User\inc\IP2366_REG.h
+.\objects\vrechargemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\vrechargemenu.o: .\User\inc\LCD_Init.h
+.\objects\vrechargemenu.o: .\User\inc\Key.h
+.\objects\vrechargemenu.o: .\GUI\GUI.h
+.\objects\vrechargemenu.o: .\User\inc\lcd.h
+.\objects\vrechargemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\vrechargemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+.\objects\vrechargemenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\vrechargemenu.o: .\User\inc\ADC.h

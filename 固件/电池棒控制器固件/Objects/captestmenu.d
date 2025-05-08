@@ -1,0 +1,13 @@
+.\objects\captestmenu.o: Menu\CapTestMenu.c
+.\objects\captestmenu.o: .\GUI\GUI.h
+.\objects\captestmenu.o: .\User\inc\lcd.h
+.\objects\captestmenu.o: .\User\inc\LCD_Init.h
+.\objects\captestmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\captestmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\captestmenu.o: .\User\inc\CapTest.h
+.\objects\captestmenu.o: .\User\inc\Config.h
+.\objects\captestmenu.o: .\User\inc\IP2366_REG.h
+.\objects\captestmenu.o: .\User\inc\ADC.h
+.\objects\captestmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+.\objects\captestmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+.\objects\captestmenu.o: .\User\inc\Key.h

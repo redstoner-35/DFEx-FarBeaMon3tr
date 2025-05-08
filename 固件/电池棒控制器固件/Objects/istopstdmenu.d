@@ -1,0 +1,9 @@
+.\objects\istopstdmenu.o: Menu\IstopStdMenu.c
+.\objects\istopstdmenu.o: .\User\inc\Config.h
+.\objects\istopstdmenu.o: .\User\inc\IP2366_REG.h
+.\objects\istopstdmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\istopstdmenu.o: .\User\inc\LCD_Init.h
+.\objects\istopstdmenu.o: .\User\inc\Key.h
+.\objects\istopstdmenu.o: .\GUI\GUI.h
+.\objects\istopstdmenu.o: .\User\inc\lcd.h
+.\objects\istopstdmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

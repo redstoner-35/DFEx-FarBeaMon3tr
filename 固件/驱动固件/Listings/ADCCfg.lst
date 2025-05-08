@@ -1,0 +1,294 @@
+C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ADCCFG
+OBJECT MODULE PLACED IN .\Objects\ADCCfg.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Hardware\ADCCfg.c OMF2 OPTIMIZE(9,SPEED) BROWSE MODDP2 INCDIR(.\StdDrive
+                    -r\inc;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System) DEFINE(EnableStdGPIO) DEBUG P
+                    -RINT(.\Listings\ADCCfg.lst) TABS(2) OBJECT(.\Objects\ADCCfg.obj)
+
+line level    source
+
+   1          #include "cms8s6990.h"
+   2          #include "PinDefs.h"
+   3          #include "ADCCfg.h"
+   4          #include "ADCAsync.h"
+   5          #include "delay.h"
+   6          
+   7          /**********************************************************************
+   8          ÒÔÏÂº¯ÊıÎªADCÒì²½×ª»»ÒıÇæÊµÏÖ¹¦ÄÜËùĞèµÄÄÚ²¿´¦Àíº¯ÊıÒÔ¼°ËùĞèµÄÄÚ²¿È«¾Ö±ä
+   9          Á¿¡£Çë²»ÒªËæÒâĞŞ¸Äº¯ÊıÄÚÈİ£¬»òÕßÔÚ³ıÁË±¾ÎÄ¼şÄÚµÄÆäËûÈÎºÎµØ·½µ÷ÓÃ£¬·ñÔò
+  10          »áµ¼ÖÂADCÒıÇæ¹¤×÷Òì³££¡ 
+  11          **********************************************************************/
+  12          static xdata ADCConvertTemp ADCTemp;
+  13          static ADCAsyncStateDef ADCState; 
+  14          static xdata char ADCConvertQueue[ADCConvertQueueDepth];  
+  15          xdata bool IsNotAllowAsync;  //ÊÇ·ñÔÊĞíADCÒıÇæÔËĞĞÔÚÒì²½Ä£Ê½
+  16            
+  17          //ÏòADCÌá½»ÈÎÎñ 
+  18          static void ADC_SubmitMisson(char Ch) 
+  19            {
+  20   1        unsigned char i=255;
+  21   1        //¼ì²é´«ÈëµÄÍ¨µÀ²ÎÊıÊÇ·ñºÏ·¨
+  22   1        if(ADCTemp.IsMissionProcessing)return;
+  23   1        if(ADC_CheckIfChInvalid(Ch))return; 
+  24   1        //½øĞĞ³õÊ¼»¯
+  25   1        ADCTemp.avgbuf=0;
+  26   1        ADCTemp.Count=0;
+  27   1        ADCTemp.Ch=Ch;
+  28   1        ADCTemp.IsMissionProcessing=true;
+  29   1        //ÅäÖÃADCÍ¨µÀ   
+  30   1        if(Ch&0x10)ADCON0|=0x80;
+  31   1        else ADCON0&=0x7F; //ÉèÖÃADCHS[4]
+  32   1        ADCON1&=0xF0;
+  33   1        ADCON1|=(Ch&0x0F); //ÉèÖÃADCHS[3:0]         
+  34   1        //Æô¶¯×ª»»
+  35   1        while(--i);  //ÑÓÊ±µÈ´ıÍ¨µÀÑ¡Í¨ºó¿ªÊ¼²ÉÑù
+  36   1        ADC_StartConv();
+  37   1        } 
+  38          
+  39          //¶ÁÈ¡Êı¾İ
+  40          static int ADC_ReadBackResult(int *Result,char *Queue)  
+  41            {
+  42   1        //ADCÎ´Íê³É±¾´Î×ª»»
+  43   1        if(ADC_GetIfStillConv())return 0; 
+  44   1        //ÊÕÈ¡½á¹û
+  45   1        ADCTemp.Count++; //ÊıÖµ+1
+  46   1        ADCTemp.avgbuf+=(long)ADC_ReadConvResult(); //´ÓAD¼Ä´æÆ÷ÊÕÈ¡½á¹û²¢½øĞĞÆ½¾ùÀÛ¼Ó
+  47   1        if(ADCTemp.Count<ADCAverageCount) 
+  48   1          {
+  49   2          ADC_StartConv();
+  50   2          return 0;//Æ½¾ù´ÎÊıÎ´µ½£¬ÖØĞÂÆô¶¯ADC½øĞĞĞÂÒ»ÂÖµÄ´¦Àí
+  51   2          }
+  52   1        //Íê³É×ª»»£¬·µ»Ø½á¹û²¢×¼±¸¿ÉÒÔÌá½»ĞÂµÄÈÎÎñ
+  53   1        ADCTemp.avgbuf/=(long)ADCAverageCount;
+C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 2   
+
+  54   1        *Result=(int)ADCTemp.avgbuf; //·µ»Ø½á¹û
+  55   1        *Queue=ADCTemp.Ch; //·µ»Ø×ª»»µÄ¶ÓÁĞ
+  56   1        ADCTemp.IsMissionProcessing=false; //ÈÎÎñÒÑ´¦ÀíÍê±Ï
+  57   1        return 1; 
+  58   1        }
+  59          
+  60          //ADCÉèÖÃµçÑ¹²Î¿¼ 
+  61          static void ADC_SetVREF(bit IsUsingVDD)
+  62            {
+  63   1        ADC_DisableCmd(); //×ª»»ADC»ù×¼ĞèÒªÔİÊ±¹Ø±ÕADC  
+  64   1        _nop_();
+  65   1        ADC_SetVREFReg(IsUsingVDD); //ÉèÖÃĞ¾Æ¬ÄÚ²¿»ù×¼
+  66   1        _nop_();
+  67   1        ADC_EnableCmd(); //»ù×¼ÇĞ»»Íê±Ï£¬ÖØĞÂÆô¶¯
+  68   1        }
+  69          //×ª»»Íê±ÏºóĞ´Êä³öÒıÇæ
+  70          int CalcNTCTemp(bool *IsNTCOK,unsigned long NTCRes); //º¯ÊıÉùÃ÷   
+  71          
+  72          static void ADC_WriteOutputBuf(int ADCResult,char Ch)
+  73            {
+  74   1        float Buf,Rt,Vadc;
+  75   1        unsigned long NTCRES;
+  76   1        //½øĞĞADC
+  77   1        Rt=ADC_IsUsingIVREF()?ADCVREF:Data.MCUVDD; //¸ù¾İ»ù×¼ÉèÖÃµÃµ½ADµ±Ç°µÄ»ù×¼µçÑ¹
+  78   1        Vadc=(float)ADCResult*(Rt/(float)4096);//½«ADÖµ×ª»»ÎªÔ­Ê¼µçÑ¹
+  79   1        //×´Ì¬»ú
+  80   1        switch(Ch)
+  81   1          {
+  82   2          //¼ÆËãFB×¢ÈëÔË·ÅµÄÊä³öµçÑ¹
+  83   2          case OPFBAIN:
+  84   2            Data.FBInjectVolt=Vadc; 
+  85   2            break;
+  86   2          //¼ÆËã²Î¿¼µçÑ¹
+  87   2          case ADC_INTVREFCh:
+  88   2            Buf=ADCBGVREF*(float)4096/(float)ADCResult;
+  89   2            Data.MCUVDD=Buf; //¼ÆËã³öMCUVDD(VREF)
+  90   2            break; 
+  91   2          //¼ÆËãµç³ØµçÑ¹
+  92   2          case VBATInputAIN:
+  93   2            Buf=(float)VBattLowerResK/(float)(VBattLowerResK+VBattUpperResK);//¼ÆËã³ö·ÖÑ¹µç×èµÄÏµÊı
+  94   2            Data.RawBattVolt=Vadc/Buf; //¸ù¾İ·ÖÑ¹ÏµÊı·´ÍÆ³öµç³ØµçÑ¹
+  95   2            Data.BatteryVoltage=Data.RawBattVolt/(float)3; //½«3½Úµç³ØµÄ×ÜµçÑ¹×ª»»Îªµ¥½Úµç³ØµÄµçÑ¹
+  96   2            break;
+  97   2          //¼ÆËãÊä³öµçÑ¹
+  98   2          case VOUTFBAIN:   
+  99   2            Buf=(float)VoutLowerResK/(float)(VoutLowerResK+VoutUpperResK);//¼ÆËã³ö·ÖÑ¹µç×èµÄÏµÊı
+ 100   2            Data.OutputVoltage=Vadc/Buf; //¸ù¾İ·ÖÑ¹ÏµÊı·´ÍÆ³öDCDCÊä³öµçÑ¹
+ 101   2            break;
+ 102   2          //¼ÆËãÎÂ¶È
+ 103   2          case NTCInputAIN:
+ 104   2            Rt=((float)NTCUpperResValueK*Vadc)/(Data.MCUVDD-Vadc);//µÃµ½NTC+µ¥Æ¬»úIOµ¼Í¨µç×èµÄ´«¸ĞÆ÷×èÖµ
+ 105   2            Rt*=1000; //½«×èÖµ´ÓKÅ·×ªÎª¦¸
+ 106   2            NTCRES=(unsigned long)Rt; //È¡Õû
+ 107   2            Data.Systemp=CalcNTCTemp(&Data.IsNTCOK,NTCRES); //¼ÆËãÎÂ¶È
+ 108   2            break;
+ 109   2          }
+ 110   1        }
+ 111          
+ 112          //ADCÒì²½ÒıÇæµÄÖ÷´¦Àíº¯Êı
+ 113          static void ADCEngineHandler(void)
+ 114            {
+ 115   1        int result;
+C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 3   
+
+ 116   1        char Ch,i;
+ 117   1        //×ª»»Ñ­»·
+ 118   1        do
+ 119   1          {
+ 120   2          if(ADCState==ADC_ConvertComplete)ADCState=ADC_SubmitQueue; //Èç¹ûÒ»ÂÖ×ª»»Íê³ÉÔòÖØĞÂ¿ªÊ¼
+ 121   2          switch(ADCState)
+ 122   2            {   
+ 123   3            //¿ªÊ¼Ìá½»×ª»»¶ÓÁĞ
+ 124   3            case ADC_SubmitQueue: 
+ 125   3              ADC_SetVREF(1); //Ã¿´ÎÌá½»¶ÓÁĞÖ®Ç°£¬ÉèÖÃ»ù×¼Ê¹ÓÃMCUVDDÀ´×ª»»ÎÂ¶ÈºÍMCUVDDµçÑ¹
+ 126   3              for(i=0;i<ADCConvertQueueDepth;i++)ADCConvertQueue[i]=ADCChQueue[i]; //°Ñ×ª»»¶ÓÁĞÀïÃæµÄÊı¾İ¸´ÖÆ¹ıÈ¥
+ 127   3              ADCState=ADC_SubmitChFromQueue;
+ 128   3              break;
+ 129   3            //ÏòADC×ª»»Ïß³ÌÌá½»ÈÎÎñ
+ 130   3            case ADC_SubmitChFromQueue: 
+ 131   3              i=0;
+ 132   3              while(i<ADCConvertQueueDepth)
+ 133   3                {
+ 134   4                if(!ADC_CheckIfChInvalid(ADCConvertQueue[i]))break; //ÕÒµ½¶ÓÁĞÖĞÎ´Íê³ÉµÄºÏ·¨×ª»»ÏîÄ¿
+ 135   4                i++;
+ 136   4                }
+ 137   3              //ÓĞ×ª»»ÏîÄ¿Î´Íê³É
+ 138   3              if(i<ADCConvertQueueDepth)  
+ 139   3                {
+ 140   4                Ch=ADCConvertQueue[i]; //¼ì²âÄ¿±êµÄÍ¨µÀÖµ
+ 141   4                if(Ch==VBATInputAIN||Ch==VOUTFBAIN)ADC_SetVREF(0); //µç³ØºÍÊä³öµçÑ¹×ª»»Ê¹ÓÃÄÚ²¿¾«ÃÜÍ¨µÀ
+ 142   4                ADC_SubmitMisson(Ch); //Ìá½»ÏîÄ¿
+ 143   4                ADCState=ADC_WaitMissionDone;
+ 144   4                }
+ 145   3              //ËùÓĞ×ª»»ÒÑÍê³É£¬Ìø×ªµ½Íê³É½×¶Î
+ 146   3              else ADCState=ADC_ConvertComplete;    
+ 147   3              break;  
+ 148   3            //Ìá½»Ïß³ÌÈÎÎñºóµÈ´ı±¾´ÎÈÎÎñÍê³É
+ 149   3            case ADC_WaitMissionDone:
+ 150   3                if(!ADC_ReadBackResult(&result,&Ch))break; //³¢ÊÔ¶ÁÈ¡½á¹û£¬×ª»»Î´Íê³ÉÔò¼ÌĞø
+ 151   3                ADC_WriteOutputBuf(result,Ch);
+ 152   3                for(i=0;i<ADCConvertQueueDepth;i++)if(ADCConvertQueue[i]==Ch)ADCConvertQueue[i]=-2; //½«µ±Ç°ÒÑ¾­Íê³
+             -É×ª»»µÄÈÎÎñÍ¨µÀÉèÖÃÎª-2±ê¼Ç×ª»»Íê±Ï
+ 153   3                ADCState=ADC_SubmitChFromQueue; //ÖØĞÂ»Øµ½Ìá½»ÈÎÎñµÄ½×¶Î
+ 154   3                break;
+ 155   3            //ËùÓĞÈÎÎñÒÑÍê³É
+ 156   3            case ADC_ConvertComplete:break;
+ 157   3            //ÆäÓàÈÎºÎ·Ç·¨×´Ì¬Ìø×ªµ½³õÊ¼½×¶Î
+ 158   3            default:ADCState=ADC_SubmitQueue;
+ 159   3            }
+ 160   2          }
+ 161   1        while(IsNotAllowAsync&&ADCState!=ADC_ConvertComplete);
+ 162   1        } 
+ 163            
+ 164          /**********************************************************************
+ 165          ÒÔÏÂº¯ÊıÎªADCÒì²½×ª»»ÒıÇæÒÔ¼°ADCµÄ³õÊ¼»¯ºÍ³ıÄÜ²Ù×÷ºÍÇı¶¯ÒıÇæ»ñÈ¡Íâ²¿Í¨
+ 166          µÀµÄµçÑ¹Êı¾İËùĞèµÄÍâ²¿º¯Êıµ÷ÓÃ¡£Äú¿ÉÒÔÔÚ³õÊ¼»¯½×¶ÎºÍÖ÷º¯ÊıÄÚµ÷ÓÃÒÔÏÂÇø
+ 167          ÓòµÄº¯Êı¶ÔADC½øĞĞ³õÊ¼»¯ºÍ³ıÄÜ²Ù×÷£¬ÒÔ¼°Æô¶¯ÒıÇæ¶ÔADC½øĞĞÒì²½²ÉÑù¡£
+ 168          **********************************************************************/ 
+ 169          ADCResultStrDef Data;  //ADC½á¹ûÊä³ö
+ 170            
+ 171          //½øĞĞÊı¾İ»ñÈ¡  
+ 172          void SystemTelemHandler(void)
+ 173            {
+ 174   1        //µ÷ÓÃADCÒì²½ÒıÇæ
+ 175   1        ADCEngineHandler();
+ 176   1        } 
+C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 4   
+
+ 177            
+ 178          //¹Ø±ÕADC
+ 179          void ADC_DeInit(void)
+ 180            {
+ 181   1        GPIOCfgDef ADCDeInitCfg;
+ 182   1        char i;   
+ 183   1        //ÅäÖÃ¼Ä´æÆ÷¹Ø±ÕADC
+ 184   1        ADCON1=0x00; //¹Ø±ÕADC
+ 185   1        ADCLDO=0x00; //¹Ø±ÕÆ¬ÄÚ»ù×¼
+ 186   1        //Çå¿Õ¶ÓÁĞ²¢¸´Î»Òì²½ÒıÇæ
+ 187   1        IsNotAllowAsync=1;    
+ 188   1        ADCState=ADC_SubmitQueue;
+ 189   1        for(i=0;i<ADCConvertQueueDepth;i++)ADCConvertQueue[i]=-2; 
+ 190   1        ADCTemp.avgbuf=0;
+ 191   1        ADCTemp.Count=0;
+ 192   1        ADCTemp.Ch=0;
+ 193   1        ADCTemp.IsMissionProcessing=false;  
+ 194   1        //½«ĞèÒª½ûÓÃµÄADCÊäÈëGPIOÉèÖÃÎªÆÕÍ¨GPIOÄ£Ê½
+ 195   1        GPIO_SetMUXMode(VOUTFBIOG,VOUTFBIOx,GPIO_AF_GPIO);
+ 196   1        GPIO_SetMUXMode(VBATInputIOG,VBATInputIOx,GPIO_AF_GPIO);
+ 197   1        //½«ĞèÒª½ûÓÃµÄADCÊäÈëÉèÖÃÎªÍÆÍìÊä³ö
+ 198   1        ADCDeInitCfg.Mode=GPIO_Out_PP;
+ 199   1        ADCDeInitCfg.Slew=GPIO_Slow_Slew;   
+ 200   1        ADCDeInitCfg.DRVCurrent=GPIO_Low_Current; //ÅäÖÃÎªµÍµçÁ÷ÍÆÍìÊä³ö
+ 201   1        
+ 202   1        GPIO_ConfigGPIOMode(VOUTFBIOG,GPIOMask(VOUTFBIOG),&ADCDeInitCfg); 
+ 203   1        GPIO_ConfigGPIOMode(VBATInputIOG,GPIOMask(VBATInputIOx),&ADCDeInitCfg); 
+ 204   1        //½«ĞèÒª½ûÓÃµÄADCÊäÈëGPIOÈ«²¿Êä³ö0
+ 205   1        GPIO_WriteBit(VBATInputIOG,VBATInputIOx,0);
+ 206   1        GPIO_WriteBit(VOUTFBIOG,VOUTFBIOx,0);
+ 207   1        //ÁîNTCÆ«Ñ¹¹©µçÊä³ö=0¹Ø±ÕNTCºÍStrapµçÔ´
+ 208   1        GPIO_WriteBit(NTCENIOG,NTCENIOx,0); 
+ 209   1        }
+ 210          
+ 211          //ADC³õÊ¼»¯
+ 212          void ADC_Init(void)
+ 213            {
+ 214   1        GPIOCfgDef ADCInitCfg;
+ 215   1        //³õÊ¼»¯GPIO
+ 216   1        ADCInitCfg.Mode=GPIO_Input_Floating;
+ 217   1        ADCInitCfg.Slew=GPIO_Slow_Slew;   
+ 218   1        ADCInitCfg.DRVCurrent=GPIO_Low_Current; //ÅäÖÃÎª¸¡¿ÕÊäÈë  
+ 219   1      
+ 220   1        GPIO_ConfigGPIOMode(VOUTFBIOG,GPIOMask(VOUTFBIOG),&ADCInitCfg); 
+ 221   1        GPIO_ConfigGPIOMode(VBATInputIOG,GPIOMask(VBATInputIOx),&ADCInitCfg); 
+ 222   1        GPIO_ConfigGPIOMode(NTCInputIOG,GPIOMask(NTCInputIOx),&ADCInitCfg);   //½«¶ÔÓ¦µÄIOÉèÖÃÎªÖ¸¶¨µÄÄ£Ê½
+ 223   1        //³õÊ¼»¯ÔË·ÅÊä³ö·´À¡
+ 224   1        ADCInitCfg.Mode=GPIO_IPD; 
+ 225   1        GPIO_ConfigGPIOMode(OPFBIOG,GPIOMask(OPFBIOx),&ADCInitCfg); //ÔË·ÅÊä³ö¸øÒ»¸ö32KµÄÏÂÀ­×è¿¹±ÜÃâĞéµç
+ 226   1        
+ 227   1        GPIO_SetMUXMode(OPFBIOG,OPFBIOx,GPIO_AF_Analog);
+ 228   1        GPIO_SetMUXMode(NTCInputIOG,NTCInputIOx,GPIO_AF_Analog);
+ 229   1        GPIO_SetMUXMode(VOUTFBIOG,VOUTFBIOx,GPIO_AF_Analog);
+ 230   1        GPIO_SetMUXMode(VBATInputIOG,VBATInputIOx,GPIO_AF_Analog); //½«GPIO¸´ÓÃÉèÖÃÎªÄ£ÄâÊäÈë
+ 231   1        //ÅäÖÃ²¢´ò¿ªNTC·ÖÑ¹µç×èµÄ¹©µç
+ 232   1        ADCInitCfg.Mode=GPIO_Out_PP;
+ 233   1        ADCInitCfg.DRVCurrent=GPIO_High_Current;   //´óµçÁ÷ÍÆÍìÊä³ö
+ 234   1          
+ 235   1        GPIO_SetMUXMode(NTCENIOG,NTCENIOx,GPIO_AF_GPIO);
+ 236   1        GPIO_ConfigGPIOMode(NTCENIOG,GPIOMask(NTCENIOx),&ADCInitCfg);   
+ 237   1        GPIO_WriteBit(NTCENIOG,NTCENIOx,1); //Áî¹©µçÊä³ö=1´ò¿ªNTCµçÔ´
+ 238   1        //ÅäÖÃADC
+C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 5   
+
+ 239   1        ADCON0=0x40; //AN31=ÄÚ²¿1.2V»ù×¼£¬½á¹ûÓÒ¶ÔÆë
+ 240   1        ADCON1=0x60; //Fadc=Fsys/128=375KHz
+ 241   1        ADCON2=0x00; //¹Ø±ÕADCÓ²¼ş´¥·¢¹¦ÄÜ£¬Ê¹ÓÃÈí¼şÃüÁîÆô¶¯ADC
+ 242   1        ADCMPC=0x00; //¹Ø±ÕADC±È½ÏÆ÷´¥·¢É²³µ¹¦ÄÜ
+ 243   1        ADDLYL=0x00; //½«ADCÓ²¼şÆô¶¯´¥·¢ÑÓÊ±ÉèÖÃÎª0
+ 244   1        ADCMPH=0x0F;
+ 245   1        ADCMPL=0xFF; //ADC±È½ÏÆ÷Ä¬ÈÏÖµÉèÖÃÎª0x0FFF
+ 246   1        ADCLDO=0xA0; //Ê¹ÄÜĞ¾Æ¬ÄÚÖÃADC»ù×¼£¬Êä³ö2.0V
+ 247   1        //³õÊ¼»¯Òì²½ADCÒıÇæ
+ 248   1        ADCState=ADC_SubmitQueue;
+ 249   1        ADCTemp.avgbuf=0;
+ 250   1        ADCTemp.Count=0;
+ 251   1        ADCTemp.Ch=0;
+ 252   1        ADCTemp.IsMissionProcessing=false;
+ 253   1        IsNotAllowAsync=true; //³õÊ¼»¯Ê±½ûÖ¹Òì²½¹¦ÄÜ  
+ 254   1        //ADCÅäÖÃÍê±Ï£¬Ê¹ÄÜADCÄ£¿é
+ 255   1        ADC_EnableCmd(); 
+ 256   1        } 
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1249    ----
+   CONSTANT SIZE    =      5    ----
+   XDATA SIZE       =     14    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     24      31
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,9 @@
+.\objects\pdosetmenu.o: Menu\PDOSetMenu.c
+.\objects\pdosetmenu.o: .\GUI\GUI.h
+.\objects\pdosetmenu.o: .\User\inc\lcd.h
+.\objects\pdosetmenu.o: .\User\inc\LCD_Init.h
+.\objects\pdosetmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\pdosetmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\pdosetmenu.o: .\User\inc\Config.h
+.\objects\pdosetmenu.o: .\User\inc\IP2366_REG.h
+.\objects\pdosetmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h

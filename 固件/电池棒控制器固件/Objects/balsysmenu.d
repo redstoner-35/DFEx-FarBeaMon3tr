@@ -1,0 +1,9 @@
+.\objects\balsysmenu.o: Menu\BalSysMenu.c
+.\objects\balsysmenu.o: .\User\inc\Config.h
+.\objects\balsysmenu.o: .\User\inc\IP2366_REG.h
+.\objects\balsysmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\balsysmenu.o: .\User\inc\LCD_Init.h
+.\objects\balsysmenu.o: .\User\inc\Key.h
+.\objects\balsysmenu.o: .\GUI\GUI.h
+.\objects\balsysmenu.o: .\User\inc\lcd.h
+.\objects\balsysmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
