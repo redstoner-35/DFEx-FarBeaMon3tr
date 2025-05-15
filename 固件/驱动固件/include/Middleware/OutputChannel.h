@@ -35,7 +35,8 @@ typedef enum
 //外部参考
 extern xdata volatile int Current; //电流值
 extern xdata int CurrentBuf; //当前已应用的电流值
-
+extern bit IsCurrentRampUp;  //电流正在上升过程中的标记位（用于和MPPT试探联动）
+	
 //函数
 void SetHBLEDState(bit State); //设置心跳LED
 void OutputChannel_Init(void);

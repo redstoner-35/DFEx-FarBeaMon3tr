@@ -165,16 +165,16 @@ static void BatteryStateFSM(void)
 		 //电池电量较为充足
 		 case Battery_Mid:
 			  if(Battery>(Thres+0.2))BattState=Battery_Plenty; //电池电压大于3.8，回到充足状态
-				if(Battery<3.2)BattState=Battery_Low; //电池电压低于3.2则切换到电量低的状态
+				if(Battery<3.0)BattState=Battery_Low; //电池电压低于3.2则切换到电量低的状态
 				break;
 		 //电池电量不足
 		 case Battery_Low:
-		    if(Battery>3.5)BattState=Battery_Mid; //电池电压高于3.5，切换到电量中等的状态
-			  if(Battery<2.9)BattState=Battery_VeryLow; //电池电压低于2.8，报告严重不足
+		    if(Battery>3.2)BattState=Battery_Mid; //电池电压高于3.5，切换到电量中等的状态
+			  if(Battery<2.8)BattState=Battery_VeryLow; //电池电压低于2.8，报告严重不足
 		    break;
 		 //电池电量严重不足
 		 case Battery_VeryLow:
-			  if(Battery>3.2)BattState=Battery_Low; //电池电压回升到3.0，跳转到电量不足阶段
+			  if(Battery>3.0)BattState=Battery_Low; //电池电压回升到3.0，跳转到电量不足阶段
 		    break;
 		 }
 	}
@@ -243,9 +243,9 @@ void BatteryTelemHandler(void)
 	if(CurrentMode->ModeIdx==Mode_Ramp)AlertThr=SysCfg.RampBattThres; //无极调光模式下，使用结构体内的动态阈值
 	else AlertThr=CurrentMode->LowVoltThres; //从当前目标挡位读取模式值  
 	VBatt=(int)(Battery*1000); //得到电池电压(mV)
-	IsBatteryFault=VBatt>2700?0:1; //故障bit
+	IsBatteryFault=VBatt>2550?0:1; //当电池电压低于2.55V之后置起故障bit
 	if(IsBatteryFault)IsBatteryAlert=0; //故障bit置起后强制清除警报bit
-	else if(Data.FBInjectVolt<0.2&&VBatt<3750&&Data.OutputVoltage>16)IsBatteryAlert=1; //电池电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发，此时强制掉档	
+	else if(Data.FBInjectVolt<0.2&&VBatt<3750&&Data.OutputVoltage>16)IsBatteryAlert=1; //电池总电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发，此时强制掉档	
 	else IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit
 	//电池电量指示状态机
 	BatteryStateFSM();

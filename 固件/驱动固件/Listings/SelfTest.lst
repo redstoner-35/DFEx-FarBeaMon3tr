@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   SELFTEST                                                          05/01/2025 07:57:18 PAGE 1   
+C51 COMPILER V9.60.0.0   SELFTEST                                                          05/15/2025 17:22:34 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SELFTEST
@@ -62,7 +62,7 @@ line level    source
   51   1        if(ErrCode==Fault_None)ErrDisplayIndex=0;
   52   1        else //发生错误，开始计时
   53   1          {
-C51 COMPILER V9.60.0.0   SELFTEST                                                          05/01/2025 07:57:18 PAGE 2   
+C51 COMPILER V9.60.0.0   SELFTEST                                                          05/15/2025 17:22:34 PAGE 2   
 
   54   2          ErrDisplayIndex++;
   55   2          if(ErrDisplayIndex>=(5+(6*(int)ErrCode)+10))ErrDisplayIndex=0; //上限到了，开始翻转
@@ -126,7 +126,7 @@ line level    source
  113   2          switch((ShortDetectTIM>>4)&0x0F)  
  114   2            {
  115   3            case 1:ReportError(Fault_DCDCOpen);break;
-C51 COMPILER V9.60.0.0   SELFTEST                                                          05/01/2025 07:57:18 PAGE 3   
+C51 COMPILER V9.60.0.0   SELFTEST                                                          05/15/2025 17:22:34 PAGE 3   
 
  116   3            default:ReportError(Fault_DCDCShort);
  117   3            }

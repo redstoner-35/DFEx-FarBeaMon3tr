@@ -148,7 +148,7 @@ bit ShowThermalStepDown(void)
 				}
 		case StepDown_Thermal: //¹ýÈÈ
 			StepDownTIM++;
-			if(StepDownTIM==12)
+			if(StepDownTIM==13)
 				{
 				StepDownTIM=0;
 				return 1;

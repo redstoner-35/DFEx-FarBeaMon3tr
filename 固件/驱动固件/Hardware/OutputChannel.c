@@ -19,6 +19,7 @@ sbit LEDMOS=LEDNegMOSIOP^LEDNegMOSIOx; //LEDMOSFET
 //外部电流配置参考
 xdata volatile int Current; //目标电流(mA)
 xdata int CurrentBuf; //存储当前已经上传的电流值 
+bit IsCurrentRampUp;  //电流正在上升过程中的标记位（用于和MPPT试探联动）
 
 //内部变量
 static bit IsEnableSlowILEDRamp; //标志位，是否启用慢速电流斜率控制
@@ -119,6 +120,7 @@ void OutputChannel_DeInit(void)
 	//系统上电时电流配置为0
 	Current=0;
 	CurrentBuf=0;
+	IsCurrentRampUp=0;
 	IsEnableSlowILEDRamp=0;
 	//复位状态机
 	HBTimer=0;
@@ -215,6 +217,8 @@ void OutputChannel_Calc(void)
 			 AUXEN=0;
 			 LEDMOS=0;
 			 PWMDACEN=0;
+	     //复位标记位
+	     IsCurrentRampUp=0;
 			 //复位PWMDAC
 		   if(PreChargeDACDuty||PWMDuty>0)
 				{
@@ -299,7 +303,11 @@ void OutputChannel_Calc(void)
 			IsNeedToUploadPWM=1;
 			PWMDuty=Duty_Calc(CurrentBuf);
 			//占空比已同步，跳转到正常运行阶段
-			if(TargetCurrent==CurrentBuf)OutputFSMState=OutCH_OutputEnabled;
+			if(TargetCurrent==CurrentBuf)
+				{
+				IsCurrentRampUp=1; //标记电流爬升结束
+				OutputFSMState=OutCH_OutputEnabled;
+				}
 	    break;
 		//输出通道正常运行阶段
 		case OutCH_OutputEnabled:

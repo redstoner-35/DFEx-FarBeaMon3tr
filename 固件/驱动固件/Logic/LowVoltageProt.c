@@ -7,7 +7,11 @@
 //内部变量
 static xdata char BattAlertTimer=0; //电池低电压告警处理
 static xdata char RampCurrentRiseAttmTIM=0; //无极调光恢复电流的计时器	
+static xdata char TryTurboILIMTimer=0; //尝试下调极亮的冷却计时
+
+//全局参考
 xdata int TurboILIM; //极亮电流限制
+
 
 //低电量保护函数
 static void StartBattAlertTimer(void)
@@ -20,6 +24,8 @@ static void StartBattAlertTimer(void)
 //电池低电量报警处理函数
 void BattAlertTIMHandler(void)
 	{
+	//极亮下调电流计时	
+	if(TryTurboILIMTimer>0)TryTurboILIMTimer--;
 	//无极调光警报定时
 	if(RampCurrentRiseAttmTIM>0&&RampCurrentRiseAttmTIM<9)RampCurrentRiseAttmTIM++;
 	//电量警报
@@ -30,8 +36,7 @@ void BattAlertTIMHandler(void)
 void CalcTurboILIM(void)
 	{
 	if(Battery>3.6)TurboILIM=QueryCurrentGearILED(); //电池电压大于3.6时按照目标电流去取
-	else if(Battery>3.4)TurboILIM=CalcIREFValue(20000); //电池电压低，极亮锁20A输出
-	else TurboILIM=CalcIREFValue(15000); //电池电压低的不行了电池扛不住，极亮锁15A
+	else TurboILIM=CalcIREFValue(25000); //电池电压低，极亮锁25A输出
 	}	
 	
 //极亮挡位时动态尝试极亮运行值的功能
@@ -49,17 +54,22 @@ void TurboLVILIMProcess(void)
 	//电池电压低或者触发输入限流，下调极亮
 	else if(IsBatteryAlert)
 		{
-		TurboILIM-=10;
+		//在电流RampUp的过程中如果触发输入限流则立即将当前电流值设置为极亮限流
+		if(IsCurrentRampUp&&CurrentBuf<QueryCurrentGearILED())
+			{
+		  CurrentBuf=TurboILIM;
+			IsCurrentRampUp=1; //强制set标记位确保极亮限流只执行一次
+			return;
+			}
+		//手电已经进入极亮，正常执行限流处理
+		if(TryTurboILIMTimer)return;
+		TurboILIM-=25;
+		TryTurboILIMTimer=TurboILIMTryCDTime; //应用定时，降低电流后等待一会再判断
+		//判断电流是否仍在极亮区间内
 		if(TurboILIM>CalcIREFValue(13000))return;
 		//尝试到13A仍然无法满足极亮，退出极亮
 		TurboILIM=CalcIREFValue(13000);
 		SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
-		}
-	//电池电压恢复开始上调极亮
-	else if(Battery>4.0)
-		{
-		if(TurboILIM<QueryCurrentGearILED())TurboILIM+=10;
-		else TurboILIM=QueryCurrentGearILED();
 		}
 	}
 

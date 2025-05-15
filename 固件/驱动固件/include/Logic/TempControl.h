@@ -4,13 +4,13 @@
 //PI环参数和最小电流限制
 #define IntegralCurrentTrimValue 2000 //积分器针对输出的电流修调的最大值(mA)
 #define IntegralFactor 16 //积分系数(每单位=1/8秒，越大时间常数越高，6=每分钟进行40mA的调整)
-#define ILEDStepDown 2000 //降档系统所能达到的最低电流(mA)
+#define ILEDStepDown 1800 //降档系统所能达到的最低电流(mA)
 
 //温度配置
 #define ForceOffTemp 80 //过热关机温度
-#define ForceDisableTurboTemp 63 //超过此温度无法进入极亮
-#define TurboConstantTemperature 55 //极亮挡位的PID维持温度
-#define ConstantTemperature 50 //非极亮挡位温控启动后维持的温度
+#define ForceDisableTurboTemp 65 //超过此温度无法进入极亮
+#define TurboConstantTemperature 58 //极亮挡位的PID维持温度
+#define ConstantTemperature 53 //非极亮挡位温控启动后维持的温度
 #define ReleaseTemperature 45 //温控释放的温度
 
 //降档提示触发原因枚举

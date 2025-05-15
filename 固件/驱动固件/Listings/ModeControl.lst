@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 1   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MODECONTROL
@@ -62,7 +62,7 @@ line level    source
   51              //极低亮
   52              {
   53              Mode_ExtremelyLow,
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 2   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 2   
 
   54              CalcIREFValue(200),  //200mA
   55              0,   //最小电流没用到，无视
@@ -126,7 +126,7 @@ line level    source
                   CalcIREFValue(22000),  //22A电流
                   #else
  115                //全功率爆闪激活
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 3   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 3   
 
  116                #ifdef TurboCurrent31A
                     CalcIREFValue(31500),  //31.5A电流
@@ -190,7 +190,7 @@ line level    source
  173            
  174          //软件计时变量
  175          xdata char HoldChangeGearTIM; //挡位模式下长按换挡
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 4   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 4   
 
  176          xdata char DisplayLockedTIM=0; //锁定和战术模式进入退出显示 
  177          static xdata char RampDIVCNT; //分频计时器  
@@ -254,7 +254,7 @@ line level    source
  234   2          ResetSOSModule();   //复位整个SOS模块
  235   2          BeaconFSM_Reset(); //复位整个信标模块
  236   2          ResetStrobeModule(); //复位爆闪控制
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 5   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 5   
 
  237   2          CurrentMode=&ModeSettings[i]; //找到匹配index，赋值结构体
  238   2          if(TargetMode==Mode_Turbo)CalcTurboILIM(); //进入极亮重新计算电流值
@@ -318,7 +318,7 @@ line level    source
  293   1        if(Limit<CurrentMode->Current&&IsPress&&SysCfg.RampCurrent>Limit)SysCfg.RampCurrent=Limit; //在电流被限制
              -的情况下用户按下按键尝试调整电流，立即限幅
  294   1        //进行亮度调整
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 6   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 6   
 
  295   1        if(getSideKeyHoldEvent()&&!IsKeyPressed) //长按增加电流
  296   1            { 
@@ -382,7 +382,7 @@ line level    source
  354          void ModeSwitchFSM(void)
  355            {
  356   1        char ClickCount;
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 7   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 7   
 
  357   1        //获取按键状态
  358   1        if(GetIfSystemInPOFFSeq())return; //系统处于关机过程中，不执行按键处理
@@ -446,7 +446,7 @@ line level    source
  416   2              RampAdjHandler();     
  417   2              break;
  418   2          //极低亮
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 8   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 8   
 
  419   2          case Mode_ExtremelyLow:         
  420   2              BatteryLowAlertProcess(true,Mode_ExtremelyLow);
@@ -510,7 +510,7 @@ line level    source
  477   2          //SOS求救挡位   
  478   2          case Mode_SOS:
  479   2              BatteryLowAlertProcess(true,Mode_SOS);
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 9   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 9   
 
  480   2              DetectIfNeedsOFF(ClickCount); //执行关机动作检测
  481   2              LeaveSpecialMode(ClickCount); //退出特殊模式回到其他地方的入口
@@ -574,7 +574,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    CONSTANT SIZE    =    117    ----
    XDATA SIZE       =      4    ----
    PDATA SIZE       =   ----    ----
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/01/2025 09:54:01 PAGE 10  
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 10  
 
    DATA SIZE        =     12      11
    IDATA SIZE       =   ----    ----
