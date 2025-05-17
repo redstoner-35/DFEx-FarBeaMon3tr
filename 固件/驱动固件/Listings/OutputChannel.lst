@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/15/2025 18:15:35 PAGE 1   
+C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/17/2025 13:41:16 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE OUTPUTCHANNEL
@@ -62,7 +62,7 @@ line level    source
   48          /*********************************************************************************************************
              -************
   49          Êä³öÍ¨µÀ¿ØÖÆÆ÷ËùÊ¹ÓÃµÄÍâ²¿º¯Êý£¬¿ÉÒÔÔÚÆäËûµØ·½µ÷ÓÃ¡£
-C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/15/2025 18:15:35 PAGE 2   
+C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/17/2025 13:41:16 PAGE 2   
 
   50          **********************************************************************************************************
              -***********/
@@ -126,7 +126,7 @@ line level    source
  108   1        //×´Ì¬»ú¼ÆÊ±Æ÷
  109   1        if(PreChargeFSMTimer>0)PreChargeFSMTimer--;
  110   1        } 
-C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/15/2025 18:15:35 PAGE 3   
+C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/17/2025 13:41:16 PAGE 3   
 
  111            
  112          //Êä³öÍ¨µÀ¸´Î»
@@ -190,7 +190,7 @@ line level    source
  170   1          {
  171   2          SystemTelemHandler();
  172   2          if(Data.OutputVoltage>16.5)IsDCDCOV=1; //±ê¼Ç³öÏÖ¹ýÑ¹
-C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/15/2025 18:15:35 PAGE 4   
+C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/17/2025 13:41:16 PAGE 4   
 
  173   2          else if(Data.OutputVoltage>14.0)
  174   2            {
@@ -217,191 +217,199 @@ line level    source
  195          void OutputChannel_Calc(void)
  196            {
  197   1        int TargetCurrent,ILIM;
- 198   1        //¶ÁÈ¡Ä¿±êµçÁ÷
- 199   1        TargetCurrent=Current;
- 200   1        if(Current>0) //µçÁ÷´óÓÚ0ËµÃ÷ÊÇÓÐÐ§Êä³öÖ´ÐÐÎÂ¿Ø¼ÆËã
- 201   1          {
- 202   2          //ÎÂ¿Ø¼ÆËã
- 203   2          ILIM=ThermalILIMCalc();
- 204   2          if(TargetCurrent>ILIM)TargetCurrent=ILIM; //ÎÂ¿Ø·´À¡µÄÔËÐÐµçÁ÷³¬¹ýÄ¿±êÖµ£¬½øÐÐÏÞÁ÷
- 205   2          }
- 206   1        //½øÐÐÊä³öÍ¨µÀ×´Ì¬»ú¹ÜÀí
- 207   1        switch(OutputFSMState)
- 208   1          {
- 209   2          //Êä³öÍ¨µÀ¹ÊÕÏ  
- 210   2          case OutCH_PreChargeFailed:
- 211   2             OutputChannel_DeInit(); //Ö´ÐÐÊä³ö¸´Î»
- 212   2             break; 
- 213   2          //Êä³öÍ¨µÀ´ý»ú×´Ì¬
- 214   2          case OutCH_Standby:
- 215   2             //¸´Î»DCDC¿ØÖÆ
- 216   2             BOOSTRUN=0;
- 217   2             AUXEN=0;
- 218   2             LEDMOS=0;
- 219   2             PWMDACEN=0;
- 220   2             //¸´Î»±ê¼ÇÎ»
- 221   2             IsCurrentRampUp=0;
- 222   2             //¸´Î»PWMDAC
- 223   2             if(PreChargeDACDuty||PWMDuty>0)
- 224   2              {
- 225   3              PreChargeDACDuty=0;
- 226   3              PWMDuty=0;
- 227   3              IsNeedToUploadPWM=1;
- 228   3              }
- 229   2             //Èç¹ûµçÁ÷·¢Éú±ä¸üÔò½øÈëÆô¶¯×´Ì¬
- 230   2             if(TargetCurrent>0)OutputFSMState=OutCH_PWMDACPreCharge;
- 231   2             break;
- 232   2          //Æô¶¯²½Öè1£¬ËÍ³öPWMDAC
- 233   2          case OutCH_PWMDACPreCharge:
- 234   2             //Æô¶¯µçÁ÷Õû¶¨DAC
-C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/15/2025 18:15:35 PAGE 5   
+ 198   1        extern bit IsBatteryAlert;
+ 199   1        //¶ÁÈ¡Ä¿±êµçÁ÷
+ 200   1        TargetCurrent=Current;
+ 201   1        if(Current>0) //µçÁ÷´óÓÚ0ËµÃ÷ÊÇÓÐÐ§Êä³öÖ´ÐÐÎÂ¿Ø¼ÆËã
+ 202   1          {
+ 203   2          //ÎÂ¿Ø¼ÆËã
+ 204   2          ILIM=ThermalILIMCalc();
+ 205   2          if(TargetCurrent>ILIM)TargetCurrent=ILIM; //ÎÂ¿Ø·´À¡µÄÔËÐÐµçÁ÷³¬¹ýÄ¿±êÖµ£¬½øÐÐÏÞÁ÷
+ 206   2          }
+ 207   1        //½øÐÐÊä³öÍ¨µÀ×´Ì¬»ú¹ÜÀí
+ 208   1        switch(OutputFSMState)
+ 209   1          {
+ 210   2          //Êä³öÍ¨µÀ¹ÊÕÏ  
+ 211   2          case OutCH_PreChargeFailed:
+ 212   2             OutputChannel_DeInit(); //Ö´ÐÐÊä³ö¸´Î»
+ 213   2             break; 
+ 214   2          //Êä³öÍ¨µÀ´ý»ú×´Ì¬
+ 215   2          case OutCH_Standby:
+ 216   2             //¸´Î»DCDC¿ØÖÆ
+ 217   2             BOOSTRUN=0;
+ 218   2             AUXEN=0;
+ 219   2             LEDMOS=0;
+ 220   2             PWMDACEN=0;
+ 221   2             //¸´Î»±ê¼ÇÎ»
+ 222   2             IsCurrentRampUp=0;
+ 223   2             //¸´Î»PWMDAC
+ 224   2             if(PreChargeDACDuty||PWMDuty>0)
+ 225   2              {
+ 226   3              PreChargeDACDuty=0;
+ 227   3              PWMDuty=0;
+ 228   3              IsNeedToUploadPWM=1;
+ 229   3              }
+ 230   2             //Èç¹ûµçÁ÷·¢Éú±ä¸üÔò½øÈëÆô¶¯×´Ì¬
+ 231   2             if(TargetCurrent>0)OutputFSMState=OutCH_PWMDACPreCharge;
+ 232   2             break;
+ 233   2          //Æô¶¯²½Öè1£¬ËÍ³öPWMDAC
+ 234   2          case OutCH_PWMDACPreCharge:
+C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/17/2025 13:41:16 PAGE 5   
 
- 235   2             PWMDACEN=1;
- 236   2             PWMDuty=Duty_Calc(TargetCurrent>CalcIREFValue(1500)?CalcIREFValue(1500):TargetCurrent);
- 237   2             //Æô¶¯CVÏÞÑ¹»·DAC
- 238   2             PreChargeDACDuty=0x82A; //0x82A=87.128%=11.29-0.4815*14.4->(0.87128*5)
- 239   2             //ÉÏ´«Õ¼¿Õ±È²¢Ìø×ªµ½ÏÂÒ»²½(Æô¶¯Ö÷DCDC¸¨ÖúPSU)
- 240   2             IsNeedToUploadPWM=1;
- 241   2             OutputFSMState=OutCH_StartAUXPSU;
- 242   2             break;
- 243   2          //Æô¶¯²½Öè2£¬Æô¶¯¸¨ÖúPSU£¨¸øLTC3787¹©µçµÄµçÔ´£©
- 244   2          case OutCH_StartAUXPSU:
- 245   2             //µÈ´ýPWMÊä³ö
- 246   2             if(IsNeedToUploadPWM)break;
- 247   2             delay_ms(20); //ÑÓÊ±20mS
- 248   2             //Æô¶¯¸¨ÖúµçÔ´²¢Ìø×ªµ½ÏÂ¸ö×´Ì¬
- 249   2             AUXEN=1;
- 250   2             PreChargeFSMTimer=16; //ÉèÖÃ¼ÆÊ±Æ÷×î¶àµÈ´ý2Ãë
- 251   2             OutputFSMState=OutCH_EnableBoost;
- 252   2             break;
- 253   2          //Æô¶¯²½Öè3£¬Æô¶¯Ö÷DCDC²¢¼ì²éÊä³öÊÇ·ñÕý³£
- 254   2          case OutCH_EnableBoost:
- 255   2            //Áî3787EN=1£¬Ö÷Boost¿ªÊ¼Êä³öÈ»ºó¼ì²âµçÑ¹×´Ì¬
- 256   2            BOOSTRUN=1;
- 257   2            if(Data.OutputVoltage>14.0)OutputFSMState=OutCH_ReleasePreCharge; //µçÑ¹ÆðÀ´ÁË£¬¼ÌÐøÆô¶¯Á÷³Ì
- 258   2            //µÈ´ý³¬Ê±ºó±¨´í
- 259   2            if(PreChargeFSMTimer>0)break;
- 260   2            ReportError(Fault_DCDCFailedToStart);
- 261   2            OutputFSMState=OutCH_PreChargeFailed;
- 262   2            break;
- 263   2          //Æô¶¯²½Öè4£¬Öð²½ÏÂµ÷Ô¤³äPWMDACÌ§ÉýÊä³öµçÑ¹
- 264   2          case OutCH_ReleasePreCharge:
- 265   2            //½ÓÍ¨LED¸º¼«FET£¬LED¿ªÊ¼·¢¹â
- 266   2            LEDMOS=1;
- 267   2            //Èç¹ûµçÁ÷Îª0Ôò¿ªÊ¼½øÈë·Åµç½×¶Î
- 268   2            if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut;
- 269   2            //Èç¹ûÕ¼¿Õ±Èµ÷Õûµ½0ÁËÔò½øÈëÌáÉýÊä³öµçÁ÷µ½Ä¿±êÖµµÄ³ÌÐò
- 270   2            if(!PreChargeDACDuty)OutputFSMState=OutCH_SubmitDuty;
- 271   2            //¿ªÊ¼Öð²½ÏÂµ÷Ô¤³äÕ¼¿Õ±È°ÑÊä³öµçÑ¹µ÷µ½¶î¶¨Öµ
- 272   2            if(IsNeedToUploadPWM)break; //ÉÏ´Îµ÷Õû»¹Î´Íê±Ï
- 273   2            ILIM=TargetCurrent/30;
- 274   2            if(ILIM>200)ILIM=200; //¼ÆËã³öÃ¿´ÎPWMDACµÝ¼õµÄÖµ
- 275   2            PreChargeDACDuty-=ILIM+1;
- 276   2            if(PreChargeDACDuty<=0)PreChargeDACDuty=0; //½ûÖ¹Õ¼¿Õ±ÈÎª¸ºÊý
- 277   2            IsNeedToUploadPWM=1;
- 278   2            break;
- 279   2          //Ó¦ÓÃÕ¼¿Õ±È
- 280   2          case OutCH_SubmitDuty:
- 281   2            if(IsNeedToUploadPWM)break; //PWMÕýÔÚÓ¦ÓÃÖÐ£¬µÈ´ý
- 282   2            if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut; //ÏµÍ³µçÁ÷ÅäÖÃÎª0£¬ËµÃ÷ÐèÒª½áÊøÔËÐÐ£¬Ìø×ªµ½´ý»ú
- 283   2            //±£»¤LEDµÄµçÁ÷Ð±ÂÊÏÞÖÆÆ÷
- 284   2            if(TargetCurrent-CurrentBuf>CalcIREFValue(6000))IsEnableSlowILEDRamp=1; //¼à²âµ½·Ç³£´óµÄµçÁ÷Ë²Ì¬£¬±ÜÃâ³
+ 235   2             //Æô¶¯µçÁ÷Õû¶¨DAC
+ 236   2             PWMDACEN=1;
+ 237   2             //ÅäÖÃPWMDACÕ¼¿Õ±È
+ 238   2             CurrentBuf=TargetCurrent>CalcIREFValue(1500)?CalcIREFValue(1500):TargetCurrent;
+ 239   2             PWMDuty=Duty_Calc(CurrentBuf);  //ÅäÖÃÁ÷³ÌÊÇÈç¹ûµ±Ç°µçÁ÷´óÓÚ1.5A£¬ÔòÇ¯Î»µ½1.5A£¬È»ºóÓÃÕâ¸ö³õÖµÅäÖÃPWMD
+             -AC
+ 240   2             //Æô¶¯CVÏÞÑ¹»·DAC
+ 241   2             PreChargeDACDuty=0x82A; //0x82A=87.128%=11.29-0.4815*14.4->(0.87128*5)
+ 242   2             //ÉÏ´«Õ¼¿Õ±È²¢Ìø×ªµ½ÏÂÒ»²½(Æô¶¯Ö÷DCDC¸¨ÖúPSU)
+ 243   2             IsNeedToUploadPWM=1;
+ 244   2             OutputFSMState=OutCH_StartAUXPSU;
+ 245   2             break;
+ 246   2          //Æô¶¯²½Öè2£¬Æô¶¯¸¨ÖúPSU£¨¸øLTC3787¹©µçµÄµçÔ´£©
+ 247   2          case OutCH_StartAUXPSU:
+ 248   2             //µÈ´ýPWMÊä³ö
+ 249   2             if(IsNeedToUploadPWM)break;
+ 250   2             delay_ms(20); //ÑÓÊ±20mS
+ 251   2             //Æô¶¯¸¨ÖúµçÔ´²¢Ìø×ªµ½ÏÂ¸ö×´Ì¬
+ 252   2             AUXEN=1;
+ 253   2             PreChargeFSMTimer=16; //ÉèÖÃ¼ÆÊ±Æ÷×î¶àµÈ´ý2Ãë
+ 254   2             OutputFSMState=OutCH_EnableBoost;
+ 255   2             break;
+ 256   2          //Æô¶¯²½Öè3£¬Æô¶¯Ö÷DCDC²¢¼ì²éÊä³öÊÇ·ñÕý³£
+ 257   2          case OutCH_EnableBoost:
+ 258   2            //Áî3787EN=1£¬Ö÷Boost¿ªÊ¼Êä³öÈ»ºó¼ì²âµçÑ¹×´Ì¬
+ 259   2            BOOSTRUN=1;
+ 260   2            if(Data.OutputVoltage>14.0)OutputFSMState=OutCH_ReleasePreCharge; //µçÑ¹ÆðÀ´ÁË£¬¼ÌÐøÆô¶¯Á÷³Ì
+ 261   2            //µÈ´ý³¬Ê±ºó±¨´í
+ 262   2            if(PreChargeFSMTimer>0)break;
+ 263   2            ReportError(Fault_DCDCFailedToStart);
+ 264   2            OutputFSMState=OutCH_PreChargeFailed;
+ 265   2            break;
+ 266   2          //Æô¶¯²½Öè4£¬Öð²½ÏÂµ÷Ô¤³äPWMDACÌ§ÉýÊä³öµçÑ¹
+ 267   2          case OutCH_ReleasePreCharge:
+ 268   2            //½ÓÍ¨LED¸º¼«FET£¬LED¿ªÊ¼·¢¹â
+ 269   2            LEDMOS=1;
+ 270   2            //Èç¹ûµçÁ÷Îª0Ôò¿ªÊ¼½øÈë·Åµç½×¶Î
+ 271   2            if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut;
+ 272   2            //Èç¹ûÕ¼¿Õ±Èµ÷Õûµ½0ÁËÔò½øÈëÌáÉýÊä³öµçÁ÷µ½Ä¿±êÖµµÄ³ÌÐò
+ 273   2            if(!PreChargeDACDuty)
+ 274   2              {
+ 275   3              //Èç¹ûÔ¤³äÍê³ÉÖ®ºó£¬ÒÑÓ¦ÓÃµÄµçÁ÷ºÍÄ¿±êÖµÍ¬²½ÔòÖ±½ÓÌø×ªµ½Õý³£Êä³ö×´Ì¬
+ 276   3              OutputFSMState=(CurrentBuf==TargetCurrent)?OutCH_OutputEnabled:OutCH_SubmitDuty;
+ 277   3              break;
+ 278   3              }
+ 279   2            //¿ªÊ¼Öð²½ÏÂµ÷Ô¤³äÕ¼¿Õ±È°ÑÊä³öµçÑ¹µ÷µ½¶î¶¨Öµ
+ 280   2            if(IsNeedToUploadPWM)break; //ÉÏ´Îµ÷Õû»¹Î´Íê±Ï
+ 281   2            ILIM=TargetCurrent/25;
+ 282   2            if(ILIM>200)ILIM=200; //¼ÆËã³öÃ¿´ÎPWMDACµÝ¼õµÄÖµ
+ 283   2            PreChargeDACDuty-=ILIM+1;
+ 284   2            if(PreChargeDACDuty<0)PreChargeDACDuty=0; //½ûÖ¹Õ¼¿Õ±ÈÎª¸ºÊý
+ 285   2            IsNeedToUploadPWM=1;
+ 286   2            break;
+ 287   2          //Ó¦ÓÃÕ¼¿Õ±È
+ 288   2          case OutCH_SubmitDuty:
+ 289   2            if(IsNeedToUploadPWM)break; //PWMÕýÔÚÓ¦ÓÃÖÐ£¬µÈ´ý
+ 290   2            if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut; //ÏµÍ³µçÁ÷ÅäÖÃÎª0£¬ËµÃ÷ÐèÒª½áÊøÔËÐÐ£¬Ìø×ªµ½´ý»ú
+ 291   2            //±£»¤LEDµÄµçÁ÷Ð±ÂÊÏÞÖÆÆ÷
+ 292   2            if(TargetCurrent-CurrentBuf>CalcIREFValue(6000))IsEnableSlowILEDRamp=1; //¼à²âµ½·Ç³£´óµÄµçÁ÷Ë²Ì¬£¬±ÜÃâ³
              -å±¬µÆÖé²ÉÓÃÈíÆð
- 285   2            if(!SysMode&&IsEnableSlowILEDRamp)
- 286   2              {
- 287   3              if(CurrentBuf==0)CurrentBuf=CalcIREFValue(1500); //µçÁ÷Îª0´Ó1500¿ªÊ¼Êä³ö
- 288   3              else switch(CurrentMode->ModeIdx)
- 289   3                {
- 290   4                case Mode_Beacon:CurrentBuf+=5000;break;
- 291   4                case Mode_Strobe:CurrentBuf+=1500;break;
- 292   4                case Mode_SOS:CurrentBuf+=500;break;
- 293   4                default:CurrentBuf+=10;
- 294   4                }
- 295   3              if(CurrentBuf>=TargetCurrent)
-C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/15/2025 18:15:35 PAGE 6   
+ 293   2            if(!SysMode&&IsEnableSlowILEDRamp)
+ 294   2              {
+C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/17/2025 13:41:16 PAGE 6   
 
+ 295   3              switch(CurrentMode->ModeIdx)
  296   3                {
- 297   4                IsEnableSlowILEDRamp=0;
- 298   4                CurrentBuf=TargetCurrent; //ÏÞ·ù£¬²»ÔÊÐíÄ¿±êµçÁ÷´óÓÚÔÊÐíÖµ
- 299   4                }
- 300   3              }
- 301   2            else CurrentBuf=TargetCurrent; //Ö±½ÓÍ¬²½   
- 302   2            //¸üÐÂÕ¼¿Õ±È
- 303   2            IsNeedToUploadPWM=1;
- 304   2            PWMDuty=Duty_Calc(CurrentBuf);
- 305   2            //Õ¼¿Õ±ÈÒÑÍ¬²½£¬Ìø×ªµ½Õý³£ÔËÐÐ½×¶Î
- 306   2            if(TargetCurrent==CurrentBuf)
- 307   2              {
- 308   3              IsCurrentRampUp=1; //±ê¼ÇµçÁ÷ÅÀÉý½áÊø
- 309   3              OutputFSMState=OutCH_OutputEnabled;
- 310   3              }
- 311   2            break;
- 312   2          //Êä³öÍ¨µÀÕý³£ÔËÐÐ½×¶Î
- 313   2          case OutCH_OutputEnabled:
- 314   2            if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut;  //ÏµÍ³µçÁ÷ÅäÖÃÎª0£¬½øÈëÈí¹Ø»ú½×¶Î¿ªÊ¼ÏÂµ÷Êä³öµç
-             -Ñ¹
- 315   2            else if(TargetCurrent==-1)OutputFSMState=OutCH_EnterIdle; //ÏµÍ³µçÁ÷ÅäÖÃÎª-1£¬ËµÃ÷ÐèÒªÔÝÍ£LEDµçÁ÷£¬Ìø×ª
+ 297   4                case Mode_Turbo:CurrentBuf+=IsInputLimited?0:10;break;  //¼«ÁÁMPPTÏµÍ³£¬ÅäºÏÊäÈë¸æ¾¯¼à²âÊ¹ÓÃ
+ 298   4                case Mode_Beacon:CurrentBuf+=5000;break;
+ 299   4                case Mode_Strobe:CurrentBuf+=1500;break;
+ 300   4                case Mode_SOS:CurrentBuf+=500;break;
+ 301   4                default:CurrentBuf+=15;
+ 302   4                }
+ 303   3              if(CurrentBuf>=TargetCurrent)
+ 304   3                {
+ 305   4                IsEnableSlowILEDRamp=0;
+ 306   4                CurrentBuf=TargetCurrent; //ÏÞ·ù£¬²»ÔÊÐíÄ¿±êµçÁ÷´óÓÚÔÊÐíÖµ
+ 307   4                }
+ 308   3              }
+ 309   2            else CurrentBuf=TargetCurrent; //Ö±½ÓÍ¬²½   
+ 310   2            //¸üÐÂÕ¼¿Õ±È
+ 311   2            IsNeedToUploadPWM=1;
+ 312   2            PWMDuty=Duty_Calc(CurrentBuf);
+ 313   2            //Õ¼¿Õ±ÈÒÑÍ¬²½£¬Ìø×ªµ½Õý³£ÔËÐÐ½×¶Î
+ 314   2            if(TargetCurrent==CurrentBuf)
+ 315   2              {
+ 316   3              IsCurrentRampUp=1; //±ê¼ÇµçÁ÷ÅÀÉý½áÊø
+ 317   3              OutputFSMState=OutCH_OutputEnabled;
+ 318   3              }
+ 319   2            break;
+ 320   2          //Êä³öÍ¨µÀÕý³£ÔËÐÐ½×¶Î
+ 321   2          case OutCH_OutputEnabled:
+ 322   2            if(!TargetCurrent)OutputFSMState=OutCH_GracefulShut;  //ÏµÍ³µçÁ÷ÅäÖÃÎª0£¬½øÈëÈí¹Ø»ú½×¶Î¿ªÊ¼ÏÂµ÷Êä³öµçÑ¹
+ 323   2            else if(TargetCurrent==-1)OutputFSMState=OutCH_EnterIdle; //ÏµÍ³µçÁ÷ÅäÖÃÎª-1£¬ËµÃ÷ÐèÒªÔÝÍ£LEDµçÁ÷£¬Ìø×ª
              -µ½ÔÝÍ£Á÷³Ì
- 316   2            else if(TargetCurrent!=CurrentBuf)OutputFSMState=OutCH_SubmitDuty; //Õ¼¿Õ±È·¢Éú±ä¸ü£¬¿ªÊ¼½øÐÐ´¦Àí
- 317   2            break;
- 318   2          //Êä³öÍ¨µÀÈí¹Ø»ú¿ØÖÆ
- 319   2          case OutCH_GracefulShut:
- 320   2            //´ò¿ªLEDMOS²¢¹Ø±ÕDCDC
- 321   2            LEDMOS=1;
- 322   2            BOOSTRUN=0;
- 323   2            //¸´Î»PWMDAC
- 324   2            PWMDACEN=0;
- 325   2            PreChargeDACDuty=2399;
- 326   2            PWMDuty=0;
- 327   2            IsNeedToUploadPWM=1;
- 328   2            //Ìø×ªµ½µÈ´ýÊä³öµçÑ¹Ë¥¼õµÄ¹ý³Ì
- 329   2            PreChargeFSMTimer=24; //µÈ´ýÊä³öµçÑ¹Ë¥¼õµÄ¹ý³Ì×î¶àµÈ´ý3Ãë
- 330   2            OutputFSMState=OutCH_WaitVOUTDecay;
- 331   2            break;
- 332   2          //DCDC¹Ø±Õ£¬µÈ´ýÊä³öµçÑ¹Ë¥¼õ
- 333   2          case OutCH_WaitVOUTDecay:
- 334   2            //µÈ´ýÊä³öµçÑ¹Ë¥¼õ
- 335   2            if(Data.OutputVoltage>15.6&&PreChargeFSMTimer>0)break;
- 336   2            //¹Ø±ÕÔ¤³äPWMDAC
- 337   2            PreChargeDACDuty=0;
- 338   2            IsNeedToUploadPWM=1;
- 339   2            //Êä³öµçÑ¹Ë¥¼õ½áÊø£¬¹Ø±ÕLEDMOSºÍ¸¨ÖúµçÔ´²¢»Øµ½´ý»ú×´Ì¬
- 340   2            LEDMOS=0;
- 341   2            AUXEN=0;
- 342   2            PreChargeFSMTimer=0; //¸´Î»¼ÆÊ±Æ÷
- 343   2            OutputFSMState=OutCH_Standby;
- 344   2            break;
- 345   2          //ÐèÒªÔÝÊ±¹Ø±ÕLED£¬ÔÚ½øÈëidleÖ®Ç°µÄ×¼±¸
- 346   2          case OutCH_EnterIdle:
- 347   2            //Á¢¼´ÈÃÔ¤³äPWMDAC°ÑµçÑ¹Ç¯×¡
- 348   2            PreChargeDACDuty=0x82A; //0x82A=87.128%=11.29-0.4815*14.4->(0.87128*5)
- 349   2            IsNeedToUploadPWM=1;
- 350   2            //µÈ´ýÊä³öµçÑ¹ÏÂ½µ
- 351   2            if(CurrentMode->ModeIdx!=Mode_Beacon&&Data.OutputVoltage>17.3)break;
- 352   2            LEDMOS=0; //¶Ï¿ªLEDMOSÇÐ¶ÏµçÁ÷
- 353   2            OutputFSMState=OutCH_OutputIdle; //½øÈëidle×´Ì¬
- 354   2            break;
- 355   2          //ÔÝÊ±¹Ø±ÕLEDµÄµÈ´ý
-C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/15/2025 18:15:35 PAGE 7   
+ 324   2            else if(TargetCurrent!=CurrentBuf)OutputFSMState=OutCH_SubmitDuty; //Õ¼¿Õ±È·¢Éú±ä¸ü£¬¿ªÊ¼½øÐÐ´¦Àí
+ 325   2            break;
+ 326   2          //Êä³öÍ¨µÀÈí¹Ø»ú¿ØÖÆ
+ 327   2          case OutCH_GracefulShut:
+ 328   2            //´ò¿ªLEDMOS²¢¹Ø±ÕDCDC
+ 329   2            LEDMOS=1;
+ 330   2            BOOSTRUN=0;
+ 331   2            //¸´Î»PWMDAC
+ 332   2            PWMDACEN=0;
+ 333   2            PreChargeDACDuty=2399;
+ 334   2            PWMDuty=0;
+ 335   2            IsNeedToUploadPWM=1;
+ 336   2            //Ìø×ªµ½µÈ´ýÊä³öµçÑ¹Ë¥¼õµÄ¹ý³Ì
+ 337   2            PreChargeFSMTimer=24; //µÈ´ýÊä³öµçÑ¹Ë¥¼õµÄ¹ý³Ì×î¶àµÈ´ý3Ãë
+ 338   2            OutputFSMState=OutCH_WaitVOUTDecay;
+ 339   2            break;
+ 340   2          //DCDC¹Ø±Õ£¬µÈ´ýÊä³öµçÑ¹Ë¥¼õ
+ 341   2          case OutCH_WaitVOUTDecay:
+ 342   2            //µÈ´ýÊä³öµçÑ¹Ë¥¼õ
+ 343   2            if(Data.OutputVoltage>15.6&&PreChargeFSMTimer)break;
+ 344   2            //¹Ø±ÕÔ¤³äPWMDAC
+ 345   2            PreChargeDACDuty=0;
+ 346   2            IsNeedToUploadPWM=1;
+ 347   2            //Êä³öµçÑ¹Ë¥¼õ½áÊø£¬¹Ø±ÕLEDMOSºÍ¸¨ÖúµçÔ´²¢»Øµ½´ý»ú×´Ì¬
+ 348   2            LEDMOS=0;
+ 349   2            AUXEN=0;
+ 350   2            PreChargeFSMTimer=0; //¸´Î»¼ÆÊ±Æ÷
+ 351   2            OutputFSMState=OutCH_Standby;
+ 352   2            break;
+ 353   2          //ÐèÒªÔÝÊ±¹Ø±ÕLED£¬ÔÚ½øÈëidleÖ®Ç°µÄ×¼±¸
+ 354   2          case OutCH_EnterIdle:
+ 355   2            //Á¢¼´ÈÃÔ¤³äPWMDAC°ÑµçÑ¹Ç¯×¡
+C51 COMPILER V9.60.0.0   OUTPUTCHANNEL                                                     05/17/2025 13:41:16 PAGE 7   
 
- 356   2          case OutCH_OutputIdle:
- 357   2            if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut;  //ÏµÍ³µçÁ÷ÅäÖÃÎª0£¬½øÈëÈí¹Ø»ú½×¶Î
- 358   2            if(TargetCurrent>0) //LEDµçÁ÷ÖØÐÂ´ò¿ª£¬ÐèÒªÆô¶¯Êä³ö
- 359   2              {
- 360   3              LEDMOS=1; //´ò¿ªLEDMOS£¬½ÓÍ¨µçÁ÷
- 361   3              PreChargeDACDuty=0;
- 362   3              IsNeedToUploadPWM=1; //ÁîPWMDAC¿ªÊ¼SysDown£¬LED·¢¹â
- 363   3              OutputFSMState=OutCH_SubmitDuty; //Ó¦ÓÃ×îÐÂµÄÕ¼¿Õ±È
- 364   3              }
- 365   2            break;
- 366   2          //¿¨³öÀ´µÄ·Ç·¨×´Ì¬»Øµ½Ä¬ÈÏ´ý»ú
- 367   2          default:OutputFSMState=OutCH_PreChargeFailed;
- 368   2          }
- 369   1        }
+ 356   2            PreChargeDACDuty=0x82A; //0x82A=87.128%=11.29-0.4815*14.4->(0.87128*5)
+ 357   2            IsNeedToUploadPWM=1;
+ 358   2            //µÈ´ýÊä³öµçÑ¹ÏÂ½µ
+ 359   2            if(CurrentMode->ModeIdx!=Mode_Beacon&&Data.OutputVoltage>17.3)break;
+ 360   2            LEDMOS=0; //¶Ï¿ªLEDMOSÇÐ¶ÏµçÁ÷
+ 361   2            OutputFSMState=OutCH_OutputIdle; //½øÈëidle×´Ì¬
+ 362   2            break;
+ 363   2          //ÔÝÊ±¹Ø±ÕLEDµÄµÈ´ý
+ 364   2          case OutCH_OutputIdle:
+ 365   2            if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut;  //ÏµÍ³µçÁ÷ÅäÖÃÎª0£¬½øÈëÈí¹Ø»ú½×¶Î
+ 366   2            if(TargetCurrent>0) //LEDµçÁ÷ÖØÐÂ´ò¿ª£¬ÐèÒªÆô¶¯Êä³ö
+ 367   2              {
+ 368   3              LEDMOS=1; //´ò¿ªLEDMOS£¬½ÓÍ¨µçÁ÷
+ 369   3              PreChargeDACDuty=0;
+ 370   3              IsNeedToUploadPWM=1; //ÁîPWMDAC¿ªÊ¼SysDown£¬LED·¢¹â
+ 371   3              OutputFSMState=OutCH_SubmitDuty; //Ó¦ÓÃ×îÐÂµÄÕ¼¿Õ±È
+ 372   3              }
+ 373   2            break;
+ 374   2          //¿¨³öÀ´µÄ·Ç·¨×´Ì¬»Øµ½Ä¬ÈÏ´ý»ú
+ 375   2          default:OutputFSMState=OutCH_PreChargeFailed;
+ 376   2          }
+ 377   1        }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1421    ----
+   CODE SIZE        =   1468    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      7    ----
    PDATA SIZE       =   ----    ----

@@ -42,7 +42,11 @@ void LoadDefaultConfig(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.EnableLVProtectConfig=true;
 	IN->ROMImage.Data.Data.EnablePDOConfig=true;
   IN->ROMImage.Data.Data.EnableOTPConfig=false;
+	IN->ROMImage.Data.Data.EnableTCCalibration=false;
 	IN->ROMImage.Data.Data.OverHeatLockTemp=90;
+	//TypeC矫正设置
+  IN->ROMImage.Data.Data.TypeCVoltageCal=1000;
+	IN->ROMImage.Data.Data.TypeCAmpereCal=1000;
 	//显示方向设置
   IN->ROMImage.Data.Data.EnableFastBoot=true;
 	IN->ROMImage.Data.Data.EnableLargeMenu=true;

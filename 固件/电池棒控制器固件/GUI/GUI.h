@@ -133,6 +133,10 @@ extern const MenuConfigDef BALTestMenu;
 extern const MenuConfigDef AutoBALMenu;
 extern const MenuConfigDef IstopStdSetMenu;
 extern const MenuConfigDef DisChgCfgMenuNoHSCP; //放电系统配置（没有高压HSCP）
+extern const MenuConfigDef TypeCGaugeSetMenu;
+extern const MenuConfigDef TypeICALMenu;
+extern const MenuConfigDef TypeCVCALMenu;
+extern const MenuConfigDef TypeCCgaugeDSourceMenu;
 
 //内部数值增减管理
 int IntIncDec(int ValueIN,int Min,int Max,int PerStep); //

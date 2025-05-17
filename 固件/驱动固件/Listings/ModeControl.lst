@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 1   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MODECONTROL
@@ -25,7 +25,7 @@ line level    source
   14          #include "Strobe.h"
   15          
   16          //¼«ÁÁºÍ±¬ÉÁµçÁ÷Ñ¡Ôñ
-  17          //#define TurboCurrent32A  //×¢ÊÍµô¿ªÆô36A¼«ÁÁ
+  17          //#define TurboCurrent32A  //×¢ÊÍµô¿ªÆô36A¼«ÁÁ£¬·ñÔò¼«ÁÁµçÁ÷Îª31.75A£¨ÊÊÅäFV7212D£©
   18          #define FullPowerStrobe //±£ÁôÔò¿ªÆôÈ«¹¦ÂÊ±¬ÉÁ
   19          #define FullPowerBeacon //È«¹¦ÂÊÐÅ±ê
   20          
@@ -62,7 +62,7 @@ line level    source
   51              //¼«µÍÁÁ
   52              {
   53              Mode_ExtremelyLow,
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 2   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 2   
 
   54              CalcIREFValue(200),  //200mA
   55              0,   //×îÐ¡µçÁ÷Ã»ÓÃµ½£¬ÎÞÊÓ
@@ -75,7 +75,7 @@ line level    source
   62              Mode_Low,
   63              CalcIREFValue(1000),  //1000mAµçÁ÷
   64              0,   //×îÐ¡µçÁ÷Ã»ÓÃµ½£¬ÎÞÊÓ
-  65              2900,  //2.8V¹Ø¶Ï
+  65              2800,  //2.8V¹Ø¶Ï
   66              true,
   67              false,
   68              },
@@ -84,7 +84,7 @@ line level    source
   71              Mode_Mid,
   72              CalcIREFValue(2000),  //2000mAµçÁ÷
   73              0,   //×îÐ¡µçÁ÷Ã»ÓÃµ½£¬ÎÞÊÓ
-  74              3000,  //3V¹Ø¶Ï
+  74              2900,  //2.9V¹Ø¶Ï
   75              true,
   76              false,
   77              },  
@@ -93,7 +93,7 @@ line level    source
   80              Mode_MHigh,
   81              CalcIREFValue(4000),  //4000mAµçÁ÷
   82              0,   //×îÐ¡µçÁ÷Ã»ÓÃµ½£¬ÎÞÊÓ
-  83              3050,  //3.05V¹Ø¶Ï
+  83              3000,  //3V¹Ø¶Ï
   84              true,
   85              true,
   86              },  
@@ -110,7 +110,7 @@ line level    source
   97              {
   98              Mode_Turbo,
   99              #ifdef TurboCurrent32A
-                  CalcIREFValue(31500),  //31.5AµçÁ÷
+                  CalcIREFValue(31750),  //31.75AµçÁ÷
                   #else
  102              CalcIREFValue(36000),  //36AµçÁ÷(Õë¶Ô7175)
  103              #endif    
@@ -126,10 +126,10 @@ line level    source
                   CalcIREFValue(22000),  //22AµçÁ÷
                   #else
  115                //È«¹¦ÂÊ±¬ÉÁ¼¤»î
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 3   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 3   
 
  116                #ifdef TurboCurrent31A
-                    CalcIREFValue(31500),  //31.5AµçÁ÷
+                    CalcIREFValue(31750),  //31.75AµçÁ÷
                     #else
  119                CalcIREFValue(36000),  //36AµçÁ÷(Õë¶Ô7175)
  120                #endif    
@@ -154,7 +154,7 @@ line level    source
  139              #ifdef FullPowerBeacon
  140                //È«¹¦ÂÊÐÅ±êÄ£Ê½¼¤»î
  141                #ifdef TurboCurrent31A
-                    CalcIREFValue(31500),  //31.5AµçÁ÷
+                    CalcIREFValue(31750),  //31.75AµçÁ÷
                     #else
  144                CalcIREFValue(36000),  //36AµçÁ÷(Õë¶Ô7175)
  145                #endif  
@@ -190,7 +190,7 @@ line level    source
  173            
  174          //Èí¼þ¼ÆÊ±±äÁ¿
  175          xdata char HoldChangeGearTIM; //µ²Î»Ä£Ê½ÏÂ³¤°´»»µ²
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 4   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 4   
 
  176          xdata char DisplayLockedTIM=0; //Ëø¶¨ºÍÕ½ÊõÄ£Ê½½øÈëÍË³öÏÔÊ¾ 
  177          static xdata char RampDIVCNT; //·ÖÆµ¼ÆÊ±Æ÷  
@@ -254,10 +254,11 @@ line level    source
  234   2          ResetSOSModule();   //¸´Î»Õû¸öSOSÄ£¿é
  235   2          BeaconFSM_Reset(); //¸´Î»Õû¸öÐÅ±êÄ£¿é
  236   2          ResetStrobeModule(); //¸´Î»±¬ÉÁ¿ØÖÆ
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 5   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 5   
 
  237   2          CurrentMode=&ModeSettings[i]; //ÕÒµ½Æ¥Åäindex£¬¸³Öµ½á¹¹Ìå
- 238   2          if(TargetMode==Mode_Turbo)CalcTurboILIM(); //½øÈë¼«ÁÁÖØÐÂ¼ÆËãµçÁ÷Öµ
+ 238   2          if(BeforeMode!=Mode_Turbo&&TargetMode==Mode_Turbo)CalcTurboILIM(); //´Ó·Ç¼«ÁÁµ²Î»½øÈë¼«ÁÁÖØÐÂ¼ÆËãµçÁ÷Öµ²
+             -¢ÖØÖÃMPPTÏµÍ³
  239   2          if(BeforeMode==Mode_Turbo&&TargetMode!=Mode_Turbo)RecalcPILoop(LastICC); //´Ó¼«ÁÁÇÐ»»µ½ÆäËûµ²Î»£¬ÖØÐÂÉèÖ
              -ÃPI»·
  240   2          }
@@ -317,9 +318,9 @@ line level    source
  292   1        Limit=SysCfg.RampCurrentLimit<CurrentMode->Current?SysCfg.RampCurrentLimit:CurrentMode->Current;
  293   1        if(Limit<CurrentMode->Current&&IsPress&&SysCfg.RampCurrent>Limit)SysCfg.RampCurrent=Limit; //ÔÚµçÁ÷±»ÏÞÖÆ
              -µÄÇé¿öÏÂÓÃ»§°´ÏÂ°´¼ü³¢ÊÔµ÷ÕûµçÁ÷£¬Á¢¼´ÏÞ·ù
- 294   1        //½øÐÐÁÁ¶Èµ÷Õû
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 6   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 6   
 
+ 294   1        //½øÐÐÁÁ¶Èµ÷Õû
  295   1        if(getSideKeyHoldEvent()&&!IsKeyPressed) //³¤°´Ôö¼ÓµçÁ÷
  296   1            { 
  297   2            if(RampDIVCNT>0)RampDIVCNT--;
@@ -381,9 +382,9 @@ line level    source
  353          //µ²Î»×´Ì¬»ú
  354          void ModeSwitchFSM(void)
  355            {
- 356   1        char ClickCount;
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 7   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 7   
 
+ 356   1        char ClickCount;
  357   1        //»ñÈ¡°´¼ü×´Ì¬
  358   1        if(GetIfSystemInPOFFSeq())return; //ÏµÍ³´¦ÓÚ¹Ø»ú¹ý³ÌÖÐ£¬²»Ö´ÐÐ°´¼ü´¦Àí
  359   1        ClickCount=getSideKeyShortPressCount(0);  //¶ÁÈ¡°´¼ü´¦Àíº¯Êý´«¹ýÀ´µÄ²ÎÊý
@@ -445,9 +446,9 @@ line level    source
  415   2              RampLowVoltHandler(); //µÍµçÑ¹±£»¤
  416   2              RampAdjHandler();     
  417   2              break;
- 418   2          //¼«µÍÁÁ
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 8   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 8   
 
+ 418   2          //¼«µÍÁÁ
  419   2          case Mode_ExtremelyLow:         
  420   2              BatteryLowAlertProcess(true,Mode_ExtremelyLow);
  421   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
@@ -509,9 +510,9 @@ line level    source
  476   2              break;  
  477   2          //SOSÇó¾Èµ²Î»   
  478   2          case Mode_SOS:
- 479   2              BatteryLowAlertProcess(true,Mode_SOS);
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 9   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 9   
 
+ 479   2              BatteryLowAlertProcess(true,Mode_SOS);
  480   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
  481   2              LeaveSpecialMode(ClickCount); //ÍË³öÌØÊâÄ£Ê½»Øµ½ÆäËûµØ·½µÄÈë¿Ú
  482   2              //³¤°´»»µ²´¦Àí
@@ -570,12 +571,12 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1759    ----
+   CODE SIZE        =   1765    ----
    CONSTANT SIZE    =    117    ----
    XDATA SIZE       =      4    ----
-   PDATA SIZE       =   ----    ----
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/15/2025 18:15:35 PAGE 10  
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 10  
 
+   PDATA SIZE       =   ----    ----
    DATA SIZE        =     12      11
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      3       1

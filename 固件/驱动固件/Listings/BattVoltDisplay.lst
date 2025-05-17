@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/15/2025 17:22:34 PAGE 1   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BATTVOLTDISPLAY
@@ -62,7 +62,7 @@ line level    source
   51          static void VshowGenerateSideStrobe(LEDStateDef Color,BattVshowFSMDef NextStep)
   52            {
   53   1        //通过快闪一次表示是0
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/15/2025 17:22:34 PAGE 2   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 2   
 
   54   1        if(VshowTIM==-1)
   55   1          {
@@ -126,7 +126,7 @@ line level    source
  113   3              VshowFSMState=BattVdis_ShowChargeLvl; //电压超出显示范围（用红色闪三次指示）
  114   3              break;
  115   3              }
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/15/2025 17:22:34 PAGE 3   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 3   
 
  116   2            VshowFSMGenTIMValue((int)VbattSample/10,BattVdis_Show10V); //配置计时器开始显示
  117   2            break;
@@ -190,7 +190,7 @@ line level    source
  174   2              break;
  175   2           //电池电量严重不足
  176   2           case Battery_VeryLow:
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/15/2025 17:22:34 PAGE 4   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 4   
 
  177   2              if(Battery>3.0)BattState=Battery_Low; //电池电压回升到3.0，跳转到电量不足阶段
  178   2              break;
@@ -254,7 +254,7 @@ line level    source
  236   1        }
  237          
  238          //电池参数测量和指示灯控制
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/15/2025 17:22:34 PAGE 5   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 5   
 
  239          void BatteryTelemHandler(void)
  240            {
@@ -266,29 +266,27 @@ line level    source
  245   1        VBatt=(int)(Battery*1000); //得到电池电压(mV)
  246   1        IsBatteryFault=VBatt>2550?0:1; //当电池电压低于2.55V之后置起故障bit
  247   1        if(IsBatteryFault)IsBatteryAlert=0; //故障bit置起后强制清除警报bit
- 248   1        else if(Data.FBInjectVolt<0.2&&VBatt<3750&&Data.OutputVoltage>16)IsBatteryAlert=1; //电池总电压低于12V，F
-             -B注入运放输出拉到负轨且输出大于16V，说明输入限流触发，此时强制掉档  
- 249   1        else IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit
- 250   1        //电池电量指示状态机
- 251   1        BatteryStateFSM();
- 252   1        //LED控制
- 253   1        if(IsOneTimeStrobe())return; //为了避免干扰只工作一次的频闪指示，不执行控制 
- 254   1        if(ErrCode!=Fault_None)DisplayErrorIDHandler(); //有故障发生，显示错误
- 255   1        else if(VshowFSMState!=BattVdis_Waiting)BatVshowFSM();//电池电压显示启动，执行状态机
- 256   1        else if(LocLEDState==LocateLED_Sel)LEDMode=LocateLED_ShowType(); //进入LED编辑
- 257   1        else if(CurrentMode->ModeIdx!=Mode_OFF||BattShowTimer)SetPowerLEDBasedOnVbatt(); //用户长按按键查询电量或
+ 248   1        else IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit
+ 249   1        //电池电量指示状态机
+ 250   1        BatteryStateFSM();
+ 251   1        //LED控制
+ 252   1        if(IsOneTimeStrobe())return; //为了避免干扰只工作一次的频闪指示，不执行控制 
+ 253   1        if(ErrCode!=Fault_None)DisplayErrorIDHandler(); //有故障发生，显示错误
+ 254   1        else if(VshowFSMState!=BattVdis_Waiting)BatVshowFSM();//电池电压显示启动，执行状态机
+ 255   1        else if(LocLEDState==LocateLED_Sel)LEDMode=LocateLED_ShowType(); //进入LED编辑
+ 256   1        else if(CurrentMode->ModeIdx!=Mode_OFF||BattShowTimer)SetPowerLEDBasedOnVbatt(); //用户长按按键查询电量或
              -者手电开机，指示电量
- 258   1        else LEDMode=LED_OFF; //手电处于关闭状态，且没有按键按下的动静，故LED设置为关闭
- 259   1        }
- 260            
+ 257   1        else LEDMode=LED_OFF; //手电处于关闭状态，且没有按键按下的动静，故LED设置为关闭
+ 258   1        }
+ 259            
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1409    ----
+   CODE SIZE        =   1343    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =     20    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      3      15
+   DATA SIZE        =      3      13
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      2    ----
    EDATA SIZE       =   ----    ----

@@ -195,6 +195,7 @@ void OutputChannel_TestRun(void)
 void OutputChannel_Calc(void)
 	{
 	int TargetCurrent,ILIM;
+	extern bit IsBatteryAlert;
 	//读取目标电流
 	TargetCurrent=Current;
 	if(Current>0) //电流大于0说明是有效输出执行温控计算
@@ -233,7 +234,9 @@ void OutputChannel_Calc(void)
 		case OutCH_PWMDACPreCharge:
        //启动电流整定DAC
 		   PWMDACEN=1;
-			 PWMDuty=Duty_Calc(TargetCurrent>CalcIREFValue(1500)?CalcIREFValue(1500):TargetCurrent);
+		   //配置PWMDAC占空比
+			 CurrentBuf=TargetCurrent>CalcIREFValue(1500)?CalcIREFValue(1500):TargetCurrent;
+			 PWMDuty=Duty_Calc(CurrentBuf);  //配置流程是如果当前电流大于1.5A，则钳位到1.5A，然后用这个初值配置PWMDAC
        //启动CV限压环DAC
        PreChargeDACDuty=0x82A; //0x82A=87.128%=11.29-0.4815*14.4->(0.87128*5)
        //上传占空比并跳转到下一步(启动主DCDC辅助PSU)
@@ -267,13 +270,18 @@ void OutputChannel_Calc(void)
 		  //如果电流为0则开始进入放电阶段
 			if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut;
 			//如果占空比调整到0了则进入提升输出电流到目标值的程序
-		  if(!PreChargeDACDuty)OutputFSMState=OutCH_SubmitDuty;
+		  if(!PreChargeDACDuty)
+				{
+				//如果预充完成之后，已应用的电流和目标值同步则直接跳转到正常输出状态
+				OutputFSMState=(CurrentBuf==TargetCurrent)?OutCH_OutputEnabled:OutCH_SubmitDuty;
+				break;
+				}
 		  //开始逐步下调预充占空比把输出电压调到额定值
 		  if(IsNeedToUploadPWM)break; //上次调整还未完毕
-			ILIM=TargetCurrent/30;
+			ILIM=TargetCurrent/25;
 			if(ILIM>200)ILIM=200; //计算出每次PWMDAC递减的值
 			PreChargeDACDuty-=ILIM+1;
-		  if(PreChargeDACDuty<=0)PreChargeDACDuty=0; //禁止占空比为负数
+		  if(PreChargeDACDuty<0)PreChargeDACDuty=0; //禁止占空比为负数
 			IsNeedToUploadPWM=1;
 		  break;
 		//应用占空比
@@ -284,13 +292,13 @@ void OutputChannel_Calc(void)
 			if(TargetCurrent-CurrentBuf>CalcIREFValue(6000))IsEnableSlowILEDRamp=1; //监测到非常大的电流瞬态，避免冲爆灯珠采用软起
 			if(!SysMode&&IsEnableSlowILEDRamp)
 				{
-				if(CurrentBuf==0)CurrentBuf=CalcIREFValue(1500); //电流为0从1500开始输出
-				else switch(CurrentMode->ModeIdx)
+				switch(CurrentMode->ModeIdx)
 					{
+					case Mode_Turbo:CurrentBuf+=IsInputLimited?0:10;break;  //极亮MPPT系统，配合输入告警监测使用
 					case Mode_Beacon:CurrentBuf+=5000;break;
 					case Mode_Strobe:CurrentBuf+=1500;break;
 					case Mode_SOS:CurrentBuf+=500;break;
-					default:CurrentBuf+=10;
+					default:CurrentBuf+=15;
 					}
 				if(CurrentBuf>=TargetCurrent)
 					{
@@ -311,7 +319,7 @@ void OutputChannel_Calc(void)
 	    break;
 		//输出通道正常运行阶段
 		case OutCH_OutputEnabled:
-			if(TargetCurrent==0)OutputFSMState=OutCH_GracefulShut;  //系统电流配置为0，进入软关机阶段开始下调输出电压
+			if(!TargetCurrent)OutputFSMState=OutCH_GracefulShut;  //系统电流配置为0，进入软关机阶段开始下调输出电压
 			else if(TargetCurrent==-1)OutputFSMState=OutCH_EnterIdle;	//系统电流配置为-1，说明需要暂停LED电流，跳转到暂停流程
 			else if(TargetCurrent!=CurrentBuf)OutputFSMState=OutCH_SubmitDuty; //占空比发生变更，开始进行处理
 			break;
@@ -332,7 +340,7 @@ void OutputChannel_Calc(void)
 		//DCDC关闭，等待输出电压衰减
 		case OutCH_WaitVOUTDecay:
 		  //等待输出电压衰减
-		  if(Data.OutputVoltage>15.6&&PreChargeFSMTimer>0)break;
+		  if(Data.OutputVoltage>15.6&&PreChargeFSMTimer)break;
 			//关闭预充PWMDAC
 		  PreChargeDACDuty=0;
 		  IsNeedToUploadPWM=1;

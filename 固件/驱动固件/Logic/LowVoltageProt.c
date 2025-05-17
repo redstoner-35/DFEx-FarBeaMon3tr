@@ -3,11 +3,12 @@
 #include "LowVoltProt.h"
 #include "OutputChannel.h"
 #include "SideKey.h"
+#include "SelfTest.h"
 
 //内部变量
 static xdata char BattAlertTimer=0; //电池低电压告警处理
 static xdata char RampCurrentRiseAttmTIM=0; //无极调光恢复电流的计时器	
-static xdata char TryTurboILIMTimer=0; //尝试下调极亮的冷却计时
+static char MPPTStepdownWaitTimer; //MPPT下调极亮等待的计时器
 
 //全局参考
 xdata int TurboILIM; //极亮电流限制
@@ -24,8 +25,8 @@ static void StartBattAlertTimer(void)
 //电池低电量报警处理函数
 void BattAlertTIMHandler(void)
 	{
-	//极亮下调电流计时	
-	if(TryTurboILIMTimer>0)TryTurboILIMTimer--;
+	//MPPT下调判断
+	if(MPPTStepdownWaitTimer>0)MPPTStepdownWaitTimer--;
 	//无极调光警报定时
 	if(RampCurrentRiseAttmTIM>0&&RampCurrentRiseAttmTIM<9)RampCurrentRiseAttmTIM++;
 	//电量警报
@@ -35,48 +36,65 @@ void BattAlertTIMHandler(void)
 //计算极亮挡位电流的限制值
 void CalcTurboILIM(void)
 	{
+	IsCurrentRampUp=0; //复位标志位重置MPPT系统
 	if(Battery>3.6)TurboILIM=QueryCurrentGearILED(); //电池电压大于3.6时按照目标电流去取
 	else TurboILIM=CalcIREFValue(25000); //电池电压低，极亮锁25A输出
 	}	
 	
-//极亮挡位时动态尝试极亮运行值的功能
+//极亮挡位进行计时，降档至高亮的处理
+static void TurboStepWaitTimerHandler(bit IsFault)
+	{
+	StartBattAlertTimer();
+	if(BattAlertTimer<(IsFault?BatteryFaultDelay:BatteryAlertDelay))return;
+	//时间到，立即换挡
+	BattAlertTimer=0;	
+	SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
+	}	
+	
+//极亮挡位进行MPPT输入监测和低电量保护的处理
 void TurboLVILIMProcess(void)	
 	{
-	//电池电压过低，立即退出极亮
-	if(IsBatteryFault)
+	//电池电压严重过低启动计时，如果持续过久则立即退出极亮
+	if(IsBatteryFault)TurboStepWaitTimerHandler(1);
+	//电池电压低且MPPT协商已结束,执行正常低电量判断
+	else if(IsBatteryAlert&&IsCurrentRampUp)	
 		{
-		StartBattAlertTimer();
-		if(BattAlertTimer<BatteryFaultDelay)return;
-		//时间到，立即换挡
-		BattAlertTimer=0;	
-		SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
+		//进行计时，时间到则执行跳档
+		TurboStepWaitTimerHandler(0);
 		}
-	//电池电压低或者触发输入限流，下调极亮
-	else if(IsBatteryAlert)
+	//触发输入限流,立即停止MPPT协商
+	else if(IsInputLimited)
 		{
-		//在电流RampUp的过程中如果触发输入限流则立即将当前电流值设置为极亮限流
-		if(IsCurrentRampUp&&CurrentBuf<QueryCurrentGearILED())
+		//MPPT协商已停止，进行输入限流下调判断
+		if(IsCurrentRampUp)
 			{
-		  CurrentBuf=TurboILIM;
-			IsCurrentRampUp=1; //强制set标记位确保极亮限流只执行一次
-			return;
+			//刚完成一次调整，需要等待ADC采样新的输入结果之后输入限流bit才会刷新，所以要倒计时
+			if(MPPTStepdownWaitTimer)return;
+			//计时结束，开始下调
+			TurboILIM-=CalcIREFValue(50);
+			MPPTStepdownWaitTimer=4; //每次下调减少50mA，等待0.5秒
+			//判断电流是否仍在极亮区间内
+			if(TurboILIM>CalcIREFValue(13000))return;
+			//尝试到13A仍然无法满足极亮，退出极亮
+			TurboILIM=CalcIREFValue(13000);
+			SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
 			}
-		//手电已经进入极亮，正常执行限流处理
-		if(TryTurboILIMTimer)return;
-		TurboILIM-=25;
-		TryTurboILIMTimer=TurboILIMTryCDTime; //应用定时，降低电流后等待一会再判断
-		//判断电流是否仍在极亮区间内
-		if(TurboILIM>CalcIREFValue(13000))return;
-		//尝试到13A仍然无法满足极亮，退出极亮
-		TurboILIM=CalcIREFValue(13000);
-		SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
+		//在电流RampUp的过程中如果触发输入限流则立即将当前电流值设置为极亮限流
+		else if(CurrentBuf<QueryCurrentGearILED())
+			{
+			MPPTStepdownWaitTimer=8; //MPPT协商停止，等待1秒的消隐间隔之后再进行输入限流判断
+ 			TurboILIM=CurrentBuf; //使用当前应用的电流作为极亮电流限制
+			IsCurrentRampUp=1; //强制set标记位，标记MPPT试探停止
+			}
 		}
+	//没有告警，复位定时器
+	else BattAlertTimer=0;
 	}
 
 //电池低电量保护函数
 void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump)
 	{
-	char Thr;
+	char Thr=BatteryFaultDelay;
 	bit IsChangingGear;
 	//获取手电按键的状态
 	if(getSideKey1HEvent())IsChangingGear=1;
@@ -89,23 +107,21 @@ void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump)
 		if(!IsBatteryAlert||IsChangingGear)BattAlertTimer=0;
 		else StartBattAlertTimer();
 		}
-  else //发生低压告警立即启动定时器
+  else StartBattAlertTimer();//发生低压告警立即启动定时器
+	//定时器计时已满，执行对应的动作
+	if(BattAlertTimer>Thr)
 		{
-	  Thr=BatteryFaultDelay;
-		StartBattAlertTimer(); 
+		//当前挡位处于需要在触发低电量保护时主动关机的状态	
+		if(IsNeedToShutOff)ReturnToOFFState();
+		//当前处于换挡模式不允许执行降档但是需要判断电池是否过低然后强制关闭
+		else if(IsChangingGear&&IsBatteryFault)ReturnToOFFState();
+		//不需要关机，触发换挡动作
+		else
+			{
+			BattAlertTimer=0;//重置定时器至初始值
+			SwitchToGear(ModeJump); //复位到指定挡位
+			}
 		}
-	//当前模式需要关机
-	if(IsNeedToShutOff||IsChangingGear)
-		 {
-		 //电池电压低于关机阈值足够时间，立即关闭
-		 if(IsBatteryFault&&BattAlertTimer>Thr)ReturnToOFFState(); 
-		 }
-	//不需要关机，触发换挡动作
-	else if(BattAlertTimer>Thr)
-		 {
-	   BattAlertTimer=0;//重置定时器至初始值
-	   SwitchToGear(ModeJump); //复位到指定挡位
-		 }
 	}		
 
 //无极调光开机时恢复低压保护限流的处理	

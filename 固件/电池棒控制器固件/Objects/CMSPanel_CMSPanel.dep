@@ -147,9 +147,9 @@ I (.\User\inc\ADC.h)(0x67CBA680)
 I (.\User\inc\I2C.h)(0x677F51D1)
 I (.\Config\Pindefs.h)(0x6785F03B)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\CapTest.h)(0x67832B98)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
@@ -200,7 +200,7 @@ I (.\Library\inc\ht32_serial.h)(0x636DF48F)
 I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\delay.h)(0x67963D55)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -1370,7 +1370,7 @@ I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\I2C.h)(0x677F51D1)
 I (.\Config\Pindefs.h)(0x6785F03B)
 I (.\User\inc\delay.h)(0x67963D55)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -1422,7 +1422,7 @@ I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\delay.h)(0x67963D55)
 I (.\Config\Pindefs.h)(0x6785F03B)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -1480,7 +1480,7 @@ F (.\Hardware\lcd.c)(0x67A0AC04)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime -
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\lcd_init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\User\inc\lcdfont.h)(0x68198A69)
+I (.\User\inc\lcdfont.h)(0x6827FE84)
 I (.\User\inc\delay.h)(0x67963D55)
 I (.\Library\inc\ht32.h)(0x59959B2B)
 I (.\CMSIS\ht32f5xxxx_01.h)(0x63C55DAC)
@@ -1570,7 +1570,7 @@ I (.\Library\inc\ht32_serial.h)(0x636DF48F)
 I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\delay.h)(0x67963D55)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -1722,7 +1722,7 @@ I (.\Library\inc\ht32_serial.h)(0x636DF48F)
 I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\delay.h)(0x67963D55)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -1929,12 +1929,12 @@ I (.\Library\inc\ht32_cm0plus_misc.h)(0x574D2641)
 I (.\Library\inc\ht32_serial.h)(0x636DF48F)
 I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
-I (GUI\GUI.h)(0x680ADB70)
+I (GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 F (.\GUI\IncDec.c)(0x6784DC3D)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\incdec.o --omf_browse .\objects\incdec.crf --depend .\objects\incdec.d)
-I (GUI\GUI.h)(0x680ADB70)
+I (GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -1942,7 +1942,7 @@ I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 F (.\GUI\MenuSystem.c)(0x67A87578)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\menusystem.o --omf_browse .\objects\menusystem.crf --depend .\objects\menusystem.d)
 I (.\User\inc\lcd.h)(0x679AE285)
-I (GUI\GUI.h)(0x680ADB70)
+I (GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
@@ -1950,13 +1950,13 @@ I (.\User\inc\Key.h)(0x6781D1C8)
 I (GUI\SwitchICON.h)(0x67A0C5C4)
 F (.\GUI\IntEditMenu.c)(0x67A828DF)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\inteditmenu.o --omf_browse .\objects\inteditmenu.crf --depend .\objects\inteditmenu.d)
 I (.\User\inc\lcd.h)(0x679AE285)
-I (GUI\GUI.h)(0x680ADB70)
+I (GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 F (.\GUI\EnterPassWordMenu.c)(0x67907B69)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\enterpasswordmenu.o --omf_browse .\objects\enterpasswordmenu.crf --depend .\objects\enterpasswordmenu.d)
-I (GUI\GUI.h)(0x680ADB70)
+I (GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -1964,19 +1964,19 @@ I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 I (.\User\inc\CapTest.h)(0x67832B98)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 F (.\User\inc\pic.h)(0x67C6C411)()
-F (.\User\inc\lcdfont.h)(0x68198A69)()
-F (.\POST\IP2366_Init.c)(0x681B389F)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\ip2366_init.o --omf_browse .\objects\ip2366_init.crf --depend .\objects\ip2366_init.d)
+F (.\User\inc\lcdfont.h)(0x6827FE84)()
+F (.\POST\IP2366_Init.c)(0x682800A2)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\ip2366_init.o --omf_browse .\objects\ip2366_init.crf --depend .\objects\ip2366_init.d)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\lcd.h)(0x679AE285)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\delay.h)(0x67963D55)
 I (.\Library\inc\ht32.h)(0x59959B2B)
 I (.\CMSIS\ht32f5xxxx_01.h)(0x63C55DAC)
@@ -2026,7 +2026,7 @@ I (.\User\inc\BalanceMgmt.h)(0x67CBAD14)
 F (.\POST\ScreenDirSet.c)(0x67FF0FAC)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\screendirset.o --omf_browse .\objects\screendirset.crf --depend .\objects\screendirset.d)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\Library\inc\ht32.h)(0x59959B2B)
 I (.\CMSIS\ht32f5xxxx_01.h)(0x63C55DAC)
@@ -2071,21 +2071,21 @@ I (.\Library\inc\ht32_cm0plus_misc.h)(0x574D2641)
 I (.\Library\inc\ht32_serial.h)(0x636DF48F)
 I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\Config\Pindefs.h)(0x6785F03B)
 F (.\POST\InstantCapTest.c)(0x6793014C)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\instantcaptest.o --omf_browse .\objects\instantcaptest.crf --depend .\objects\instantcaptest.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\ADC.h)(0x67CBA680)
 F (.\POST\SelfTestErrorHandle.c)(0x67908787)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\selftesterrorhandle.o --omf_browse .\objects\selftesterrorhandle.crf --depend .\objects\selftesterrorhandle.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -2138,14 +2138,14 @@ I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 F (.\POST\OverChargeDetect.c)(0x67BAB6D0)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\overchargedetect.o --omf_browse .\objects\overchargedetect.crf --depend .\objects\overchargedetect.d)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 F (.\POST\BalanceMgmt.c)(0x680DAACB)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\balancemgmt.o --omf_browse .\objects\balancemgmt.crf --depend .\objects\balancemgmt.d)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\Library\inc\ht32.h)(0x59959B2B)
 I (.\CMSIS\ht32f5xxxx_01.h)(0x63C55DAC)
@@ -2190,7 +2190,7 @@ I (.\Library\inc\ht32_cm0plus_misc.h)(0x574D2641)
 I (.\Library\inc\ht32_serial.h)(0x636DF48F)
 I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\PCA9536.h)(0x67BABED6)
@@ -2200,13 +2200,13 @@ I (.\User\inc\BalanceMgmt.h)(0x67CBAD14)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 F (.\POST\HPTypeCGauge.c)(0x681758B3)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\hptypecgauge.o --omf_browse .\objects\hptypecgauge.crf --depend .\objects\hptypecgauge.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\INA226.h)(0x6817570C)
 I (.\User\inc\lcd.h)(0x679AE285)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\delay.h)(0x67963D55)
 I (.\Library\inc\ht32.h)(0x59959B2B)
@@ -2252,51 +2252,51 @@ I (.\Library\inc\ht32_cm0plus_misc.h)(0x574D2641)
 I (.\Library\inc\ht32_serial.h)(0x636DF48F)
 I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
-F (.\Menu\MainMenu.c)(0x681760D1)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\mainmenu.o --omf_browse .\objects\mainmenu.crf --depend .\objects\mainmenu.d)
+F (.\Menu\MainMenu.c)(0x68280118)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\mainmenu.o --omf_browse .\objects\mainmenu.crf --depend .\objects\mainmenu.d)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (.\User\inc\pic.h)(0x67C6C411)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 I (.\User\inc\INA226.h)(0x6817570C)
 F (.\Menu\ChargePowerMenu.c)(0x679AEEB2)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\chargepowermenu.o --omf_browse .\objects\chargepowermenu.crf --depend .\objects\chargepowermenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\LVSetMenu.c)(0x6783554C)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\lvsetmenu.o --omf_browse .\objects\lvsetmenu.crf --depend .\objects\lvsetmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\DischargeMgmtMenu.c)(0x680ADB73)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\dischargemgmtmenu.o --omf_browse .\objects\dischargemgmtmenu.crf --depend .\objects\dischargemgmtmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-F (.\Menu\SetttingMainMenu.c)(0x680ADC86)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\setttingmainmenu.o --omf_browse .\objects\setttingmainmenu.crf --depend .\objects\setttingmainmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+F (.\Menu\SetttingMainMenu.c)(0x6828002F)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\setttingmainmenu.o --omf_browse .\objects\setttingmainmenu.crf --depend .\objects\setttingmainmenu.d)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\CapTest.h)(0x67832B98)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 I (.\User\inc\delay.h)(0x67963D55)
@@ -2346,48 +2346,48 @@ I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (.\User\inc\BalanceMgmt.h)(0x67CBAD14)
 F (.\Menu\ChargingSystemMenu.c)(0x67D4FD72)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\chargingsystemmenu.o --omf_browse .\objects\chargingsystemmenu.crf --depend .\objects\chargingsystemmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 F (.\Menu\CapTestMenu.c)(0x67EB8A05)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\captestmenu.o --omf_browse .\objects\captestmenu.crf --depend .\objects\captestmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\CapTest.h)(0x67832B98)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 F (.\Menu\RestoreFactorySetMenu.c)(0x680C42A5)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\restorefactorysetmenu.o --omf_browse .\objects\restorefactorysetmenu.crf --depend .\objects\restorefactorysetmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\CapTest.h)(0x67832B98)
 F (.\Menu\ResetConfigMenu.c)(0x680C4493)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\resetconfigmenu.o --omf_browse .\objects\resetconfigmenu.crf --depend .\objects\resetconfigmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\CapTest.h)(0x67832B98)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 F (.\Menu\DisplayLastCTestMenu.c)(0x67A83CF7)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\displaylastctestmenu.o --omf_browse .\objects\displaylastctestmenu.crf --depend .\objects\displaylastctestmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -2395,45 +2395,45 @@ I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\CapTest.h)(0x67832B98)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\SetChargeCurrentMenu.c)(0x67BAB82E)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\setchargecurrentmenu.o --omf_browse .\objects\setchargecurrentmenu.crf --depend .\objects\setchargecurrentmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\PreChargeCurrentSetMenu.c)(0x6783BEE5)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\prechargecurrentsetmenu.o --omf_browse .\objects\prechargecurrentsetmenu.crf --depend .\objects\prechargecurrentsetmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\ChargeVoltSet.c)(0x6784F0F7)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\chargevoltset.o --omf_browse .\objects\chargevoltset.crf --depend .\objects\chargevoltset.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\ColumGaugeViewMenu.c)(0x67CBB299)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\columgaugeviewmenu.o --omf_browse .\objects\columgaugeviewmenu.crf --depend .\objects\columgaugeviewmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 I (.\User\inc\CapTest.h)(0x67832B98)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\Key.h)(0x6781D1C8)
 F (.\Menu\ViewChipStateMenu.c)(0x681761EA)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\viewchipstatemenu.o --omf_browse .\objects\viewchipstatemenu.crf --depend .\objects\viewchipstatemenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
@@ -2441,70 +2441,70 @@ I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\PCA9536.h)(0x67BABED6)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 F (.\Menu\EasySetupMenu.c)(0x67CAF589)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\easysetupmenu.o --omf_browse .\objects\easysetupmenu.crf --depend .\objects\easysetupmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\CapTest.h)(0x67832B98)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 F (.\Menu\PDOSetMenu.c)(0x679B07F9)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\pdosetmenu.o --omf_browse .\objects\pdosetmenu.crf --depend .\objects\pdosetmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 F (.\Menu\EnterAdvancedModeMenu.c)(0x67905162)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\enteradvancedmodemenu.o --omf_browse .\objects\enteradvancedmodemenu.crf --depend .\objects\enteradvancedmodemenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-F (.\Menu\SystemSecuMenu.c)(0x680DB2EF)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\systemsecumenu.o --omf_browse .\objects\systemsecumenu.crf --depend .\objects\systemsecumenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+F (.\Menu\SystemSecuMenu.c)(0x6827FB01)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\systemsecumenu.o --omf_browse .\objects\systemsecumenu.crf --depend .\objects\systemsecumenu.d)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\EnterSecuSettingMenu.c)(0x6790514E)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\entersecusettingmenu.o --omf_browse .\objects\entersecusettingmenu.crf --depend .\objects\entersecusettingmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-F (.\Menu\AboutMenu.c)(0x681760E9)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\aboutmenu.o --omf_browse .\objects\aboutmenu.crf --depend .\objects\aboutmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+F (.\Menu\AboutMenu.c)(0x682802B0)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\aboutmenu.o --omf_browse .\objects\aboutmenu.crf --depend .\objects\aboutmenu.d)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 F (.\Menu\OTPTempSet.c)(0x679AFB5D)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\otptempset.o --omf_browse .\objects\otptempset.crf --depend .\objects\otptempset.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\AdapterEmulationMenu.c)(0x67E4CC3E)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\adapteremulationmenu.o --omf_browse .\objects\adapteremulationmenu.crf --depend .\objects\adapteremulationmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (.\User\inc\delay.h)(0x67963D55)
@@ -2553,115 +2553,115 @@ I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 F (.\Menu\TypeCConnReset.c)(0x67A08594)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\typecconnreset.o --omf_browse .\objects\typecconnreset.crf --depend .\objects\typecconnreset.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\Key.h)(0x6781D1C8)
 F (.\Menu\DisplayDirMenu.c)(0x6789C1D2)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\displaydirmenu.o --omf_browse .\objects\displaydirmenu.crf --depend .\objects\displaydirmenu.d)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 F (.\Menu\EnableInstCapTMenu.c)(0x67A0BEF0)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\enableinstcaptmenu.o --omf_browse .\objects\enableinstcaptmenu.crf --depend .\objects\enableinstcaptmenu.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 F (.\Menu\VRechargeMenu.c)(0x67BAB70C)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\vrechargemenu.o --omf_browse .\objects\vrechargemenu.crf --depend .\objects\vrechargemenu.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x599EDB3C)
 I (.\User\inc\ADC.h)(0x67CBA680)
 F (.\Menu\IStopMenu.c)(0x67D4FD6D)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\istopmenu.o --omf_browse .\objects\istopmenu.crf --depend .\objects\istopmenu.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 F (.\Menu\SafetyAlertMenu.c)(0x67904457)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\safetyalertmenu.o --omf_browse .\objects\safetyalertmenu.crf --depend .\objects\safetyalertmenu.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 F (.\Menu\MaxVPDConfigMenu.c)(0x67BAB824)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\maxvpdconfigmenu.o --omf_browse .\objects\maxvpdconfigmenu.crf --depend .\objects\maxvpdconfigmenu.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 F (.\Menu\ChgPowerWithOutEPR.c)(0x67D155EB)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\chgpowerwithoutepr.o --omf_browse .\objects\chgpowerwithoutepr.crf --depend .\objects\chgpowerwithoutepr.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\LargeMainMenu.c)(0x681760B4)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\largemainmenu.o --omf_browse .\objects\largemainmenu.crf --depend .\objects\largemainmenu.d)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 I (.\User\inc\CapTest.h)(0x67832B98)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
 F (.\Menu\GUIPrefMenu.c)(0x67A09FF7)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\guiprefmenu.o --omf_browse .\objects\guiprefmenu.crf --depend .\objects\guiprefmenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 F (.\Menu\BalSysMenu.c)(0x67D4FECB)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\balsysmenu.o --omf_browse .\objects\balsysmenu.crf --depend .\objects\balsysmenu.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 F (.\Menu\ManuStartBalanceMenu.c)(0x67D4FB32)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\manustartbalancemenu.o --omf_browse .\objects\manustartbalancemenu.crf --depend .\objects\manustartbalancemenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
@@ -2671,30 +2671,54 @@ I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (.\User\inc\BalanceMgmt.h)(0x67CBAD14)
 F (.\Menu\AutoExtendBalanceMenu.c)(0x67CBB199)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\autoextendbalancemenu.o --omf_browse .\objects\autoextendbalancemenu.crf --depend .\objects\autoextendbalancemenu.d)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 I (.\User\inc\CapTest.h)(0x67832B98)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\ADC.h)(0x67CBA680)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 I (.\User\inc\Key.h)(0x6781D1C8)
 I (.\User\inc\BalanceMgmt.h)(0x67CBAD14)
 F (.\Menu\IstopStdMenu.c)(0x67D4FF53)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\istopstdmenu.o --omf_browse .\objects\istopstdmenu.crf --depend .\objects\istopstdmenu.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\Key.h)(0x6781D1C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
-F (.\EEPROM\Config.c)(0x680AD9DF)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\config.o --omf_browse .\objects\config.crf --depend .\objects\config.d)
-I (.\User\inc\Config.h)(0x680DAA3C)
+F (.\Menu\TypeCGaugeConfigMenu.c)(0x6827FF8E)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\typecgaugeconfigmenu.o --omf_browse .\objects\typecgaugeconfigmenu.crf --depend .\objects\typecgaugeconfigmenu.d)
+I (.\GUI\GUI.h)(0x6827FF99)
+I (.\User\inc\lcd.h)(0x679AE285)
+I (.\User\inc\LCD_Init.h)(0x67A0618D)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
+I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
+I (.\User\inc\IP2366_REG.h)(0x681B3B68)
+I (.\User\inc\Config.h)(0x6827FAA5)
+F (.\Menu\TypeCCalibrationSource.c)(0x6828007A)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\typeccalibrationsource.o --omf_browse .\objects\typeccalibrationsource.crf --depend .\objects\typeccalibrationsource.d)
+I (.\GUI\GUI.h)(0x6827FF99)
+I (.\User\inc\lcd.h)(0x679AE285)
+I (.\User\inc\LCD_Init.h)(0x67A0618D)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
+I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
+I (.\User\inc\IP2366_REG.h)(0x681B3B68)
+F (.\Menu\TypeCCalibrationSet.c)(0x68280297)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\typeccalibrationset.o --omf_browse .\objects\typeccalibrationset.crf --depend .\objects\typeccalibrationset.d)
+I (.\GUI\GUI.h)(0x6827FF99)
+I (.\User\inc\lcd.h)(0x679AE285)
+I (.\User\inc\LCD_Init.h)(0x67A0618D)
+I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
+I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
+I (.\User\inc\IP2366_REG.h)(0x681B3B68)
+F (.\EEPROM\Config.c)(0x6827FAB9)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\config.o --omf_browse .\objects\config.crf --depend .\objects\config.d)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
@@ -2743,7 +2767,7 @@ I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\24Cxx.h)(0x678895E6)
 I (.\Config\I2CAddr.h)(0x680D93C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\delay.h)(0x67963D55)
@@ -2793,21 +2817,21 @@ I (.\Library\inc\ht32_div.h)(0x56C22A05)
 I (.\Library\inc\ht32_rand.h)(0x57B1BC8E)
 I (.\User\inc\24Cxx.h)(0x678895E6)
 I (.\Config\I2CAddr.h)(0x680D93C8)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\delay.h)(0x67963D55)
 I (.\User\inc\CapTest.h)(0x67832B98)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 F (.\EEPROM\LogSystem.c)(0x680C7230)(--c99 --gnu -c --cpu Cortex-M0+ -g -O3 -Otime --apcs=interwork --split_sections -I .\User\inc -I .\Library\inc -I .\CMSIS\Include -I .\CMSIS\Core\Include -I .\CMSIS -I .\Config -I .\MDK-ARM -I .\GUI-I.\RTE\_CMSPanel-IC:\Keil_v5\ARM\PACK\Holtek\HT32_DFP\1.0.44\ARM\INC\Holtek\HT32F5xxxx-IC:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="527" -DUSE_HT32F52342_52 -DUSE_HT32_DRIVER -DUSE_HT32F52352_SK -DUSE_HT32F52342_52 -DUSE_MEM_HT32F52352 -DBATTCOUNT="3"-o .\objects\logsystem.o --omf_browse .\objects\logsystem.crf --depend .\objects\logsystem.d)
 I (.\User\inc\LogSystem.h)(0x67CBB026)
 I (.\User\inc\CapTest.h)(0x67832B98)
 I (C:\Keil_v5\ARM\ARMCC\include\stdbool.h)(0x599EDB3E)
-I (.\User\inc\Config.h)(0x680DAA3C)
+I (.\User\inc\Config.h)(0x6827FAA5)
 I (.\User\inc\IP2366_REG.h)(0x681B3B68)
 I (.\User\inc\LCD_Init.h)(0x67A0618D)
 I (.\User\inc\24Cxx.h)(0x678895E6)
@@ -2859,7 +2883,7 @@ I (.\User\inc\ADC.h)(0x67CBA680)
 I (.\User\inc\BalanceMgmt.h)(0x67CBAD14)
 I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x599EDB3C)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x599EDB3E)
-I (.\GUI\GUI.h)(0x680ADB70)
+I (.\GUI\GUI.h)(0x6827FF99)
 I (.\User\inc\lcd.h)(0x679AE285)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x599EDB3C)
 I (.\User\inc\WatchDog.h)(0x679AD13A)

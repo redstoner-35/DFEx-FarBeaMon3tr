@@ -21,6 +21,7 @@ typedef enum
 
 //外部引用
 extern xdata FaultCodeDef ErrCode; //错误代码
+extern bit IsInputLimited; //输入限流激活	
 	
 //函数
 void ReportError(FaultCodeDef Code); //报告错误

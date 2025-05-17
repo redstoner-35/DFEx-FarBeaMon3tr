@@ -927,6 +927,21 @@
               <FileType>1</FileType>
               <FilePath>.\Menu\IstopStdMenu.c</FilePath>
             </File>
+            <File>
+              <FileName>TypeCGaugeConfigMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\TypeCGaugeConfigMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>TypeCCalibrationSource.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\TypeCCalibrationSource.c</FilePath>
+            </File>
+            <File>
+              <FileName>TypeCCalibrationSet.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\TypeCCalibrationSet.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

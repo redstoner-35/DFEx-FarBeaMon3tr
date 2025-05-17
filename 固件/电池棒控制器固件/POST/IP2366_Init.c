@@ -7,7 +7,7 @@
 #include "BalanceMgmt.h"
 
 //全局变量
-static const char NonStdFwID[]={"YEGQF"};
+static const char NonStdFwID[]={"YCNNH"};
 static const char HSCPFwID[]={"YCEDS"};
 bool IsBootFromVBUS;	
 bool IsEnable17AMode=true;

@@ -14,7 +14,7 @@
 #include "Strobe.h"
 
 //极亮和爆闪电流选择
-//#define TurboCurrent32A  //注释掉开启36A极亮
+//#define TurboCurrent32A  //注释掉开启36A极亮，否则极亮电流为31.75A（适配FV7212D）
 #define FullPowerStrobe //保留则开启全功率爆闪
 #define FullPowerBeacon //全功率信标
 
@@ -62,7 +62,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Low,
 		CalcIREFValue(1000),  //1000mA电流
 		0,   //最小电流没用到，无视
-		2900,  //2.8V关断
+		2800,  //2.8V关断
 		true,
 		false,
 		},
@@ -71,7 +71,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Mid,
 		CalcIREFValue(2000),  //2000mA电流
 		0,   //最小电流没用到，无视
-		3000,  //3V关断
+		2900,  //2.9V关断
 		true,
 		false,
 		}, 	
@@ -80,7 +80,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_MHigh,
 		CalcIREFValue(4000),  //4000mA电流
 		0,   //最小电流没用到，无视
-		3050,  //3.05V关断
+		3000,  //3V关断
 		true,
 		true,
 		}, 	
@@ -97,7 +97,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		{
 		Mode_Turbo,
 		#ifdef TurboCurrent32A
-		CalcIREFValue(31500),  //31.5A电流
+		CalcIREFValue(31750),  //31.75A电流
 		#else
     CalcIREFValue(36000),  //36A电流(针对7175)
 	  #endif		
@@ -114,7 +114,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		#else
 			//全功率爆闪激活
 			#ifdef TurboCurrent31A
-			CalcIREFValue(31500),  //31.5A电流
+			CalcIREFValue(31750),  //31.75A电流
 			#else
 			CalcIREFValue(36000),  //36A电流(针对7175)
 			#endif		
@@ -139,7 +139,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		#ifdef FullPowerBeacon
 			//全功率信标模式激活
 			#ifdef TurboCurrent31A
-			CalcIREFValue(31500),  //31.5A电流
+			CalcIREFValue(31750),  //31.75A电流
 			#else
 			CalcIREFValue(36000),  //36A电流(针对7175)
 			#endif	
@@ -235,7 +235,7 @@ void SwitchToGear(ModeIdxDef TargetMode)
 		BeaconFSM_Reset(); //复位整个信标模块
 		ResetStrobeModule(); //复位爆闪控制
 		CurrentMode=&ModeSettings[i]; //找到匹配index，赋值结构体
-		if(TargetMode==Mode_Turbo)CalcTurboILIM(); //进入极亮重新计算电流值
+		if(BeforeMode!=Mode_Turbo&&TargetMode==Mode_Turbo)CalcTurboILIM(); //从非极亮挡位进入极亮重新计算电流值并重置MPPT系统
 		if(BeforeMode==Mode_Turbo&&TargetMode!=Mode_Turbo)RecalcPILoop(LastICC); //从极亮切换到其他挡位，重新设置PI环
 		}
 	}

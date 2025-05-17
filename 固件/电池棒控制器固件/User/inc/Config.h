@@ -42,7 +42,11 @@ typedef struct
 	bool EnableLVProtectConfig; //开启低压保护配置
 	bool EnableOTPConfig; //打开过热保护配置
 	bool EnableThermalStepdown; //开启过热后自动掉功率的机制
-	//过热保护配置
+	bool EnableTCCalibration; //开启TypeC功率计修正值配置
+	//TypeC功率修正数据配置	
+	int TypeCVoltageCal;  
+	int TypeCAmpereCal; //Type-C的电压和电流修正值，LSB=0.1% 1000=原始值的100%
+	//过热保护配置		
 	int OverHeatLockTemp; //过热保护时间
 	//GUI和显示配置
 	bool EnableLargeMenu; //启用大菜单

@@ -60,12 +60,12 @@ const BoolListEntryDef SecuParam[10]=
 		false
 		},	
 		{
-		"使能高精度功率计",
+		"使能TypeC校准配置",
 		true,
-		&CfgData.EnableHPGauge,
+		&CfgData.EnableTCCalibration,
 		false,
 		false
-		},	
+		},
 		{ //占位符
 		"",
 		false,

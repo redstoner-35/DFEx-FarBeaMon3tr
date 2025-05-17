@@ -74,7 +74,6 @@ static void SetLEDONOFF(bit RLED,bit GLED)
 //LED控制函数
 void LEDControlHandler(void)
 	{
-	char buf;
 	bit IsLEDON,RLED=0,GLED=0;
 	//执行特殊的逻辑（战术模式指示等）
 	if(LEDMode<LED_RedBlinkFifth) //非一次性状态，进行降档和战术模式指示判断
@@ -94,16 +93,15 @@ void LEDControlHandler(void)
 		case LED_Amber:RLED=1;GLED=1;break;//黄色LED
 		case LED_Green:GLED=1;break;//绿色LED
 		case LED_Red:RLED=1;break;//红色LED
-		case LED_RedBlink_Fast: //红色快闪	
 		case LED_RedBlink: //红色闪烁
-		  buf=timer&0x7F; //读取当前定时器的控制位
-			if(buf<(LEDMode==LED_RedBlink?3:0))
+		  //如果计时变量bit2=1说明已经计数到4
+			if(timer&0x04)
 				{
-				buf++;
-			  timer&=0x80;
-				timer|=buf; //时间没到，继续计时
+				timer&=0x80; //复位掉计数部分
+				timer^=0x80; //和0x80 XOR取反bit7
 				}
-			else timer=timer&0x80?0x00:0x80; //翻转bit 7并重置定时器
+			//否则继续计数
+			else timer++;
 			RLED=timer&0x80?1:0; //根据bit 7载入LED控制位
 			break;
 		case LED_GreenBlinkThird:

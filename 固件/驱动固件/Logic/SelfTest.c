@@ -17,6 +17,7 @@ static code FaultCodeDef NonCriticalFault[]={ //非致命的错误代码
 	};
 	
 //外部全局参考
+bit IsInputLimited;  //输入限流触发
 xdata FaultCodeDef ErrCode; //错误代码	
 
 //查询错误是否致命
@@ -86,6 +87,10 @@ static char ErrTIMCounter(char buf,char Count)
 void OutputFaultDetect(void)
 	{
 	char buf,OErrID;
+	//输入MPPT限流监测
+	if(Data.FBInjectVolt<0.2&&Data.RawBattVolt<12.0&&Data.OutputVoltage>16)IsInputLimited=1; //电池总电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发
+	else IsInputLimited=0;
+	//输出故障监测
 	if(!GetIfOutputEnabled())ShortBlankTIM=0; //DCDC关闭
 	else if(ShortBlankTIM<FaultBlankingInterval)ShortBlankTIM++; //时间未到不允许监测
 	else  //开始检测

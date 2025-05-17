@@ -180,8 +180,13 @@ void EnterManuBal(void)
 	SwitchingMenu(&BALTestMenu);
 	}
 	
+void EnterTypeCGaugeConfig(void)
+	{
+	SwitchingMenu(&TypeCGaugeSetMenu);
+	}	
+	
 //菜单项参数
-const SetupMenuSelDef MainSetup[22]=
+const SetupMenuSelDef MainSetup[23]=
 	{
 		{
 		"系统安全设置",
@@ -284,6 +289,12 @@ const SetupMenuSelDef MainSetup[22]=
 		false,
 		&EnableManuBal,
 		&EnterManuBal,
+		},
+		{
+		"TypeC功率计配置",
+		false,
+		&CfgData.EnableTCCalibration,
+		&EnterTypeCGaugeConfig
 		},
 		{
 		"查看芯片状态",

@@ -245,7 +245,6 @@ void BatteryTelemHandler(void)
 	VBatt=(int)(Battery*1000); //得到电池电压(mV)
 	IsBatteryFault=VBatt>2550?0:1; //当电池电压低于2.55V之后置起故障bit
 	if(IsBatteryFault)IsBatteryAlert=0; //故障bit置起后强制清除警报bit
-	else if(Data.FBInjectVolt<0.2&&VBatt<3750&&Data.OutputVoltage>16)IsBatteryAlert=1; //电池总电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发，此时强制掉档	
 	else IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit
 	//电池电量指示状态机
 	BatteryStateFSM();

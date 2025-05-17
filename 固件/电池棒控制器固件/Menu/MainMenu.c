@@ -87,9 +87,13 @@ void IP2366_Telem(void)
 			IBat=VBUSAvgBuf[3]/(float)SADCAvgCount;
       //读取TypeC结果
 			Result=VBUSAvgBuf[0]/(float)SADCAvgCount;
+			Result*=(float)CfgData.TypeCVoltageCal;
+			Result/=(float)1000;
 			if(Result>4&&Result<30)VTypec=Result;
 			//读取TypeC电流结果
 			Result=VBUSAvgBuf[1]/(float)SADCAvgCount;
+			Result*=(float)CfgData.TypeCAmpereCal;
+			Result/=(float)1000;
 			if(fabsf(Result)<7.5)ITypeC=Result;
 			for(i=0;i<4;i++)VBUSAvgBuf[i]=0;
 			}		
