@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 1   
+C51 COMPILER V9.60.0.0   ADCCFG                                                            05/18/2025 17:01:20 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ADCCFG
@@ -62,7 +62,7 @@ line level    source
   51   2          }
   52   1        //完成转换，返回结果并准备可以提交新的任务
   53   1        ADCTemp.avgbuf/=(long)ADCAverageCount;
-C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 2   
+C51 COMPILER V9.60.0.0   ADCCFG                                                            05/18/2025 17:01:20 PAGE 2   
 
   54   1        *Result=(int)ADCTemp.avgbuf; //返回结果
   55   1        *Queue=ADCTemp.Ch; //返回转换的队列
@@ -126,7 +126,7 @@ line level    source
  113          static void ADCEngineHandler(void)
  114            {
  115   1        int result;
-C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 3   
+C51 COMPILER V9.60.0.0   ADCCFG                                                            05/18/2025 17:01:20 PAGE 3   
 
  116   1        char Ch,i;
  117   1        //转换循环
@@ -190,7 +190,7 @@ line level    source
  174   1        //调用ADC异步引擎
  175   1        ADCEngineHandler();
  176   1        } 
-C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 4   
+C51 COMPILER V9.60.0.0   ADCCFG                                                            05/18/2025 17:01:20 PAGE 4   
 
  177            
  178          //关闭ADC
@@ -254,7 +254,7 @@ line level    source
  236   1        GPIO_ConfigGPIOMode(NTCENIOG,GPIOMask(NTCENIOx),&ADCInitCfg);   
  237   1        GPIO_WriteBit(NTCENIOG,NTCENIOx,1); //令供电输出=1打开NTC电源
  238   1        //配置ADC
-C51 COMPILER V9.60.0.0   ADCCFG                                                            04/29/2025 17:16:19 PAGE 5   
+C51 COMPILER V9.60.0.0   ADCCFG                                                            05/18/2025 17:01:20 PAGE 5   
 
  239   1        ADCON0=0x40; //AN31=内部1.2V基准，结果右对齐
  240   1        ADCON1=0x60; //Fadc=Fsys/128=375KHz

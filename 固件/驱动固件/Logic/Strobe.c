@@ -11,7 +11,7 @@ static xdata char StrobeSelIdx; //爆闪选择index
 static xdata char StrobeCounter; //爆闪次数计时
 
 //内部爆闪事件顺序
-static code char StrobeSeq[]={1,3,10,9,7,8,5,11,6,4};
+static code char StrobeSeq[]={1,3,10,9,7,8,5,11,6};
 
 //爆闪控制器复位
 void ResetStrobeModule(void)

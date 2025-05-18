@@ -10,6 +10,7 @@
 
 //外部引用
 extern xdata int TurboILIM; //极亮电流限制
+extern xdata float BeforeRawBattVolt; //极亮前电压的采样
 
 //函数
 void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump); //普通挡位的警报函数

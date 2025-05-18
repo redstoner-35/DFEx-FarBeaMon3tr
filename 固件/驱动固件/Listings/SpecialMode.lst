@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   SPECIALMODE                                                       05/17/2025 13:41:16 PAGE 1   
+C51 COMPILER V9.60.0.0   SPECIALMODE                                                       05/18/2025 17:01:21 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SPECIALMODE
@@ -62,7 +62,7 @@ line level    source
   51   1        if(ClickCount==3)
   52   1          {
   53   2          if(Battery>2.7)SwitchToGear(Mode_Strobe);   //进入爆闪
-C51 COMPILER V9.60.0.0   SPECIALMODE                                                       05/17/2025 13:41:16 PAGE 2   
+C51 COMPILER V9.60.0.0   SPECIALMODE                                                       05/18/2025 17:01:21 PAGE 2   
 
   54   2          else LEDMode=LED_RedBlinkFifth; //电量不足五次闪烁提示
   55   2          }
@@ -126,7 +126,7 @@ line level    source
  113   4                    }
  114   3                  else
  115   3                    {
-C51 COMPILER V9.60.0.0   SPECIALMODE                                                       05/17/2025 13:41:16 PAGE 3   
+C51 COMPILER V9.60.0.0   SPECIALMODE                                                       05/18/2025 17:01:21 PAGE 3   
 
  116   4                    SysMode=Operation_TacTurbo;
  117   4                    LEDMode=LED_RedBlinkThird;  //关闭爆闪战术

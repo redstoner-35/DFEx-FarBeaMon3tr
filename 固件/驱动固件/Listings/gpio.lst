@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 1   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE GPIO
@@ -62,7 +62,7 @@ line level    source
   51          ****************************************************************************/
   52          
   53          /****************************************************************************/
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 2   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 2   
 
   54          /*  Local function prototypes('static')
   55          ****************************************************************************/
@@ -126,7 +126,7 @@ line level    source
  113   1        {
  114   2          case GPIO0:
  115   2            P0TRIS=(TRISMSK&0x100)?P0TRIS|(TRISMSK&0xFF):P0TRIS&(TRISMSK&0xFF);
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 3   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 3   
 
  116   2            P0OD=(ODMSK&0x100)?P0OD|(ODMSK&0xFF):P0OD&(ODMSK&0xFF);
  117   2            P0UP=(UPMSK&0x100)?P0UP|(UPMSK&0xFF):P0UP&(UPMSK&0xFF);
@@ -190,7 +190,7 @@ line level    source
  175   2            P3EXTIE |= PinMSK;
  176   2            break;
  177   2          default:
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 4   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 4   
 
  178   2            break;  
  179   2        }
@@ -254,7 +254,7 @@ line level    source
  237   2            break;  
  238   2          case GPIO3:
  239   2            P3EXTIE &= ~PinMSK;
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 5   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 5   
 
  240   2            break;
  241   2          default:
@@ -318,7 +318,7 @@ line level    source
  299           **  (3)P2的PinNum输入值范围：GPIO_PIN_1~GPIO_PIN_6
  300           **  (4)P3的PinNum输入值范围：GPIO_PIN_0~GPIO_PIN_2、GPIO_PIN_5、GPIO_PIN_6
  301           ******************************************************************************/
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 6   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 6   
 
  302          void GPIO_SetExtIntMode(uint8_t Port, uint8_t PinNum, uint8_t Mode)
  303          {
@@ -382,7 +382,7 @@ line level    source
  361   2             PCFG=&P13EICFG+(PinNum-3);
  362   2             flag=P1EXTIE&(1<<PinNum);
  363   2             break;   
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 7   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 7   
 
  364   2          case GPIO2:
  365   2             if(PinNum>6||PinNum<1)return GPIO_Int_Disable;
@@ -446,7 +446,7 @@ line level    source
  423   1       if(Mode==0x19||Mode>0x1C)return;
  424   1       //开始设置
  425   1        switch(Port)
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 8   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 8   
 
  426   1          {
  427   2          case GPIO0:
@@ -510,7 +510,7 @@ line level    source
  485          // **     清除中断标志位
  486          // ** \param [in] Port  ： GPIO0、GPIO1、GPIO2、GPIO3
  487          // **         PinNum:  GPIO_PIN_0~GPIO_PIN_7 (0~7)     
-C51 COMPILER V9.60.0.0   GPIO                                                              04/29/2025 17:16:19 PAGE 9   
+C51 COMPILER V9.60.0.0   GPIO                                                              05/18/2025 17:01:20 PAGE 9   
 
  488          // ** \return  none
  489          // ** \note  

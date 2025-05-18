@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              05/17/2025 13:41:16 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              05/18/2025 17:01:20 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -26,78 +26,76 @@ line level    source
   15          #include "Beacon.h"
   16          #include "LocateLED.h"
   17          #include "Strobe.h"
-  18          #include "SysReset.h"
-  19          
-  20          //函数声明
-  21          void SleepMgmt(void);
-  22          
-  23          //主函数
-  24          void main()
-  25            {
-  26   1        bit TaskSel=0;
-  27   1        //时钟初始化  
-  28   1        ClearSoftwareResetFlag(); //移除软件复位flag
-  29   1        delay_init();  //延时函数初始化
-  30   1        SetSystemHBTimer(1);//启用系统心跳8Hz定时器 
-  31   1        //初始化外设
-  32   1        OutputChannel_Init(); //启动输出通道  
-  33   1        ADC_Init(); //初始化ADC
-  34   1        PWM_Init(); //启动PWM定时器
-  35   1        LED_Init(); //初始化侧按LED
-  36   1        ModeFSMInit(); //初始化挡位状态机
-  37   1        SideKeyInit(); //侧按初始化 
-  38   1        OutputChannel_TestRun(); //进行输出通道试运行
-  39   1        DisplayVBattAtStart(); //显示输出电压
-  40   1        EnableADCAsync(); //启动ADC的异步模式提高处理速度
-  41   1        //主循环  
-  42   1        while(1)
-  43   1          {
-  44   2          //实时处理
-  45   2          SystemTelemHandler();//获取电池信息 
-  46   2          SideKey_LogicHandler(); //处理侧按事务
-  47   2          BatteryTelemHandler(); //处理电池遥测
-  48   2          ModeSwitchFSM(); //挡位状态机
-  49   2          ThermalMgmtProcess(); //温度管理函数过热保护等
-  50   2          OutputChannel_Calc(); //根据电流进行输出通道控制
-  51   2          PWM_OutputCtrlHandler(); //处理PWM输出事务  
-  52   2          //8Hz定时处理
-  53   2          if(!SysHFBitFlag)continue; //时间没到，跳过处理
-C51 COMPILER V9.60.0.0   MAIN                                                              05/17/2025 13:41:16 PAGE 2   
+  18          
+  19          //函数声明
+  20          void SleepMgmt(void);
+  21          
+  22          //主函数
+  23          void main()
+  24            {
+  25   1        bit TaskSel=0;
+  26   1        //时钟初始化  
+  27   1        delay_init();  //延时函数初始化
+  28   1        SetSystemHBTimer(1);//启用系统心跳8Hz定时器 
+  29   1        //初始化外设
+  30   1        OutputChannel_Init(); //启动输出通道  
+  31   1        ADC_Init(); //初始化ADC
+  32   1        PWM_Init(); //启动PWM定时器
+  33   1        LED_Init(); //初始化侧按LED
+  34   1        ModeFSMInit(); //初始化挡位状态机
+  35   1        SideKeyInit(); //侧按初始化 
+  36   1        OutputChannel_TestRun(); //进行输出通道试运行
+  37   1        DisplayVBattAtStart(); //显示输出电压
+  38   1        EnableADCAsync(); //启动ADC的异步模式提高处理速度
+  39   1        //主循环  
+  40   1        while(1)
+  41   1          {
+  42   2          //实时处理
+  43   2          SystemTelemHandler();//获取电池信息 
+  44   2          SideKey_LogicHandler(); //处理侧按事务
+  45   2          BatteryTelemHandler(); //处理电池遥测
+  46   2          ModeSwitchFSM(); //挡位状态机
+  47   2          ThermalMgmtProcess(); //温度管理函数过热保护等
+  48   2          OutputChannel_Calc(); //根据电流进行输出通道控制
+  49   2          PWM_OutputCtrlHandler(); //处理PWM输出事务  
+  50   2          //8Hz定时处理
+  51   2          if(!SysHFBitFlag)continue; //时间没到，跳过处理
+  52   2          SysHFBitFlag=0; 
+  53   2          //Task0，处理计算量比较大的任务
+C51 COMPILER V9.60.0.0   MAIN                                                              05/18/2025 17:01:20 PAGE 2   
 
-  54   2          SysHFBitFlag=0; 
-  55   2          //Task0，处理计算量比较大的任务
-  56   2          if(!TaskSel)
-  57   2            {
-  58   3            RandStrobeHandler(); //处理伪随机爆闪任务
-  59   3            ThermalPILoopCalc(); //积分器计算
-  60   3            ModeFSMTIMHandler(); //模式状态机计时
-  61   3            BeaconFSM_TIMHandler(); //信标模式计时器  
-  62   3            LEDControlHandler();//侧按指示LED控制函数
-  63   3            OCFSM_TIMHandler(); //输出通道状态机计时
-  64   3            HoldSwitchGearCmdHandler(); //长按换挡
-  65   3            SideKey_TIM_Callback();//侧按按键的监测定时器处理
-  66   3            //处理结束，对任务选择进行翻转处理下一组
-  67   3            TaskSel=1;
-  68   3            }     
-  69   2          //Task1，处理计算量比较小的计时任务
-  70   2          else
-  71   2            {     
-  72   3            OutputFaultDetect();//输出故障检测
-  73   3            BattDisplayTIM(); //电池电量显示TIM
-  74   3            SOSTIMHandler(); //SOS计时器
-  75   3            BattAlertTIMHandler(); //电池警报定时处理
-  76   3            DisplayErrorTIMHandler(); //故障代码显示
-  77   3            SleepMgmt(); //休眠管理
-  78   3            LocateLED_TIMHandler(); //定位LED计时
-  79   3            //处理结束，对任务选择进行翻转处理下一组
-  80   3            TaskSel=0;
-  81   3            }
-  82   2          }
-  83   1        }
+  54   2          if(!TaskSel)
+  55   2            {
+  56   3            RandStrobeHandler(); //处理伪随机爆闪任务
+  57   3            ThermalPILoopCalc(); //积分器计算
+  58   3            ModeFSMTIMHandler(); //模式状态机计时
+  59   3            BeaconFSM_TIMHandler(); //信标模式计时器  
+  60   3            LEDControlHandler();//侧按指示LED控制函数
+  61   3            OCFSM_TIMHandler(); //输出通道状态机计时
+  62   3            HoldSwitchGearCmdHandler(); //长按换挡
+  63   3            SideKey_TIM_Callback();//侧按按键的监测定时器处理
+  64   3            //处理结束，对任务选择进行翻转处理下一组
+  65   3            TaskSel=1;
+  66   3            }     
+  67   2          //Task1，处理计算量比较小的计时任务
+  68   2          else
+  69   2            {     
+  70   3            OutputFaultDetect();//输出故障检测
+  71   3            BattDisplayTIM(); //电池电量显示TIM
+  72   3            SOSTIMHandler(); //SOS计时器
+  73   3            BattAlertTIMHandler(); //电池警报定时处理
+  74   3            DisplayErrorTIMHandler(); //故障代码显示
+  75   3            SleepMgmt(); //休眠管理
+  76   3            LocateLED_TIMHandler(); //定位LED计时
+  77   3            //处理结束，对任务选择进行翻转处理下一组
+  78   3            TaskSel=0;
+  79   3            }
+  80   2          }
+  81   1        }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    124    ----
+   CODE SIZE        =    121    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

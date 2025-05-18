@@ -7,7 +7,6 @@
 #include "SpecialMode.h"
 #include "delay.h"
 #include "LEDMgmt.h"
-#include "SysReset.h"
 
 //内部全局
 static xdata int CurrentIdx=0;
@@ -83,14 +82,18 @@ void ReadSysConfig(void)
 		RestoreToMinimumSysCurrent();
 		IsRampEnabled=0; //默认为挡位模式
 		SaveSysConfig(1); //重建数据后立即保存参数
-		if(KState)while(GetIfKeyPressed())
+		//按键按下重置，提示用户松开按键
+		if(KState)
 			{
-			IsHalfBrightness=0;
-			MakeFastStrobe(LED_Amber);
-			delay_ms(40);
+			while(GetIfKeyPressed())
+				{
+				IsHalfBrightness=0;
+				MakeFastStrobe(LED_Amber);
+				delay_ms(40);
+				}
+			//按键松开，等待500mS继续启动流程
+			delay_ms(500);
 			}
-		//进行系统复位
-		TriggerSoftwareReset();
 		}
 	//读取操作完毕，锁定flash	
 	SetFlashState(0);
@@ -101,7 +104,6 @@ void RestoreToMinimumSysCurrent(void)
 	{
 	char i;
 	extern code ModeStrDef ModeSettings[ModeTotalDepth];
-	SysCfg.RampCurrent=100;
 	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp)
 			SysCfg.RampCurrent=ModeSettings[i].MinCurrent; //找到挡位数据中无极调光的挡位
 	}

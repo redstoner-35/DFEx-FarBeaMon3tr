@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   SYSRESET                                                          04/29/2025 17:16:19 PAGE 1   
+C51 COMPILER V9.60.0.0   SYSRESET                                                          05/17/2025 23:39:54 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SYSRESET
@@ -13,29 +13,19 @@ line level    source
    2          #include "SysReset.h"
    3          
    4          //生成系统复位
-   5          void TriggerSoftwareReset(void)
+   5          void SendWDCONCommand(WDCONCmdDef Cmd)
    6            {
    7   1        EA=0;
    8   1        _nop_();
    9   1        TA=0xAA;
   10   1        TA=0x55;  //往TA寄存器写55AA解锁
-  11   1        WDCON=0x80;  //令WDTCON[7]=1，触发系统复位
+  11   1        WDCON=(unsigned char)Cmd;  //写寄存器发送命令
   12   1        while(1);
   13   1        }
-  14          
-  15          //清除软件复位标志位
-  16          void ClearSoftwareResetFlag(void)
-  17            {
-  18   1        EA=0;
-  19   1        _nop_();
-  20   1        TA=0xAA;
-  21   1        TA=0x55;  //往TA寄存器写55AA解锁
-  22   1        WDCON&=0x7F;  //令WDTCON[7]=0，触发系统复位
-  23   1        }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     27    ----
+   CODE SIZE        =     13    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

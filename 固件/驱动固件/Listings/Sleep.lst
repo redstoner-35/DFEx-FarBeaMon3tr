@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   SLEEP                                                             05/17/2025 13:41:16 PAGE 1   
+C51 COMPILER V9.60.0.0   SLEEP                                                             05/18/2025 17:01:21 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SLEEP
@@ -62,7 +62,7 @@ line level    source
   51   1        if(CurrentMode->ModeIdx!=Mode_OFF)return 1;
   52   1        //ÔÊÐíË¯Ãß
   53   1        return 0;
-C51 COMPILER V9.60.0.0   SLEEP                                                             05/17/2025 13:41:16 PAGE 2   
+C51 COMPILER V9.60.0.0   SLEEP                                                             05/18/2025 17:01:21 PAGE 2   
 
   54   1        } 
   55            

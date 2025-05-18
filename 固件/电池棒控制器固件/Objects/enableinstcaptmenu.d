@@ -1,9 +1,0 @@
-.\objects\enableinstcaptmenu.o: Menu\EnableInstCapTMenu.c
-.\objects\enableinstcaptmenu.o: .\User\inc\Config.h
-.\objects\enableinstcaptmenu.o: .\User\inc\IP2366_REG.h
-.\objects\enableinstcaptmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
-.\objects\enableinstcaptmenu.o: .\User\inc\LCD_Init.h
-.\objects\enableinstcaptmenu.o: .\User\inc\Key.h
-.\objects\enableinstcaptmenu.o: .\GUI\GUI.h
-.\objects\enableinstcaptmenu.o: .\User\inc\lcd.h
-.\objects\enableinstcaptmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

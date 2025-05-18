@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   LEDMGMT                                                           05/17/2025 13:41:16 PAGE 1   
+C51 COMPILER V9.60.0.0   LEDMGMT                                                           05/18/2025 17:01:21 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LEDMGMT
@@ -62,7 +62,7 @@ line level    source
   51   1        while(PWMLOADEN&0x0C); //等待PWM完成应用
   52   1        //复位IO
   53   1        GPIO_WriteBit(GreenLEDIOG,GreenLEDIOx,0); 
-C51 COMPILER V9.60.0.0   LEDMGMT                                                           05/17/2025 13:41:16 PAGE 2   
+C51 COMPILER V9.60.0.0   LEDMGMT                                                           05/18/2025 17:01:21 PAGE 2   
 
   54   1        GPIO_WriteBit(RedLEDIOG,RedLEDIOx,0); 
   55   1        //配置GPIO（将配置GPIO拉到最后是因为避免PWM发生器工作异常引起闪烁）
@@ -126,7 +126,7 @@ line level    source
  112   2            else //继续计时
  113   2              {
  114   3              IsLEDON=(timer%2)?1:0; //通过余2判断实现检测
-C51 COMPILER V9.60.0.0   LEDMGMT                                                           05/17/2025 13:41:16 PAGE 3   
+C51 COMPILER V9.60.0.0   LEDMGMT                                                           05/18/2025 17:01:21 PAGE 3   
 
  115   3              if(LEDMode==LED_GreenBlinkThird)GLED=IsLEDON;
  116   3              else RLED=IsLEDON;

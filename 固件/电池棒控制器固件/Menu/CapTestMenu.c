@@ -173,11 +173,11 @@ void CTestGUIHandler(void)
 		    break;
 	  //系统正在等待充满判断 
 		case CapTest_ConfirmFull:
-		    LCD_ShowChinese(20,19,"正在确认充满状态…",WHITE,LGRAY,0);
+		    LCD_ShowChinese(20,33,"正在确认充满状态…",WHITE,LGRAY,0);
 				LCD_ShowChinese(46,47,"请稍后……",WHITE,LGRAY,0);
 		    break;
 		case CapTest_OverCharge:
-		    LCD_ShowChinese(20,19,"系统检测到过充事件",YELLOW,LGRAY,0);
+		    LCD_ShowChinese(20,33,"系统检测到过充事件",YELLOW,LGRAY,0);
 				LCD_ShowChinese(20,47,"请等待事件解除……",WHITE,LGRAY,0);
 		    break;			 
 		//测容进行中
@@ -253,31 +253,50 @@ void CTestGUIHandler(void)
 					LCD_ShowIntNum(33,64,iroundf(CurrentTestResult.Data.TotalmAH/1000),3,RED,LGRAY,12);
 					LCD_ShowString(60,64,"Ah",RED,LGRAY,12,0);
 					}
-			 //温度显示
-			LCD_ShowChinese(87,64,"温度",WHITE,LGRAY,0);
-			if(!ADCO.IsNTCOK)LCD_ShowString(115,64,"---",WHITE,LGRAY,12,0);
-			else
-				{
-				Temp=iroundf(ADCO.Systemp);
-				if(Temp<0)Color=DARKBLUE;	
-				else if(Temp<10)Color=BLUE;
-				else if(Temp<CfgData.OverHeatLockTemp-20)Color=GREEN;
-				else if(Temp<CfgData.OverHeatLockTemp-8)Color=YELLOW;
-				else Color=RED;
-				//负数温度，显示为负标识符
-				if(Temp<0)
+			 //切屏显示电池状态
+			 if(!IsDispChargingINFO)	
 					{
-					Temp*=-1;
-					LCD_ShowChar(117,61,'-',Color,LGRAY,12,0);
-					LCD_ShowIntNum(124,64,Temp,2,Color,LGRAY,12);
-					}		
-				//个位数温度，使用浮点显示
-				else if(Temp<10)LCD_ShowFloatNum1(115,64,ADCO.Systemp,1,Color,LGRAY,12);		
-				//其余温度，整数显示
-				else LCD_ShowIntNum(115,64,Temp,2,Color,LGRAY,12);
-				}
-			//显示℃符号
-			LCD_ShowChinese12x12(143,64,"℃\0",Color,LGRAY,12,0);	
+					LCD_ShowHybridString(87,64,"状态:",WHITE,LGRAY,0);
+					switch(BATT)
+						{
+						case Batt_StandBy:
+					  case Batt_ChgWait:LCD_ShowChinese(129,64,"等待",WHITE,LGRAY,0);break;
+						case Batt_PreChage:LCD_ShowChinese(129,64,"预充",MAGENTA,LGRAY,0);break;
+						case Batt_CCCharge:LCD_ShowChinese(129,64,"恒流",YELLOW,LGRAY,0);break;
+						case Batt_CVCharge:LCD_ShowChinese(129,64,"恒压",CYAN,LGRAY,0);break;
+						case Batt_ChgDone:LCD_ShowChinese(129,64,"充满",GREEN,LGRAY,0);break;
+						case Batt_ChgError:
+						case Batt_discharging:LCD_ShowChinese(129,64,"异常",RED,LGRAY,0);break;
+						}
+					}
+				//显示系统温度
+				else	
+					{		
+					LCD_ShowChinese(87,64,"温度",WHITE,LGRAY,0);
+					if(!ADCO.IsNTCOK)LCD_ShowString(115,64,"---",WHITE,LGRAY,12,0);
+					else
+						{
+						Temp=iroundf(ADCO.Systemp);
+						if(Temp<0)Color=DARKBLUE;	
+						else if(Temp<10)Color=BLUE;
+						else if(Temp<CfgData.OverHeatLockTemp-20)Color=GREEN;
+						else if(Temp<CfgData.OverHeatLockTemp-8)Color=YELLOW;
+						else Color=RED;
+						//负数温度，显示为负标识符
+						if(Temp<0)
+							{
+							Temp*=-1;
+							LCD_ShowChar(117,61,'-',Color,LGRAY,12,0);
+							LCD_ShowIntNum(124,64,Temp,2,Color,LGRAY,12);
+							}		
+						//个位数温度，使用浮点显示
+						else if(Temp<10)LCD_ShowFloatNum1(115,64,ADCO.Systemp,1,Color,LGRAY,12);		
+						//其余温度，整数显示
+						else LCD_ShowIntNum(115,64,Temp,2,Color,LGRAY,12);
+						}
+					//显示℃符号
+					LCD_ShowChinese12x12(143,64,"℃\0",Color,LGRAY,12,0);	
+					}
 		  break;
 		//运行结束
 		case CapTest_Finish:

@@ -1,9 +1,0 @@
-.\objects\maxvpdconfigmenu.o: Menu\MaxVPDConfigMenu.c
-.\objects\maxvpdconfigmenu.o: .\User\inc\Config.h
-.\objects\maxvpdconfigmenu.o: .\User\inc\IP2366_REG.h
-.\objects\maxvpdconfigmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
-.\objects\maxvpdconfigmenu.o: .\User\inc\LCD_Init.h
-.\objects\maxvpdconfigmenu.o: .\User\inc\Key.h
-.\objects\maxvpdconfigmenu.o: .\GUI\GUI.h
-.\objects\maxvpdconfigmenu.o: .\User\inc\lcd.h
-.\objects\maxvpdconfigmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 1   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MODECONTROL
@@ -62,7 +62,7 @@ line level    source
   51              //¼«µÍÁÁ
   52              {
   53              Mode_ExtremelyLow,
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 2   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 2   
 
   54              CalcIREFValue(200),  //200mA
   55              0,   //×îÐ¡µçÁ÷Ã»ÓÃµ½£¬ÎÞÊÓ
@@ -126,7 +126,7 @@ line level    source
                   CalcIREFValue(22000),  //22AµçÁ÷
                   #else
  115                //È«¹¦ÂÊ±¬ÉÁ¼¤»î
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 3   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 3   
 
  116                #ifdef TurboCurrent31A
                     CalcIREFValue(31750),  //31.75AµçÁ÷
@@ -190,394 +190,406 @@ line level    source
  173            
  174          //Èí¼þ¼ÆÊ±±äÁ¿
  175          xdata char HoldChangeGearTIM; //µ²Î»Ä£Ê½ÏÂ³¤°´»»µ²
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 4   
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 4   
 
- 176          xdata char DisplayLockedTIM=0; //Ëø¶¨ºÍÕ½ÊõÄ£Ê½½øÈëÍË³öÏÔÊ¾ 
+ 176          xdata char DisplayLockedTIM; //Ëø¶¨ºÍÕ½ÊõÄ£Ê½½øÈëÍË³öÏÔÊ¾ 
  177          static xdata char RampDIVCNT; //·ÖÆµ¼ÆÊ±Æ÷  
  178            
- 179          //³õÊ¼»¯Ä£Ê½×´Ì¬»ú
- 180          void ModeFSMInit(void)
- 181          {
- 182   1        char i;
- 183   1        //³õÊ¼»¯ÎÞ¼«µ÷¹â
- 184   1        SysCfg.RampLimitReachDisplayTIM=0;
- 185   1        ReadSysConfig(); //´ÓEEPROMÄÚ¶ÁÈ¡ÎÞ¼«µ÷¹âÅäÖÃ
- 186   1        for(i=0;i<ModeTotalDepth;i++) //±éÀúµ²Î»ÉèÖÃ½á¹¹ÌåÑ°ÕÒ¼«ÁÁËùÔÚµÄµ²Î»ºÍÎÞ¼«µ÷¹âµÄµ²Î»²¢¶ÁÈ¡ÅäÖÃ
- 187   1          {
- 188   2          //¶ÁÈ¡¼«ÁÁµÄÊý¾Ý²¢³õÊ¼»¯µçÁ÷ÏÞÖÆ
- 189   2          if(ModeSettings[i].ModeIdx==Mode_Turbo)TurboILIM=ModeSettings[i].Current;
- 190   2          //¶ÁÈ¡ÎÞ¼«µ÷¹âµÄÊý¾Ý
- 191   2          if(ModeSettings[i].ModeIdx==Mode_Ramp)
- 192   2            {
- 193   3            SysCfg.RampBattThres=ModeSettings[i].LowVoltThres; //µÍÑ¹¼ì²âÉÏÏÞ»Ö¸´
- 194   3            SysCfg.RampCurrentLimit=ModeSettings[i].Current; //ÕÒµ½µ²Î»Êý¾ÝÖÐÎÞ¼«µ÷¹âµÄµ²Î»£¬µçÁ÷ÉÏÏÞ»Ö¸´
- 195   3            //¶ÁÈ¡Êý¾Ý½áÊøºó£¬¼ì²é¶ÁÈëµÄÊý¾ÝÊÇ·ñºÏ·¨£¬²»ºÏ·¨¾ÍÖ±½ÓÐÞÕý
- 196   3            if(SysCfg.RampCurrent<ModeSettings[i].MinCurrent)SysCfg.RampCurrent=ModeSettings[i].MinCurrent;
- 197   3            if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;
- 198   3            }
- 199   2          }
- 200   1        //¸´Î»±äÁ¿
- 201   1        RampDIVCNT=3;   
- 202   1        //µ²Î»Ä£Ê½ÅäÖÃ
- 203   1        ResetSOSModule(); //¸´Î»SOSÄ£¿é
- 204   1        LastMode=Mode_Low;
- 205   1        ErrCode=Fault_None; //Ã»ÓÐ¹ÊÕÏ
- 206   1        CurrentMode=&ModeSettings[0]; //¼ÇÒäÖØÖÃÎªµÚÒ»¸öµµ
- 207   1      } 
- 208          
- 209          //µ²Î»×´Ì¬»úËùÐèµÄÈí¼þ¶¨Ê±Æ÷´¦Àí
- 210          void ModeFSMTIMHandler(void)
- 211          {
- 212   1        //ÎÞ¼«µ÷¹âÏà¹ØµÄ¶¨Ê±Æ÷
- 213   1        if(SysCfg.CfgSavedTIM<32)SysCfg.CfgSavedTIM++;
- 214   1        if(SysCfg.RampLimitReachDisplayTIM>0)
- 215   1          {
- 216   2          SysCfg.RampLimitReachDisplayTIM--;
- 217   2          if(!SysCfg.RampLimitReachDisplayTIM)IsNotifyMaxRampLimitReached=0; //µ±ÎÞ¼«µ÷¹âÏÔÊ¾¼ÆÊ±Æ÷±äÎª0Ö®ºó£¬¸´Î»
+ 179          //»ñÈ¡¼«ÁÁµçÁ÷
+ 180          static int QueryTurboCurrent(void)  
+ 181            {
+ 182   1        //¼«ÁÁMPPTÏÞÁ÷Æô¶¯£¬´Ó¶¯Ì¬¼«ÁÁÏÞÁ÷º¯ÊýÈ¡µçÁ÷ÏÞÖÆ
+ 183   1        if(TurboILIM<QueryCurrentGearILED())return TurboILIM;
+ 184   1        //ÆäÓàÇé¿ö£¬´Óµ±Ç°µ²Î»ÄÃµçÁ÷  
+ 185   1        return QueryCurrentGearILED();  
+ 186   1        }
+ 187          
+ 188          //³õÊ¼»¯Ä£Ê½×´Ì¬»ú
+ 189          void ModeFSMInit(void)
+ 190          {
+ 191   1        char i;
+ 192   1        //³õÊ¼»¯ÎÞ¼«µ÷¹â
+ 193   1        SysCfg.RampLimitReachDisplayTIM=0;
+ 194   1        ReadSysConfig(); //´ÓEEPROMÄÚ¶ÁÈ¡ÎÞ¼«µ÷¹âÅäÖÃ
+ 195   1        for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp) //±éÀúµ²Î»ÉèÖÃ½á¹¹ÌåÑ°ÕÒÎÞ¼«µ÷¹âµÄµ²
+             -Î»²¢¶ÁÈ¡ÅäÖÃ
+ 196   1          {
+ 197   2          SysCfg.RampBattThres=ModeSettings[i].LowVoltThres; //µÍÑ¹¼ì²âÉÏÏÞ»Ö¸´
+ 198   2          SysCfg.RampCurrentLimit=ModeSettings[i].Current; //ÕÒµ½µ²Î»Êý¾ÝÖÐÎÞ¼«µ÷¹âµÄµ²Î»£¬µçÁ÷ÉÏÏÞ»Ö¸´
+ 199   2          //¶ÁÈ¡Êý¾Ý½áÊøºó£¬¼ì²é¶ÁÈëµÄÊý¾ÝÊÇ·ñºÏ·¨£¬²»ºÏ·¨¾ÍÖ±½ÓÐÞÕý
+ 200   2          if(SysCfg.RampCurrent<ModeSettings[i].MinCurrent)SysCfg.RampCurrent=ModeSettings[i].MinCurrent;
+ 201   2          if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;
+ 202   2          //¶ÁÈ¡½áÊø£¬Ìø³öÑ­»·
+ 203   2          break;
+ 204   2          }
+ 205   1        //¸´Î»±äÁ¿
+ 206   1        RampDIVCNT=3;   
+ 207   1        //µ²Î»Ä£Ê½ÅäÖÃ
+ 208   1        ResetSOSModule(); //¸´Î»SOSÄ£¿é
+ 209   1        LastMode=Mode_Low;
+ 210   1        ErrCode=Fault_None; //Ã»ÓÐ¹ÊÕÏ
+ 211   1        CurrentMode=&ModeSettings[0]; //¼ÇÒäÖØÖÃÎªµÚÒ»¸öµµ
+ 212   1      } 
+ 213          
+ 214          //µ²Î»×´Ì¬»úËùÐèµÄÈí¼þ¶¨Ê±Æ÷´¦Àí
+ 215          void ModeFSMTIMHandler(void)
+ 216          {
+ 217   1        //ÎÞ¼«µ÷¹âÏà¹ØµÄ¶¨Ê±Æ÷
+ 218   1        if(SysCfg.CfgSavedTIM<32)SysCfg.CfgSavedTIM++;
+ 219   1        if(SysCfg.RampLimitReachDisplayTIM>0)
+ 220   1          {
+ 221   2          SysCfg.RampLimitReachDisplayTIM--;
+ 222   2          if(!SysCfg.RampLimitReachDisplayTIM)IsNotifyMaxRampLimitReached=0; //µ±ÎÞ¼«µ÷¹âÏÔÊ¾¼ÆÊ±Æ÷±äÎª0Ö®ºó£¬¸´Î»
              -±êÖ¾Î»
- 218   2          }
- 219   1        //Ëø¶¨²Ù×÷ÌáÊ¾¼ÆÊ±Æ÷
- 220   1        if(DisplayLockedTIM>0)DisplayLockedTIM--;
- 221   1      }
- 222          
- 223          //µ²Î»Ìø×ª
- 224          void SwitchToGear(ModeIdxDef TargetMode)
- 225            {
- 226   1        char i;
- 227   1        int LastICC;
- 228   1        //¼ÇÂ¼»»µµÇ°µÄ½á¹û
- 229   1        ModeIdxDef BeforeMode=CurrentMode->ModeIdx; //´æ´¢µ±Ç°Ä£Ê½        
- 230   1        LastICC=CurrentMode->Current; //´æ´¢Ö®Ç°µÄµ²Î»
- 231   1        //¿ªÊ¼Ñ°ÕÒ
- 232   1        for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==TargetMode)
- 233   1          {
- 234   2          ResetSOSModule();   //¸´Î»Õû¸öSOSÄ£¿é
- 235   2          BeaconFSM_Reset(); //¸´Î»Õû¸öÐÅ±êÄ£¿é
- 236   2          ResetStrobeModule(); //¸´Î»±¬ÉÁ¿ØÖÆ
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 5   
+ 223   2          }
+ 224   1        //Ëø¶¨²Ù×÷ÌáÊ¾¼ÆÊ±Æ÷
+ 225   1        if(DisplayLockedTIM>0)DisplayLockedTIM--;
+ 226   1      }
+ 227          
+ 228          //µ²Î»Ìø×ª
+ 229          void SwitchToGear(ModeIdxDef TargetMode)
+ 230            {
+ 231   1        char i;
+ 232   1        int LastICC;
+ 233   1        bool IsLastModeNeedStepDown;
+ 234   1        //¼ÇÂ¼»»µµÇ°µÄ½á¹û
+ 235   1        ModeIdxDef BeforeMode=CurrentMode->ModeIdx;       
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 5   
 
- 237   2          CurrentMode=&ModeSettings[i]; //ÕÒµ½Æ¥Åäindex£¬¸³Öµ½á¹¹Ìå
- 238   2          if(BeforeMode!=Mode_Turbo&&TargetMode==Mode_Turbo)CalcTurboILIM(); //´Ó·Ç¼«ÁÁµ²Î»½øÈë¼«ÁÁÖØÐÂ¼ÆËãµçÁ÷Öµ²
+ 236   1        IsLastModeNeedStepDown=CurrentMode->IsNeedStepDown; //´æÏÂÊÇ·ñÐèÒª½µµµ
+ 237   1        if(CurrentMode->ModeIdx==Mode_Turbo)LastICC=QueryTurboCurrent(); //Èç¹ûÊÇ¼«ÁÁµ²Î»ÔòÐèÒªÈ¡µ±Ç°µÄµçÁ÷ÏÞÖÆ×÷
+             -Îª×îÖÕµçÁ÷
+ 238   1        else LastICC=CurrentMode->Current; //´æ´¢»»µ²Ö®Ç°µÄµ²Î»ºÍµçÁ÷Öµ
+ 239   1        //¿ªÊ¼Ñ°ÕÒ
+ 240   1        for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==TargetMode)
+ 241   1          {
+ 242   2          //¸´Î»ÌØÊâ¹¦ÄÜµ²Î»ÖÁ³õÊ¼×´Ì¬
+ 243   2          ResetSOSModule();   //¸´Î»Õû¸öSOSÄ£¿é
+ 244   2          BeaconFSM_Reset(); //¸´Î»Õû¸öÐÅ±êÄ£¿é
+ 245   2          ResetStrobeModule(); //¸´Î»±¬ÉÁ¿ØÖÆ
+ 246   2          
+ 247   2          //ÕÒµ½Æ¥Åäindex£¬½«¶ÔÓ¦µÄ½á¹¹Ìå»ùµØÖ·¸³Öµ¸øÖ¸Õë
+ 248   2          CurrentMode=&ModeSettings[i]; 
+ 249   2          //½øÐÐ»»µ²Ö®ºóµÄÎÂ¿Ø½»½ÓºÍÖØÐÂ¼ÆËã¼«ÁÁµçÁ÷ÏÞÖÆ
+ 250   2          if(BeforeMode!=Mode_Turbo&&TargetMode==Mode_Turbo)CalcTurboILIM(); //´Ó·Ç¼«ÁÁµ²Î»½øÈë¼«ÁÁÖØÐÂ¼ÆËãµçÁ÷Öµ²
              -¢ÖØÖÃMPPTÏµÍ³
- 239   2          if(BeforeMode==Mode_Turbo&&TargetMode!=Mode_Turbo)RecalcPILoop(LastICC); //´Ó¼«ÁÁÇÐ»»µ½ÆäËûµ²Î»£¬ÖØÐÂÉèÖ
-             -ÃPI»·
- 240   2          }
- 241   1        }
- 242            
- 243          //³¤°´¹Ø»úº¯Êý  
- 244          void ReturnToOFFState(void)
- 245            {
- 246   1        if(CurrentMode->ModeIdx==Mode_OFF)return; //¹Ø»ú×´Ì¬²»Ö´ÐÐ    
- 247   1        if(CurrentMode->IsModeHasMemory)LastMode=CurrentMode->ModeIdx; //´æ´¢¹Ø»úÇ°µÄµ²Î»
- 248   1        SwitchToGear(Mode_OFF); //Ç¿ÖÆÌø»Øµ½¹Ø»úµ²Î»
- 249   1        } 
- 250          
- 251          //³¤°´»»µ²µÄ¼ä¸ôÃüÁîÉú³É
- 252          void HoldSwitchGearCmdHandler(void)
- 253            {
- 254   1        char buf;
- 255   1        if(SysMode||IsRampEnabled)HoldChangeGearTIM=0; //Õ½ÊõÄ£Ê½»òÕß½øÈëËø¶¨¡¢»òÕß´¦ÓÚÎÞ¼«µ÷¹âÄ£Ê½£¬½ûÖ¹»»µ²ÏµÍ³
-             -ÔËÐÐ
- 256   1        else if(!getSideKeyHoldEvent()&&!getSideKey1HEvent())HoldChangeGearTIM=0; //°´¼üËÉ¿ª£¬¼ÆÊ±Æ÷¸´Î»
- 257   1        else //Ö´ÐÐ»»µ²³ÌÐò
- 258   1          {
- 259   2          buf=HoldChangeGearTIM&0x1F; //È¡³öTIMÖµ
- 260   2          if(buf==0&&!(HoldChangeGearTIM&0x40))HoldChangeGearTIM|=getSideKey1HEvent()?0x20:0x80; //Áî»»µ²ÃüÁîÎ»1Ö¸
+ 251   2          if(IsLastModeNeedStepDown)RecalcPILoop(LastICC); //ÖØÐÂÉèÖÃPI»·±ÜÃâµçÁ÷¹ýµ÷
+ 252   2          //ÒÑÕÒµ½Ä¿±êµ²Î»£¬ÍË³öÑ­»·
+ 253   2          break;
+ 254   2          }
+ 255   1        }
+ 256            
+ 257          //³¤°´¹Ø»úº¯Êý  
+ 258          void ReturnToOFFState(void)
+ 259            {
+ 260   1        if(CurrentMode->ModeIdx==Mode_OFF)return; //¹Ø»ú×´Ì¬²»Ö´ÐÐ    
+ 261   1        if(CurrentMode->IsModeHasMemory)LastMode=CurrentMode->ModeIdx; //´æ´¢¹Ø»úÇ°µÄµ²Î»
+ 262   1        SwitchToGear(Mode_OFF); //Ç¿ÖÆÌø»Øµ½¹Ø»úµ²Î»
+ 263   1        } 
+ 264          
+ 265          //³¤°´»»µ²µÄ¼ä¸ôÃüÁîÉú³É
+ 266          void HoldSwitchGearCmdHandler(void)
+ 267            {
+ 268   1        char buf;
+ 269   1        if(SysMode||CurrentMode->ModeIdx==Mode_Ramp)HoldChangeGearTIM=0; //Õ½ÊõÄ£Ê½»òÕß½øÈëËø¶¨£¬ÒÔ¼°Î»ÓÚÎÞ¼«µ÷¹â
+             -Ä£Ê½ÏÂ£¬½ûÖ¹»»µ²ÏµÍ³ÔËÐÐ
+ 270   1        else if(!getSideKeyHoldEvent()&&!getSideKey1HEvent())HoldChangeGearTIM=0; //°´¼üËÉ¿ª£¬¼ÆÊ±Æ÷¸´Î»
+ 271   1        else //Ö´ÐÐ»»µ²³ÌÐò
+ 272   1          {
+ 273   2          buf=HoldChangeGearTIM&0x1F; //È¡³öTIMÖµ
+ 274   2          if(buf==0&&!(HoldChangeGearTIM&0x40))HoldChangeGearTIM|=getSideKey1HEvent()?0x20:0x80; //Áî»»µ²ÃüÁîÎ»1Ö¸
              -Ê¾»»µ²¿ÉÒÔ¼ÌÐø
- 261   2          HoldChangeGearTIM&=0xE0; //È¥³ýµôÔ­Ê¼µÄTIMÖµ
- 262   2          if(buf<HoldSwitchDelay&&!(HoldChangeGearTIM&0x40))buf++;
- 263   2          else buf=0;  //Ê±¼äµ½£¬ÇåÁã½á¹û
- 264   2          HoldChangeGearTIM|=buf; //°ÑÊýÖµÐ´»ØÈ¥
- 265   2          }
- 266   1        } 
- 267          
- 268          //²à°´³¤°´»»µ²²Ù×÷Ö´ÐÐ
- 269          static void SideKeySwitchGearHandler(ModeIdxDef TargetMode) 
- 270            {
- 271   1        if(!(HoldChangeGearTIM&0x80))return;
- 272   1        HoldChangeGearTIM&=0x7F; //Çå³ý±ê¼ÇÎ»±ê¼Ç±¾´Î»»µ²Íê³É
- 273   1        SwitchToGear(TargetMode); //»»µ½Ä¿±êµ²Î»
- 274   1        }
- 275            
- 276          //²à°´µ¥»÷+³¤°´»»µ²»ØÍË²Ù×÷Ö´ÐÐ
- 277          static void SideKey1HRevGearHandler(ModeIdxDef TargetMode)
- 278            {
- 279   1        if(!(HoldChangeGearTIM&0x20))return;
- 280   1        HoldChangeGearTIM&=0xDF; //Çå³ý±ê¼ÇÎ»±ê¼Ç±¾´Î»»µ²Íê³É
- 281   1        SwitchToGear(TargetMode); //»»µ½Ä¿±êµ²Î»
- 282   1        } 
- 283            
- 284          //ÎÞ¼«µ÷¹â´¦Àí
- 285          static void RampAdjHandler(void)
- 286            {
- 287   1        static bit IsKeyPressed=0;  
- 288   1        int Limit;
- 289   1        bit IsPress;
- 290   1        //¼ÆËã³öÎÞ¼«µ÷¹âÉÏÏÞ
- 291   1        IsPress=(getSideKey1HEvent()||getSideKeyHoldEvent())?1:0;
- 292   1        Limit=SysCfg.RampCurrentLimit<CurrentMode->Current?SysCfg.RampCurrentLimit:CurrentMode->Current;
- 293   1        if(Limit<CurrentMode->Current&&IsPress&&SysCfg.RampCurrent>Limit)SysCfg.RampCurrent=Limit; //ÔÚµçÁ÷±»ÏÞÖÆ
+ 275   2          HoldChangeGearTIM&=0xE0; //È¥³ýµôÔ­Ê¼µÄTIMÖµ
+ 276   2          if(buf<HoldSwitchDelay&&!(HoldChangeGearTIM&0x40))buf++;
+ 277   2          else buf=0;  //Ê±¼äµ½£¬ÇåÁã½á¹û
+ 278   2          HoldChangeGearTIM|=buf; //°ÑÊýÖµÐ´»ØÈ¥
+ 279   2          }
+ 280   1        } 
+ 281          
+ 282          //²à°´³¤°´»»µ²²Ù×÷Ö´ÐÐ
+ 283          static void SideKeySwitchGearHandler(ModeIdxDef TargetMode) 
+ 284            {
+ 285   1        if(!(HoldChangeGearTIM&0x80))return;
+ 286   1        HoldChangeGearTIM&=0x7F; //Çå³ý±ê¼ÇÎ»±ê¼Ç±¾´Î»»µ²Íê³É
+ 287   1        SwitchToGear(TargetMode); //»»µ½Ä¿±êµ²Î»
+ 288   1        }
+ 289            
+ 290          //²à°´µ¥»÷+³¤°´»»µ²»ØÍË²Ù×÷Ö´ÐÐ
+ 291          static void SideKey1HRevGearHandler(ModeIdxDef TargetMode)
+ 292            {
+ 293   1        if(!(HoldChangeGearTIM&0x20))return;
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 6   
+
+ 294   1        HoldChangeGearTIM&=0xDF; //Çå³ý±ê¼ÇÎ»±ê¼Ç±¾´Î»»µ²Íê³É
+ 295   1        SwitchToGear(TargetMode); //»»µ½Ä¿±êµ²Î»
+ 296   1        } 
+ 297            
+ 298          //ÎÞ¼«µ÷¹â´¦Àí
+ 299          static void RampAdjHandler(void)
+ 300            {
+ 301   1        static bit IsKeyPressed=0;  
+ 302   1        int Limit;
+ 303   1        bit IsPress;
+ 304   1        //¼ÆËã³öÎÞ¼«µ÷¹âÉÏÏÞ
+ 305   1        IsPress=(getSideKey1HEvent()||getSideKeyHoldEvent())?1:0;
+ 306   1        Limit=SysCfg.RampCurrentLimit<CurrentMode->Current?SysCfg.RampCurrentLimit:CurrentMode->Current;
+ 307   1        if(Limit<CurrentMode->Current&&IsPress&&SysCfg.RampCurrent>Limit)SysCfg.RampCurrent=Limit; //ÔÚµçÁ÷±»ÏÞÖÆ
              -µÄÇé¿öÏÂÓÃ»§°´ÏÂ°´¼ü³¢ÊÔµ÷ÕûµçÁ÷£¬Á¢¼´ÏÞ·ù
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 6   
+ 308   1        //½øÐÐÁÁ¶Èµ÷Õû
+ 309   1        if(getSideKeyHoldEvent()&&!IsKeyPressed) //³¤°´Ôö¼ÓµçÁ÷
+ 310   1            { 
+ 311   2            if(RampDIVCNT>0)RampDIVCNT--;
+ 312   2            else 
+ 313   2              {
+ 314   3              //Ê±¼äµ½£¬¿ªÊ¼Ôö¼ÓµçÁ÷
+ 315   3              if(SysCfg.RampCurrent<Limit)SysCfg.RampCurrent++;
+ 316   3              else
+ 317   3                {
+ 318   4                IsNotifyMaxRampLimitReached=1; //±ê¼ÇÒÑ´ïµ½ÉÏÏÞ
+ 319   4                SysCfg.RampLimitReachDisplayTIM=4; //Ï¨Ãð0.5ÃëÖ¸Ê¾ÒÑ¾­µ½ÉÏÏÞ
+ 320   4                SysCfg.RampCurrent=Limit; //ÏÞÖÆµçÁ÷×î´óÖµ  
+ 321   4                IsKeyPressed=1;
+ 322   4                }
+ 323   3              //¼ÆÊ±Ê±¼äµ½£¬¸´Î»±äÁ¿
+ 324   3              RampDIVCNT=3;
+ 325   3              }
+ 326   2            } 
+ 327   1        else if(getSideKey1HEvent()&&!IsKeyPressed) //µ¥»÷+³¤°´¼õÉÙµçÁ÷
+ 328   1           {
+ 329   2            if(RampDIVCNT>0)RampDIVCNT--;
+ 330   2            else
+ 331   2              {
+ 332   3              if(SysCfg.RampCurrent>CurrentMode->MinCurrent)SysCfg.RampCurrent--; //¼õÉÙµçÁ÷  
+ 333   3              else
+ 334   3                {
+ 335   4                IsNotifyMaxRampLimitReached=0;
+ 336   4                SysCfg.RampLimitReachDisplayTIM=4; //Ï¨Ãð0.5ÃëÖ¸Ê¾ÒÑ¾­µ½ÏÂÏÞ
+ 337   4                SysCfg.RampCurrent=CurrentMode->MinCurrent; //ÏÞÖÆµçÁ÷×îÐ¡Öµ
+ 338   4                IsKeyPressed=1;
+ 339   4                }
+ 340   3              //¼ÆÊ±Ê±¼äµ½£¬¸´Î»±äÁ¿
+ 341   3              RampDIVCNT=3;
+ 342   3              }
+ 343   2           }
+ 344   1        else if(!IsPress&&IsKeyPressed)
+ 345   1          {
+ 346   2          IsKeyPressed=0; //ÓÃ»§·Å¿ª°´¼ü£¬ÔÊÐíµ÷½Ú    
+ 347   2          RampDIVCNT=3; //¸´Î»·ÖÆµ¼ÆÊ±Æ÷
+ 348   2          }
+ 349   1        //½øÐÐÊý¾Ý±£´æµÄÅÐ¶Ï
+ 350   1        if(IsPress)SysCfg.CfgSavedTIM=0; //°´¼ü°´ÏÂËµÃ÷ÕýÔÚµ÷Õû£¬¸´Î»¼ÆÊ±Æ÷
+ 351   1        else if(SysCfg.CfgSavedTIM==32)
+ 352   1            {
+ 353   2            SysCfg.CfgSavedTIM++;
+ 354   2            SaveSysConfig(0);  //Ò»¶ÎÊ±¼äÄÚÃ»²Ù×÷ËµÃ÷ÒÑ¾­µ÷½ÚÍê±Ï£¬±£´æÊý¾Ý
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 7   
 
- 294   1        //½øÐÐÁÁ¶Èµ÷Õû
- 295   1        if(getSideKeyHoldEvent()&&!IsKeyPressed) //³¤°´Ôö¼ÓµçÁ÷
- 296   1            { 
- 297   2            if(RampDIVCNT>0)RampDIVCNT--;
- 298   2            else 
- 299   2              {
- 300   3              //Ê±¼äµ½£¬¿ªÊ¼Ôö¼ÓµçÁ÷
- 301   3              if(SysCfg.RampCurrent<Limit)SysCfg.RampCurrent++;
- 302   3              else
- 303   3                {
- 304   4                IsNotifyMaxRampLimitReached=1; //±ê¼ÇÒÑ´ïµ½ÉÏÏÞ
- 305   4                SysCfg.RampLimitReachDisplayTIM=4; //Ï¨Ãð0.5ÃëÖ¸Ê¾ÒÑ¾­µ½ÉÏÏÞ
- 306   4                SysCfg.RampCurrent=Limit; //ÏÞÖÆµçÁ÷×î´óÖµ  
- 307   4                IsKeyPressed=1;
- 308   4                }
- 309   3              //¼ÆÊ±Ê±¼äµ½£¬¸´Î»±äÁ¿
- 310   3              RampDIVCNT=3;
- 311   3              }
- 312   2            } 
- 313   1        else if(getSideKey1HEvent()&&!IsKeyPressed) //µ¥»÷+³¤°´¼õÉÙµçÁ÷
- 314   1           {
- 315   2            if(RampDIVCNT>0)RampDIVCNT--;
- 316   2            else
- 317   2              {
- 318   3              if(SysCfg.RampCurrent>CurrentMode->MinCurrent)SysCfg.RampCurrent--; //¼õÉÙµçÁ÷  
- 319   3              else
- 320   3                {
- 321   4                IsNotifyMaxRampLimitReached=0;
- 322   4                SysCfg.RampLimitReachDisplayTIM=4; //Ï¨Ãð0.5ÃëÖ¸Ê¾ÒÑ¾­µ½ÏÂÏÞ
- 323   4                SysCfg.RampCurrent=CurrentMode->MinCurrent; //ÏÞÖÆµçÁ÷×îÐ¡Öµ
- 324   4                IsKeyPressed=1;
- 325   4                }
- 326   3              //¼ÆÊ±Ê±¼äµ½£¬¸´Î»±äÁ¿
- 327   3              RampDIVCNT=3;
- 328   3              }
- 329   2           }
- 330   1        else if(!IsPress&&IsKeyPressed)
- 331   1          {
- 332   2          IsKeyPressed=0; //ÓÃ»§·Å¿ª°´¼ü£¬ÔÊÐíµ÷½Ú    
- 333   2          RampDIVCNT=3; //¸´Î»·ÖÆµ¼ÆÊ±Æ÷
- 334   2          }
- 335   1        //½øÐÐÊý¾Ý±£´æµÄÅÐ¶Ï
- 336   1        if(IsPress)SysCfg.CfgSavedTIM=0; //°´¼ü°´ÏÂËµÃ÷ÕýÔÚµ÷Õû£¬¸´Î»¼ÆÊ±Æ÷
- 337   1        else if(SysCfg.CfgSavedTIM==32)
- 338   1            {
- 339   2            SysCfg.CfgSavedTIM++;
- 340   2            SaveSysConfig(0);  //Ò»¶ÎÊ±¼äÄÚÃ»²Ù×÷ËµÃ÷ÒÑ¾­µ÷½ÚÍê±Ï£¬±£´æÊý¾Ý
- 341   2            }
- 342   1        }
- 343          
- 344          //¼ì²âÊÇ·ñÐèÒª¹Ø»ú
- 345          static void DetectIfNeedsOFF(int ClickCount)
- 346            {
- 347   1        if(getSideKeyNClickAndHoldEvent()==2)TriggerVshowDisplay();
- 348   1        if(!SysMode&&ClickCount!=1)return;
- 349   1        if(SysMode&&getSideKeyHoldEvent())return;
- 350   1        ReturnToOFFState();//²à°´µ¥»÷»òÕßÔÚÕ½ÊõÄ£Ê½ÏÂËÉ¿ª°´Å¥Ê±¹Ø»ú
- 351   1        } 
- 352          
- 353          //µ²Î»×´Ì¬»ú
- 354          void ModeSwitchFSM(void)
- 355            {
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 7   
+ 355   2            }
+ 356   1        }
+ 357          
+ 358          //¼ì²âÊÇ·ñÐèÒª¹Ø»ú
+ 359          static void DetectIfNeedsOFF(int ClickCount)
+ 360            {
+ 361   1        if(getSideKeyNClickAndHoldEvent()==2)TriggerVshowDisplay();
+ 362   1        if(!SysMode&&ClickCount!=1)return;
+ 363   1        if(SysMode&&getSideKeyHoldEvent())return;
+ 364   1        ReturnToOFFState();//²à°´µ¥»÷»òÕßÔÚÕ½ÊõÄ£Ê½ÏÂËÉ¿ª°´Å¥Ê±¹Ø»ú
+ 365   1        } 
+ 366          
+ 367          //µ²Î»×´Ì¬»ú
+ 368          void ModeSwitchFSM(void)
+ 369            {
+ 370   1        char ClickCount;
+ 371   1        //»ñÈ¡°´¼ü×´Ì¬
+ 372   1        if(GetIfSystemInPOFFSeq())return; //ÏµÍ³´¦ÓÚ¹Ø»ú¹ý³ÌÖÐ£¬²»Ö´ÐÐ°´¼ü´¦Àí
+ 373   1        ClickCount=getSideKeyShortPressCount(0);  //¶ÁÈ¡°´¼ü´¦Àíº¯Êý´«¹ýÀ´µÄ²ÎÊý
+ 374   1        //µ²Î»¼ÇÒä²ÎÊý¼ì²éºÍEEPROM¼ÇÒä
+ 375   1        if(LastMode==Mode_OFF||LastMode>=ModeTotalDepth)LastMode=Mode_Low;
+ 376   1        //×´Ì¬»ú
+ 377   1        IsHalfBrightness=0; //°´¼üµÆÄ¬ÈÏÈ«ÁÁ
+ 378   1        switch(CurrentMode->ModeIdx)  
+ 379   1          {
+ 380   2          //³öÏÖ´íÎó  
+ 381   2          case Mode_Fault:
+ 382   2            SysMode=Operation_Normal; //¹ÊÕÏºó×Ô¶¯»Øµ½ÆÕÍ¨Ä£Ê½      
+ 383   2            if(!getSideKeyLongPressEvent()||IsErrorFatal())break; //ÓÃ»§Ã»ÓÐ°´ÏÂ°´Å¥»òÕßÊÇÖÂÃüµÄ´íÎó×´Ì¬²»ÔÊÐíÖØÖÃ
+ 384   2            ClearError(); //Ïû³ýµôµ±Ç°´íÎó
+ 385   2            break;
+ 386   2          //¹Ø»ú×´Ì¬
+ 387   2          case Mode_OFF:      
+ 388   2            //´¦ÀíÌØÊâ¹¦ÄÜ
+ 389   2            if(LocLEDState==LocateLED_NotEdit)
+ 390   2              {
+ 391   3              SpecialModeOperation(ClickCount);  //Ö»ÓÐÔÚÍË³öÁË¶¨Î»LED±à¼­Ä£Ê½Ö®ºó²ÅÄÜÖ´ÐÐ
+ 392   3              if(SysMode)break;
+ 393   3              }
+ 394   2            //´¦Àí¶¨Î»LED±ä¸ü
+ 395   2            if(LocateLED_Edit(ClickCount))break;
+ 396   2            //·ÇÌØÊâÄ£Ê½Õý³£µ¥»÷¿ª¹Ø»úµÄÊÂÏî
+ 397   2            if(ClickCount==1)PowerToNormalMode(LastMode); //²à°´µ¥»÷¿ª»ú½øÈëÑ­»·  
+ 398   2            //½øÈë¼«ÁÁºÍ±¬ÉÁ
+ 399   2            else EnterTurboStrobe(ClickCount);    
+ 400   2            if(getSideKeyLongPressEvent())SwitchToGear(Mode_Moon); //³¤°´¿ª»úÖ±½Ó½øÔÂ¹â         
+ 401   2            if(ClickCount==4) //ËÄ»÷ÇÐ»»µ²Î»Ä£Ê½ºÍÎÞ¼«µ÷¹â
+ 402   2                { 
+ 403   3                IsRampEnabled=~IsRampEnabled; //×ª»»ÎÞ¼«µ÷¹â×´Ì¬  
+ 404   3                LEDMode=IsRampEnabled?LED_GreenBlinkThird:LED_RedBlinkThird; //ÏÔÊ¾ÊÇ·ñ¿ªÆô
+ 405   3                SaveSysConfig(0); //±£´æÅäÖÃµ½ROMÄÚ
+ 406   3                }
+ 407   2            //²éÑ¯µçÑ¹
+ 408   2            if(getSideKeyNClickAndHoldEvent())TriggerVshowDisplay();
+ 409   2            break;
+ 410   2          //ÔÂ¹â×´Ì¬
+ 411   2           case Mode_Moon:
+ 412   2             IsHalfBrightness=1; //ÔÂ¹âÄ£Ê½°´¼üµÆÁÁ¶È¼õ°ë
+ 413   2             BatteryLowAlertProcess(true,Mode_Moon);
+ 414   2             DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â 
+ 415   2             //µç³ØµçÑ¹³ä×ã£¬³¤°´½øÈëµÍÁÁµ²Î»
+ 416   2             if(getSideKeyLongPressEvent())  
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 8   
 
- 356   1        char ClickCount;
- 357   1        //»ñÈ¡°´¼ü×´Ì¬
- 358   1        if(GetIfSystemInPOFFSeq())return; //ÏµÍ³´¦ÓÚ¹Ø»ú¹ý³ÌÖÐ£¬²»Ö´ÐÐ°´¼ü´¦Àí
- 359   1        ClickCount=getSideKeyShortPressCount(0);  //¶ÁÈ¡°´¼ü´¦Àíº¯Êý´«¹ýÀ´µÄ²ÎÊý
- 360   1        //µ²Î»¼ÇÒä²ÎÊý¼ì²éºÍEEPROM¼ÇÒä
- 361   1        if(LastMode==Mode_OFF||LastMode>=ModeTotalDepth)LastMode=Mode_Low;
- 362   1        //×´Ì¬»ú
- 363   1        IsHalfBrightness=0; //°´¼üµÆÄ¬ÈÏÈ«ÁÁ
- 364   1        switch(CurrentMode->ModeIdx)  
- 365   1          {
- 366   2          //³öÏÖ´íÎó  
- 367   2          case Mode_Fault:
- 368   2            SysMode=Operation_Normal; //¹ÊÕÏºó×Ô¶¯»Øµ½ÆÕÍ¨Ä£Ê½      
- 369   2            if(!getSideKeyLongPressEvent()||IsErrorFatal())break; //ÓÃ»§Ã»ÓÐ°´ÏÂ°´Å¥»òÕßÊÇÖÂÃüµÄ´íÎó×´Ì¬²»ÔÊÐíÖØÖÃ
- 370   2            ClearError(); //Ïû³ýµôµ±Ç°´íÎó
- 371   2            break;
- 372   2          //¹Ø»ú×´Ì¬
- 373   2          case Mode_OFF:      
- 374   2            //´¦ÀíÌØÊâ¹¦ÄÜ
- 375   2            if(LocLEDState==LocateLED_NotEdit)
- 376   2              {
- 377   3              SpecialModeOperation(ClickCount);  //Ö»ÓÐÔÚÍË³öÁË¶¨Î»LED±à¼­Ä£Ê½Ö®ºó²ÅÄÜÖ´ÐÐ
- 378   3              if(SysMode)break;
- 379   3              }
- 380   2            //´¦Àí¶¨Î»LED±ä¸ü
- 381   2            if(LocateLED_Edit(ClickCount))break;
- 382   2            //·ÇÌØÊâÄ£Ê½Õý³£µ¥»÷¿ª¹Ø»úµÄÊÂÏî
- 383   2            if(ClickCount==1)PowerToNormalMode(LastMode); //²à°´µ¥»÷¿ª»ú½øÈëÑ­»·  
- 384   2            //½øÈë¼«ÁÁºÍ±¬ÉÁ
- 385   2            else EnterTurboStrobe(ClickCount);    
- 386   2            if(getSideKeyLongPressEvent())SwitchToGear(Mode_Moon); //³¤°´¿ª»úÖ±½Ó½øÔÂ¹â         
- 387   2            if(ClickCount==4) //ËÄ»÷ÇÐ»»µ²Î»Ä£Ê½ºÍÎÞ¼«µ÷¹â
- 388   2                { 
- 389   3                IsRampEnabled=~IsRampEnabled; //×ª»»ÎÞ¼«µ÷¹â×´Ì¬  
- 390   3                LEDMode=IsRampEnabled?LED_GreenBlinkThird:LED_RedBlinkThird; //ÏÔÊ¾ÊÇ·ñ¿ªÆô
- 391   3                SaveSysConfig(0); //±£´æÅäÖÃµ½ROMÄÚ
- 392   3                }
- 393   2            //²éÑ¯µçÑ¹
- 394   2            if(getSideKeyNClickAndHoldEvent())TriggerVshowDisplay();
- 395   2            break;
- 396   2          //ÔÂ¹â×´Ì¬
- 397   2           case Mode_Moon:
- 398   2             IsHalfBrightness=1; //ÔÂ¹âÄ£Ê½°´¼üµÆÁÁ¶È¼õ°ë
- 399   2             BatteryLowAlertProcess(true,Mode_Moon);
- 400   2             DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â 
- 401   2             //µç³ØµçÑ¹³ä×ã£¬³¤°´½øÈëµÍÁÁµ²Î»
- 402   2             if(getSideKeyLongPressEvent())  
- 403   2                {
- 404   3                PowerToNormalMode(Mode_ExtremelyLow); //¿ª»úµ½¼«µÍÁÁÄ£Ê½
- 405   3                if(CurrentMode->ModeIdx==Mode_Moon)break;//»»µ²Ö®ºóÎÞ·¨³É¹¦Àë¿ªÔÂ¹âÄ£Ê½£¬²»½øÐÐÏÂÃæµÄ¸´Î»²Ù×÷
- 406   3                if(IsRampEnabled)RestoreToMinimumSysCurrent(); //Èç¹ûÊÇÎÞ¼«µ÷¹âÔò»Ö¸´µ½×îµÍµçÁ÷
- 407   3                HoldChangeGearTIM|=0x40; //½ûÖ¹»»µ²ÏµÍ³¹¤×÷
- 408   3                }       
- 409   2              break;      
- 410   2          //ÎÞ¼«µ÷¹â×´Ì¬        
- 411   2          case Mode_Ramp:
- 412   2              DetectIfNeedsOFF(ClickCount); //¼ì²âÊÇ·ñÐèÒª¹Ø»ú
- 413   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
- 414   2              //ÎÞ¼«µ÷¹â´¦Àí
- 415   2              RampLowVoltHandler(); //µÍµçÑ¹±£»¤
- 416   2              RampAdjHandler();     
- 417   2              break;
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 8   
+ 417   2                {
+ 418   3                PowerToNormalMode(Mode_ExtremelyLow); //¿ª»úµ½¼«µÍÁÁÄ£Ê½
+ 419   3                if(CurrentMode->ModeIdx==Mode_Moon)break;//»»µ²Ö®ºóÎÞ·¨³É¹¦Àë¿ªÔÂ¹âÄ£Ê½£¬²»½øÐÐÏÂÃæµÄ¸´Î»²Ù×÷
+ 420   3                if(IsRampEnabled)RestoreToMinimumSysCurrent(); //Èç¹ûÊÇÎÞ¼«µ÷¹âÔò»Ö¸´µ½×îµÍµçÁ÷
+ 421   3                HoldChangeGearTIM|=0x40; //½ûÖ¹»»µ²ÏµÍ³¹¤×÷
+ 422   3                }       
+ 423   2              break;      
+ 424   2          //ÎÞ¼«µ÷¹â×´Ì¬        
+ 425   2          case Mode_Ramp:
+ 426   2              DetectIfNeedsOFF(ClickCount); //¼ì²âÊÇ·ñÐèÒª¹Ø»ú
+ 427   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
+ 428   2              //ÎÞ¼«µ÷¹â´¦Àí
+ 429   2              RampLowVoltHandler(); //µÍµçÑ¹±£»¤
+ 430   2              RampAdjHandler();     
+ 431   2              break;
+ 432   2          //¼«µÍÁÁ
+ 433   2          case Mode_ExtremelyLow:         
+ 434   2              BatteryLowAlertProcess(true,Mode_ExtremelyLow);
+ 435   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 436   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
+ 437   2              SideKeySwitchGearHandler(Mode_Low); //»»µ½µÍµµ
+ 438   2              break;          
+ 439   2          //µÍÁÁ×´Ì¬    
+ 440   2          case Mode_Low:
+ 441   2              BatteryLowAlertProcess(false,Mode_ExtremelyLow);
+ 442   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 443   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
+ 444   2              //³¤°´»»µ²´¦Àí
+ 445   2              SideKey1HRevGearHandler(Mode_ExtremelyLow); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½¼«µÍµµ
+ 446   2              SideKeySwitchGearHandler(Mode_Mid); //»»µ½ÖÐµµ
+ 447   2              break;          
+ 448   2          //ÖÐÁÁ×´Ì¬    
+ 449   2          case Mode_Mid:
+ 450   2              BatteryLowAlertProcess(false,Mode_Low);
+ 451   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 452   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
+ 453   2              //³¤°´»»µ²´¦Àí
+ 454   2              SideKeySwitchGearHandler(Mode_MHigh); //»»µ½ÖÐ¸ßµµ
+ 455   2              SideKey1HRevGearHandler(Mode_Low); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½µÍµµ
+ 456   2              break;  
+ 457   2          //ÖÐ¸ßÁÁ×´Ì¬
+ 458   2          case Mode_MHigh:
+ 459   2              BatteryLowAlertProcess(false,Mode_Mid);
+ 460   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 461   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
+ 462   2              //³¤°´»»µ²´¦Àí
+ 463   2              SideKeySwitchGearHandler(Mode_High); //»»µ½¸ßµµ
+ 464   2              SideKey1HRevGearHandler(Mode_Mid); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½ÖÐµµ
+ 465   2              break;  
+ 466   2          //¸ßÁÁ×´Ì¬
+ 467   2          case Mode_High:
+ 468   2              BatteryLowAlertProcess(false,Mode_MHigh);
+ 469   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 470   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
+ 471   2              //³¤°´»»µ²´¦Àí
+ 472   2              SideKeySwitchGearHandler(Mode_ExtremelyLow); //»»µ½¼«µÍµµÎ»¹¹³ÉÑ­»·  
+ 473   2              SideKey1HRevGearHandler(Mode_MHigh); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½ÖÐ¸ßµµ
+ 474   2              break;
+ 475   2          //¼«ÁÁ×´Ì¬
+ 476   2          case Mode_Turbo:
+ 477   2              TurboLVILIMProcess(); //Ö´ÐÐ¼«ÁÁµÍµçÁ÷¼ì²â
+ 478   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 9   
 
- 418   2          //¼«µÍÁÁ
- 419   2          case Mode_ExtremelyLow:         
- 420   2              BatteryLowAlertProcess(true,Mode_ExtremelyLow);
- 421   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 422   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
- 423   2              SideKeySwitchGearHandler(Mode_Low); //»»µ½µÍµµ
- 424   2              break;          
- 425   2          //µÍÁÁ×´Ì¬    
- 426   2          case Mode_Low:
- 427   2              BatteryLowAlertProcess(false,Mode_ExtremelyLow);
- 428   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 429   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
- 430   2              //³¤°´»»µ²´¦Àí
- 431   2              SideKey1HRevGearHandler(Mode_ExtremelyLow); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½¼«µÍµµ
- 432   2              SideKeySwitchGearHandler(Mode_Mid); //»»µ½ÖÐµµ
- 433   2              break;          
- 434   2          //ÖÐÁÁ×´Ì¬    
- 435   2          case Mode_Mid:
- 436   2              BatteryLowAlertProcess(false,Mode_Low);
- 437   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 438   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
- 439   2              //³¤°´»»µ²´¦Àí
- 440   2              SideKeySwitchGearHandler(Mode_MHigh); //»»µ½ÖÐ¸ßµµ
- 441   2              SideKey1HRevGearHandler(Mode_Low); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½µÍµµ
- 442   2              break;  
- 443   2          //ÖÐ¸ßÁÁ×´Ì¬
- 444   2          case Mode_MHigh:
- 445   2              BatteryLowAlertProcess(false,Mode_Mid);
- 446   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 447   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
- 448   2              //³¤°´»»µ²´¦Àí
- 449   2              SideKeySwitchGearHandler(Mode_High); //»»µ½¸ßµµ
- 450   2              SideKey1HRevGearHandler(Mode_Mid); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½ÖÐµµ
- 451   2              break;  
- 452   2          //¸ßÁÁ×´Ì¬
- 453   2          case Mode_High:
- 454   2              BatteryLowAlertProcess(false,Mode_MHigh);
- 455   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 456   2              EnterTurboStrobe(ClickCount); //½øÈë¼«ÁÁ»òÕß±¬ÉÁµÄ¼ì²â
- 457   2              //³¤°´»»µ²´¦Àí
- 458   2              SideKeySwitchGearHandler(Mode_ExtremelyLow); //»»µ½¼«µÍµµÎ»¹¹³ÉÑ­»·  
- 459   2              SideKey1HRevGearHandler(Mode_MHigh); //µ¥»÷+³¤°´»ØÍËµ²Î»µ½ÖÐ¸ßµµ
- 460   2              break;
- 461   2          //¼«ÁÁ×´Ì¬
- 462   2          case Mode_Turbo:
- 463   2              TurboLVILIMProcess(); //Ö´ÐÐ¼«ÁÁµÍµçÁ÷¼ì²â
- 464   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 465   2              SideKeySwitchGearHandler(Mode_High); //³¤°´ÍË»Ø¸ßµµ 
- 466   2              if(ClickCount==2||IsForceLeaveTurbo)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_Low); //Ë«»÷»òÕßÎÂ¶È´ïµ
+ 479   2              SideKeySwitchGearHandler(Mode_High); //³¤°´ÍË»Ø¸ßµµ 
+ 480   2              if(ClickCount==2||IsForceLeaveTurbo)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_Low); //Ë«»÷»òÕßÎÂ¶È´ïµ
              -½ÉÏÏÞÖµ£¬Ç¿ÖÆ·µ»Øµ½µÍÁÁ
- 467   2              if(ClickCount==3)SwitchToGear(Mode_Strobe); //²à°´3»÷½øÈë±¬ÉÁ
- 468   2              break;  
- 469   2          //±¬ÉÁ×´Ì¬
- 470   2          case Mode_Strobe:
- 471   2              BatteryLowAlertProcess(true,Mode_Strobe);
- 472   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 473   2              LeaveSpecialMode(ClickCount); //ÍË³öÌØÊâÄ£Ê½»Øµ½ÆäËûµØ·½µÄÈë¿Ú
- 474   2              //³¤°´»»µ²´¦Àí
- 475   2              SideKeySwitchGearHandler(Mode_SOS); //³¤°´ÇÐ»»µ½SOS
- 476   2              break;  
- 477   2          //SOSÇó¾Èµ²Î»   
- 478   2          case Mode_SOS:
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 9   
-
- 479   2              BatteryLowAlertProcess(true,Mode_SOS);
- 480   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 481   2              LeaveSpecialMode(ClickCount); //ÍË³öÌØÊâÄ£Ê½»Øµ½ÆäËûµØ·½µÄÈë¿Ú
- 482   2              //³¤°´»»µ²´¦Àí
- 483   2              SideKeySwitchGearHandler(Mode_Beacon); //³¤°´ÇÐ»»µ½ÐÅ±ê
- 484   2              break;  
- 485   2          //ÐÅ±êµ²Î»
- 486   2          case Mode_Beacon:
- 487   2              BatteryLowAlertProcess(true,Mode_Beacon);
- 488   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
- 489   2              LeaveSpecialMode(ClickCount); //ÍË³öÌØÊâÄ£Ê½»Øµ½ÆäËûµØ·½µÄÈë¿Ú
- 490   2              //³¤°´»»µ²´¦Àí
- 491   2              SideKeySwitchGearHandler(Mode_Strobe); //³¤°´ÇÐ»»µ½±¬ÉÁ
- 492   2              break;        
- 493   2          }
- 494   1        //Ó¦ÓÃÊä³öµçÁ÷
- 495   1        if(DisplayLockedTIM||IsDisplayLocked)Current=CalcIREFValue(50); //ÓÃ»§½øÈë»òÕßÍË³öËø¶¨£¬ÓÃ50mA¶ÌÔÝµãÁÁÌáÊ
+ 481   2              if(ClickCount==3)SwitchToGear(Mode_Strobe); //²à°´3»÷½øÈë±¬ÉÁ
+ 482   2              break;  
+ 483   2          //±¬ÉÁ×´Ì¬
+ 484   2          case Mode_Strobe:
+ 485   2              BatteryLowAlertProcess(true,Mode_Strobe);
+ 486   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 487   2              LeaveSpecialMode(ClickCount); //ÍË³öÌØÊâÄ£Ê½»Øµ½ÆäËûµØ·½µÄÈë¿Ú
+ 488   2              //³¤°´»»µ²´¦Àí
+ 489   2              SideKeySwitchGearHandler(Mode_SOS); //³¤°´ÇÐ»»µ½SOS
+ 490   2              break;  
+ 491   2          //SOSÇó¾Èµ²Î»   
+ 492   2          case Mode_SOS:
+ 493   2              BatteryLowAlertProcess(true,Mode_SOS);
+ 494   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 495   2              LeaveSpecialMode(ClickCount); //ÍË³öÌØÊâÄ£Ê½»Øµ½ÆäËûµØ·½µÄÈë¿Ú
+ 496   2              //³¤°´»»µ²´¦Àí
+ 497   2              SideKeySwitchGearHandler(Mode_Beacon); //³¤°´ÇÐ»»µ½ÐÅ±ê
+ 498   2              break;  
+ 499   2          //ÐÅ±êµ²Î»
+ 500   2          case Mode_Beacon:
+ 501   2              BatteryLowAlertProcess(true,Mode_Beacon);
+ 502   2              DetectIfNeedsOFF(ClickCount); //Ö´ÐÐ¹Ø»ú¶¯×÷¼ì²â
+ 503   2              LeaveSpecialMode(ClickCount); //ÍË³öÌØÊâÄ£Ê½»Øµ½ÆäËûµØ·½µÄÈë¿Ú
+ 504   2              //³¤°´»»µ²´¦Àí
+ 505   2              SideKeySwitchGearHandler(Mode_Strobe); //³¤°´ÇÐ»»µ½±¬ÉÁ
+ 506   2              break;        
+ 507   2          }
+ 508   1        //Ó¦ÓÃÊä³öµçÁ÷
+ 509   1        if(DisplayLockedTIM||IsDisplayLocked)Current=CalcIREFValue(50); //ÓÃ»§½øÈë»òÕßÍË³öËø¶¨£¬ÓÃ50mA¶ÌÔÝµãÁÁÌáÊ
              -¾Ò»ÏÂ
- 496   1        else switch(CurrentMode->ModeIdx) 
- 497   1          {
- 498   2          case Mode_Turbo: //¼«ÁÁÄ£Ê½
- 499   2             if(TurboILIM<QueryCurrentGearILED())Current=TurboILIM;
- 500   2             else Current=QueryCurrentGearILED();  //´Ó¶¯Ì¬¼«ÁÁÏÞÁ÷º¯ÊýÈ¡µçÁ÷ÏÞÖÆ
- 501   2             break;
- 502   2          case Mode_Beacon: //ÐÅ±êÄ£Ê½      
- 503   2          case Mode_SOS: 
- 504   2          case Mode_Strobe://±¬ÉÁÄ£Ê½ºÍSOSÄ£Ê½       
- 505   2             switch(BattState)//È¡³öµ²Î»µçÁ÷
- 506   2               {
- 507   3               case Battery_Plenty:Current=QueryCurrentGearILED();break;
- 508   3               case Battery_Mid:Current=CalcIREFValue(10000);break;
- 509   3               case Battery_Low:Current=CalcIREFValue(8000);break;
- 510   3               case Battery_VeryLow:Current=CalcIREFValue(2000);break;
- 511   3               }
- 512   2             //¸ù¾Ý×´Ì¬¿ØÖÆµçÁ÷
- 513   2             if(CurrentMode->ModeIdx==Mode_Strobe&&!StrobeOutputHandler())Current=-1; 
- 514   2             if(CurrentMode->ModeIdx==Mode_SOS&&!SOSFSM())Current=-1;
- 515   2             if(CurrentMode->ModeIdx==Mode_Beacon)switch(BeaconFSM())
- 516   2               {
- 517   3               case 0:Current=-1;break; //0±íÊ¾ÈÃµçÁ÷¹Ø±Õ
- 518   3               case 2:Current=CalcIREFValue(200);break; //ÓÃ200mAµÍÁÁÌáÊ¾¸æÖªÓÃ»§ÒÑ½øÈëÐÅ±êÄ£Ê½
- 519   3               case 1:break; //µçÁ÷1²»½øÐÐÈÎºÎ´¦Àí
- 520   3               }
- 521   2             break; 
- 522   2          //ÆäÓàÄ£Ê½£¬µçÁ÷È¡Õý³£Öµ
- 523   2          default:
- 524   2            if(LowPowerStrobe())Current=-1; //´¥·¢µÍÑ¹±¨¾¯£¬ÉÁË¸
- 525   2            else if(CurrentMode->ModeIdx==Mode_Ramp)Current=SysCfg.RampCurrentLimit<SysCfg.RampCurrent?SysCfg.RampC
+ 510   1        else switch(CurrentMode->ModeIdx) 
+ 511   1          {
+ 512   2          case Mode_Turbo:Current=QueryTurboCurrent();break; //¼«ÁÁÄ£Ê½
+ 513   2          case Mode_Beacon: //ÐÅ±êÄ£Ê½      
+ 514   2          case Mode_SOS: 
+ 515   2          case Mode_Strobe://±¬ÉÁÄ£Ê½ºÍSOSÄ£Ê½       
+ 516   2             switch(BattState)//È¡³öµ²Î»µçÁ÷
+ 517   2               {
+ 518   3               case Battery_Plenty:Current=QueryCurrentGearILED();break;
+ 519   3               case Battery_Mid:Current=CalcIREFValue(10000);break;
+ 520   3               case Battery_Low:Current=CalcIREFValue(8000);break;
+ 521   3               case Battery_VeryLow:Current=CalcIREFValue(2000);break;
+ 522   3               }
+ 523   2             //¸ù¾Ý×´Ì¬¿ØÖÆµçÁ÷
+ 524   2             if(CurrentMode->ModeIdx==Mode_Strobe&&!StrobeOutputHandler())Current=-1; 
+ 525   2             if(CurrentMode->ModeIdx==Mode_SOS&&!SOSFSM())Current=-1;
+ 526   2             if(CurrentMode->ModeIdx==Mode_Beacon)switch(BeaconFSM())
+ 527   2               {
+ 528   3               case 0:Current=-1;break; //0±íÊ¾ÈÃµçÁ÷¹Ø±Õ
+ 529   3               case 2:Current=CalcIREFValue(200);break; //ÓÃ200mAµÍÁÁÌáÊ¾¸æÖªÓÃ»§ÒÑ½øÈëÐÅ±êÄ£Ê½
+ 530   3               case 1:break; //µçÁ÷1²»½øÐÐÈÎºÎ´¦Àí
+ 531   3               }
+ 532   2             break; 
+ 533   2          //ÆäÓàÄ£Ê½£¬µçÁ÷È¡Õý³£Öµ
+ 534   2          default:
+ 535   2            if(LowPowerStrobe())Current=-1; //´¥·¢µÍÑ¹±¨¾¯£¬ÉÁË¸
+ 536   2            else if(CurrentMode->ModeIdx==Mode_Ramp)Current=SysCfg.RampCurrentLimit<SysCfg.RampCurrent?SysCfg.RampC
              -urrentLimit:SysCfg.RampCurrent; //ÎÞ¼«µ÷¹âÄ£Ê½È¡½á¹¹ÌåÄÚÊý¾Ý
- 526   2            else Current=QueryCurrentGearILED();//ÆäËûµ²Î»Ê¹ÓÃÉèÖÃÖµ×÷ÎªÄ¿±êµçÁ÷
- 527   2          }
- 528   1        //ÎÞ¼«µ÷¹âÄ£Ê½Ö¸Ê¾(ÎÞ¼«µ÷¹âÄ£Ê½ÔÚµÖ´ïÉÏÏÂÏÞºó¶ÌÔÝÏ¨Ãð»òÕßµ÷µ½33%)
- 529   1        if(SysCfg.RampLimitReachDisplayTIM)Current=IsNotifyMaxRampLimitReached?Current/3:-1;
- 530   1        //Çå³ý°´¼ü´¦Àí
- 531   1        getSideKeyShortPressCount(1); 
- 532   1        }
+ 537   2            else Current=QueryCurrentGearILED();//ÆäËûµ²Î»Ê¹ÓÃÉèÖÃÖµ×÷ÎªÄ¿±êµçÁ÷
+C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/18/2025 17:01:21 PAGE 10  
+
+ 538   2          }
+ 539   1        //ÎÞ¼«µ÷¹âÄ£Ê½Ö¸Ê¾(ÎÞ¼«µ÷¹âÄ£Ê½ÔÚµÖ´ïÉÏÏÂÏÞºó¶ÌÔÝÏ¨Ãð»òÕßµ÷µ½33%)
+ 540   1        if(SysCfg.RampLimitReachDisplayTIM)Current=IsNotifyMaxRampLimitReached?Current/3:-1;
+ 541   1        //Çå³ý°´¼ü´¦Àí
+ 542   1        getSideKeyShortPressCount(1); 
+ 543   1        }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1765    ----
+   CODE SIZE        =   1738    ----
    CONSTANT SIZE    =    117    ----
    XDATA SIZE       =      4    ----
-C51 COMPILER V9.60.0.0   MODECONTROL                                                       05/17/2025 13:41:16 PAGE 10  
-
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     12      11
+   DATA SIZE        =     12      12
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      3       1
    EDATA SIZE       =   ----    ----

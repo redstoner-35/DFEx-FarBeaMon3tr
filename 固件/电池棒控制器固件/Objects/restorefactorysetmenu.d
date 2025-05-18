@@ -1,9 +1,0 @@
-.\objects\restorefactorysetmenu.o: Menu\RestoreFactorySetMenu.c
-.\objects\restorefactorysetmenu.o: .\GUI\GUI.h
-.\objects\restorefactorysetmenu.o: .\User\inc\lcd.h
-.\objects\restorefactorysetmenu.o: .\User\inc\LCD_Init.h
-.\objects\restorefactorysetmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
-.\objects\restorefactorysetmenu.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
-.\objects\restorefactorysetmenu.o: .\User\inc\IP2366_REG.h
-.\objects\restorefactorysetmenu.o: .\User\inc\Config.h
-.\objects\restorefactorysetmenu.o: .\User\inc\CapTest.h

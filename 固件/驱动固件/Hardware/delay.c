@@ -34,30 +34,6 @@ void SetSystemHBTimer(bit IsEnable)
 	StrobeFlag=0;	 //复位所有flag
 	T2CON=0x91; //设置T2时钟源为fSys/24=1MHz，定时器立即启动
 	}
-
-#ifdef EnableHBCheck
-//检查心跳定时器是否就绪
-void CheckIfHBTIMIsReady(void)
-	{
-	//函数声明
-	void SetHBLEDState(bit State);
-	//变量
-	char retry=100;
-	//开始检查之前复位flag并置起LED
-	SetHBLEDState(1);
-	SysHFBitFlag=0;
-	//循环等待flag置起
-	do
-		{
-	  delay_ms(1);
-		if(SysHFBitFlag)return; //定时器已启动，退出
-		retry--;
-		}
-	while(retry);
-	//定时器等待超时,锁死
-	while(1);
-	}
-#endif
 	
 //系统心跳定时器的中断处理	
 void Timer2_IRQHandler(void) interrupt TMR2_VECTOR
@@ -89,26 +65,7 @@ void delay_init()
 	TL0=0x00; //初始化数值
 	IE=0x82; //令ET0=1，启用定时中断,EA=1，启用全局总中断
 	}
-#ifdef EnableMicroSecDelay
-//uS延迟
-void delay_us(int us)
-	{
-	bit IsEA=EA;
-	us<<=2; //左移两位,将uS*4得到总周期值
-	us=0xFFFF-us; //得到计数器值
-	//装载定时器值
-	TH0=(us>>8)&0xFF;
-	TL0=us&0xFF; 
-	IE&=0x7D; //令ET0,EA=0，关闭定时中断和全局总中断开关
-	//启动定时器开始倒计时
-	TCON|=0x10; //TR0=1,定时器开始计时	
-	while(!(TCON&0x20)); //等待直到T0溢出
-	//计时结束，复位所有标志位并重新打开中断
-	TCON&=0xCF; //清除溢出标记位，关闭定时器
-  if(IsEA)IE|=0x82;
-	else IE|=0x02;
-	}
-#endif
+
 //1ms延时
 void delay_ms(int ms)
 	{

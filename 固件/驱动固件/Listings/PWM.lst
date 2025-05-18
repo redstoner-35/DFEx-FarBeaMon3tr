@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   PWM                                                               05/01/2025 09:19:00 PAGE 1   
+C51 COMPILER V9.60.0.0   PWM                                                               05/18/2025 17:01:21 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE PWM
@@ -62,7 +62,7 @@ line level    source
   51   1        PWMOE=0x1D; //打开PWM输出通道0 2 3 4
   52   1        PWM01PSC=0x01;  
   53   1        PWM45PSC=0x01;  //打开预分频器和计数器时钟 
-C51 COMPILER V9.60.0.0   PWM                                                               05/01/2025 09:19:00 PAGE 2   
+C51 COMPILER V9.60.0.0   PWM                                                               05/18/2025 17:01:21 PAGE 2   
 
   54   1        PWM0DIV=0xff;   
   55   1        PWM4DIV=0xff;   //令Fpwmcnt=Fsys=48MHz(不分频)
@@ -126,7 +126,7 @@ line level    source
  113   1        if(PWMDuty>100)PWMDuty=100;
  114   1        if(PWMDuty<0)PWMDuty=0;
  115   1        if(PreChargeDACDuty>2399)PreChargeDACDuty=2399;
-C51 COMPILER V9.60.0.0   PWM                                                               05/01/2025 09:19:00 PAGE 3   
+C51 COMPILER V9.60.0.0   PWM                                                               05/18/2025 17:01:21 PAGE 3   
 
  116   1        if(PreChargeDACDuty<0)PreChargeDACDuty=0;
  117   1        //根据PWM数值选择MASK寄存器是否启用

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/17/2025 13:41:16 PAGE 1   
+C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/18/2025 17:01:20 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SIDEKEY
@@ -62,7 +62,7 @@ line level    source
   51            
   52          //初始化侧按键
   53          void SideKeyInit(void)
-C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/17/2025 13:41:16 PAGE 2   
+C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/18/2025 17:01:20 PAGE 2   
 
   54            {
   55   1        GPIOCfgDef KeyInitCfg;
@@ -126,7 +126,7 @@ line level    source
              -��面什么都不做
  113   2            {
  114   3            Keyevent.HoldStat=HoldEvent_None;
-C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/17/2025 13:41:16 PAGE 3   
+C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/18/2025 17:01:20 PAGE 3   
 
  115   3            Keyevent.LongPressDetected=0;//清除检测到的表示
  116   3            }
@@ -190,7 +190,7 @@ line level    source
  174   3            IsKeyPressed=buf==KeyReleaseDetectMask?0:1; //更新按键状态  
  175   3            GPIO_SetExtIntMode(SideKeyGPIOG,SideKeyGPIOx,buf==KeyReleaseDetectMask?GPIO_Int_Falling:GPIO_Int_Rising
              -);//如果当前按键是松开状态则设置为下降沿，否则设置为上升沿
-C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/17/2025 13:41:16 PAGE 4   
+C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/18/2025 17:01:20 PAGE 4   
 
  176   3            GPIO_EnableInt(SideKeyGPIOG,GPIOMask(SideKeyGPIOx)); //使能中断功能
  177   3            }
@@ -254,7 +254,7 @@ line level    source
  234   1        return Keyevent.HoldStat==HoldEvent_1H?1:0;
  235   1        }
  236          //获取按键单击+长按次数的操作
-C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/17/2025 13:41:16 PAGE 5   
+C51 COMPILER V9.60.0.0   SIDEKEY                                                           05/18/2025 17:01:20 PAGE 5   
 
  237          char getSideKeyNClickAndHoldEvent(void)
  238            {

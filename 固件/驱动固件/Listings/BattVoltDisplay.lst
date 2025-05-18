@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 1   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/18/2025 14:33:18 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BATTVOLTDISPLAY
@@ -62,7 +62,7 @@ line level    source
   51          static void VshowGenerateSideStrobe(LEDStateDef Color,BattVshowFSMDef NextStep)
   52            {
   53   1        //Í¨¹ý¿ìÉÁÒ»´Î±íÊ¾ÊÇ0
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 2   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/18/2025 14:33:18 PAGE 2   
 
   54   1        if(VshowTIM==-1)
   55   1          {
@@ -126,7 +126,7 @@ line level    source
  113   3              VshowFSMState=BattVdis_ShowChargeLvl; //µçÑ¹³¬³öÏÔÊ¾·¶Î§£¨ÓÃºìÉ«ÉÁÈý´ÎÖ¸Ê¾£©
  114   3              break;
  115   3              }
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 3   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/18/2025 14:33:18 PAGE 3   
 
  116   2            VshowFSMGenTIMValue((int)VbattSample/10,BattVdis_Show10V); //ÅäÖÃ¼ÆÊ±Æ÷¿ªÊ¼ÏÔÊ¾
  117   2            break;
@@ -190,7 +190,7 @@ line level    source
  174   2              break;
  175   2           //µç³ØµçÁ¿ÑÏÖØ²»×ã
  176   2           case Battery_VeryLow:
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 4   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/18/2025 14:33:18 PAGE 4   
 
  177   2              if(Battery>3.0)BattState=Battery_Low; //µç³ØµçÑ¹»ØÉýµ½3.0£¬Ìø×ªµ½µçÁ¿²»×ã½×¶Î
  178   2              break;
@@ -254,7 +254,7 @@ line level    source
  236   1        }
  237          
  238          //µç³Ø²ÎÊý²âÁ¿ºÍÖ¸Ê¾µÆ¿ØÖÆ
-C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/16/2025 12:16:07 PAGE 5   
+C51 COMPILER V9.60.0.0   BATTVOLTDISPLAY                                                   05/18/2025 14:33:18 PAGE 5   
 
  239          void BatteryTelemHandler(void)
  240            {
@@ -264,7 +264,7 @@ line level    source
              -µ
  244   1        else AlertThr=CurrentMode->LowVoltThres; //´Óµ±Ç°Ä¿±êµ²Î»¶ÁÈ¡Ä£Ê½Öµ  
  245   1        VBatt=(int)(Battery*1000); //µÃµ½µç³ØµçÑ¹(mV)
- 246   1        IsBatteryFault=VBatt>2550?0:1; //µ±µç³ØµçÑ¹µÍÓÚ2.55VÖ®ºóÖÃÆð¹ÊÕÏbit
+ 246   1        IsBatteryFault=VBatt>2560?0:1; //µ±µç³ØµçÑ¹µÍÓÚ2.55VÖ®ºóÖÃÆð¹ÊÕÏbit
  247   1        if(IsBatteryFault)IsBatteryAlert=0; //¹ÊÕÏbitÖÃÆðºóÇ¿ÖÆÇå³ý¾¯±¨bit
  248   1        else IsBatteryAlert=VBatt>AlertThr?0:1; //¾¯±¨bit
  249   1        //µç³ØµçÁ¿Ö¸Ê¾×´Ì¬»ú

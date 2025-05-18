@@ -15,7 +15,6 @@
 #include "Beacon.h"
 #include "LocateLED.h"
 #include "Strobe.h"
-#include "SysReset.h"
 
 //函数声明
 void SleepMgmt(void);
@@ -25,7 +24,6 @@ void main()
 	{
 	bit TaskSel=0;
 	//时钟初始化	
-	ClearSoftwareResetFlag(); //移除软件复位flag
  	delay_init();	 //延时函数初始化
 	SetSystemHBTimer(1);//启用系统心跳8Hz定时器	
 	//初始化外设

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/17/2025 10:41:11 PAGE 1   
+C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/18/2025 14:33:19 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LOWVOLTAGEPROT
@@ -14,191 +14,184 @@ line level    source
    3          #include "LowVoltProt.h"
    4          #include "OutputChannel.h"
    5          #include "SideKey.h"
-   6          #include "SelfTest.h"
-   7          
-   8          //ÄÚ²¿±äÁ¿
-   9          static xdata char BattAlertTimer=0; //µç³ØµÍµçÑ¹¸æ¾¯´¦Àí
-  10          static xdata char RampCurrentRiseAttmTIM=0; //ÎÞ¼«µ÷¹â»Ö¸´µçÁ÷µÄ¼ÆÊ±Æ÷  
-  11          static char MPPTStepdownWaitTimer; //MPPTÏÂµ÷¼«ÁÁµÈ´ýµÄ¼ÆÊ±Æ÷
-  12          
-  13          //È«¾Ö²Î¿¼
-  14          xdata int TurboILIM; //¼«ÁÁµçÁ÷ÏÞÖÆ
-  15          
-  16          
-  17          //µÍµçÁ¿±£»¤º¯Êý
-  18          static void StartBattAlertTimer(void)
-  19            {
-  20   1        //Æô¶¯¶¨Ê±Æ÷
-  21   1        if(BattAlertTimer)return;
-  22   1        BattAlertTimer=1;
-  23   1        } 
-  24          
-  25          //µç³ØµÍµçÁ¿±¨¾¯´¦Àíº¯Êý
-  26          void BattAlertTIMHandler(void)
-  27            {
-  28   1        //MPPTÏÂµ÷ÅÐ¶Ï
-  29   1        if(MPPTStepdownWaitTimer>0)MPPTStepdownWaitTimer--;
-  30   1        //ÎÞ¼«µ÷¹â¾¯±¨¶¨Ê±
-  31   1        if(RampCurrentRiseAttmTIM>0&&RampCurrentRiseAttmTIM<9)RampCurrentRiseAttmTIM++;
-  32   1        //µçÁ¿¾¯±¨
-  33   1        if(BattAlertTimer>0&&BattAlertTimer<(BatteryAlertDelay+1))BattAlertTimer++;
-  34   1        } 
-  35            
-  36          //¼ÆËã¼«ÁÁµ²Î»µçÁ÷µÄÏÞÖÆÖµ
-  37          void CalcTurboILIM(void)
-  38            {
-  39   1        IsCurrentRampUp=0; //¸´Î»±êÖ¾Î»ÖØÖÃMPPTÏµÍ³
-  40   1        if(Battery>3.6)TurboILIM=QueryCurrentGearILED(); //µç³ØµçÑ¹´óÓÚ3.6Ê±°´ÕÕÄ¿±êµçÁ÷È¥È¡
-  41   1        else TurboILIM=CalcIREFValue(25000); //µç³ØµçÑ¹µÍ£¬¼«ÁÁËø25AÊä³ö
-  42   1        } 
-  43            
-  44          //¼«ÁÁµ²Î»½øÐÐ¼ÆÊ±£¬½µµµÖÁ¸ßÁÁµÄ´¦Àí
-  45          static void TurboStepWaitTimerHandler(bit IsFault)
-  46            {
-  47   1        StartBattAlertTimer();
-  48   1        if(BattAlertTimer<(IsFault?BatteryFaultDelay:BatteryAlertDelay))return;
-  49   1        //Ê±¼äµ½£¬Á¢¼´»»µ²
-  50   1        BattAlertTimer=0; 
-  51   1        SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
-  52   1        } 
-  53            
-C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/17/2025 10:41:11 PAGE 2   
+   6          #include "ADCCfg.h"
+   7          #include "SelfTest.h"
+   8          
+   9          //ÄÚ²¿±äÁ¿
+  10          static xdata char BattAlertTimer=0; //µç³ØµÍµçÑ¹¸æ¾¯´¦Àí
+  11          static xdata char RampCurrentRiseAttmTIM=0; //ÎÞ¼«µ÷¹â»Ö¸´µçÁ÷µÄ¼ÆÊ±Æ÷  
+  12          static char MPPTStepdownWaitTimer; //MPPTÏÂµ÷¼«ÁÁµÈ´ýµÄ¼ÆÊ±Æ÷
+  13          
+  14          //È«¾Ö²Î¿¼
+  15          xdata int TurboILIM; //¼«ÁÁµçÁ÷ÏÞÖÆ
+  16          xdata float BeforeRawBattVolt; //¿ªÆô¼«ÁÁÇ°µÄµç³ØµçÑ¹
+  17          
+  18          //µÍµçÁ¿±£»¤º¯Êý
+  19          static void StartBattAlertTimer(void)
+  20            {
+  21   1        //Æô¶¯¶¨Ê±Æ÷
+  22   1        if(BattAlertTimer)return;
+  23   1        BattAlertTimer=1;
+  24   1        } 
+  25          
+  26          //µç³ØµÍµçÁ¿±¨¾¯´¦Àíº¯Êý
+  27          void BattAlertTIMHandler(void)
+  28            {
+  29   1        //MPPTÏÂµ÷ÅÐ¶Ï
+  30   1        if(MPPTStepdownWaitTimer>0)MPPTStepdownWaitTimer--;
+  31   1        //ÎÞ¼«µ÷¹â¾¯±¨¶¨Ê±
+  32   1        if(RampCurrentRiseAttmTIM>0&&RampCurrentRiseAttmTIM<9)RampCurrentRiseAttmTIM++;
+  33   1        //µçÁ¿¾¯±¨
+  34   1        if(BattAlertTimer>0&&BattAlertTimer<(BatteryAlertDelay+1))BattAlertTimer++;
+  35   1        } 
+  36            
+  37          //¼ÆËã¼«ÁÁµ²Î»µçÁ÷µÄÏÞÖÆÖµ
+  38          void CalcTurboILIM(void)
+  39            {
+  40   1        IsCurrentRampUp=0; //¸´Î»±êÖ¾Î»ÖØÖÃMPPTÏµÍ³
+  41   1        TurboILIM=QueryCurrentGearILED(); //Ä¬ÈÏÉÏÏÞ°´ÕÕÄ¿±êµçÁ÷È¥È¡
+  42   1        BeforeRawBattVolt=Data.RawBattVolt-1.2; //ÇÐ»»µ½¼«ÁÁÖ®Ç°È¡Ñùµç³ØÊµÊ±µçÑ¹
+  43   1        } 
+  44            
+  45          //¼«ÁÁµ²Î»½øÐÐMPPTÊäÈë¼à²âºÍµÍµçÁ¿±£»¤µÄ´¦Àí
+  46          void TurboLVILIMProcess(void) 
+  47            {
+  48   1        //µç³ØµçÑ¹µÍÇÒMPPTÐ­ÉÌÒÑ½áÊø,Ö´ÐÐÕý³£µÍµçÁ¿ÅÐ¶Ï
+  49   1        if(IsBatteryAlert&&IsCurrentRampUp) 
+  50   1          {
+  51   2          //Æô¶¯¶¨Ê±Æ÷²¢¿ªÊ¼¼ÆÊ±
+  52   2          StartBattAlertTimer();
+  53   2          if(BattAlertTimer<BatteryAlertDelay)return;
+C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/18/2025 14:33:19 PAGE 2   
 
-  54          //¼«ÁÁµ²Î»½øÐÐMPPTÊäÈë¼à²âºÍµÍµçÁ¿±£»¤µÄ´¦Àí
-  55          void TurboLVILIMProcess(void) 
-  56            {
-  57   1        //µç³ØµçÑ¹ÑÏÖØ¹ýµÍÆô¶¯¼ÆÊ±£¬Èç¹û³ÖÐø¹ý¾ÃÔòÁ¢¼´ÍË³ö¼«ÁÁ
-  58   1        if(IsBatteryFault)TurboStepWaitTimerHandler(1);
-  59   1        //µç³ØµçÑ¹µÍÇÒMPPTÐ­ÉÌÒÑ½áÊø,Ö´ÐÐÕý³£µÍµçÁ¿ÅÐ¶Ï
-  60   1        else if(IsBatteryAlert&&IsCurrentRampUp)  
-  61   1          {
-  62   2          //½øÐÐ¼ÆÊ±£¬Ê±¼äµ½ÔòÖ´ÐÐÌøµµ
-  63   2          TurboStepWaitTimerHandler(0);
-  64   2          }
-  65   1        //´¥·¢ÊäÈëÏÞÁ÷,Á¢¼´Í£Ö¹MPPTÐ­ÉÌ
-  66   1        else if(IsInputLimited)
-  67   1          {
-  68   2          //MPPTÐ­ÉÌÒÑÍ£Ö¹£¬½øÐÐÊäÈëÏÞÁ÷ÏÂµ÷ÅÐ¶Ï
-  69   2          if(IsCurrentRampUp)
-  70   2            {
-  71   3            //¸ÕÍê³ÉÒ»´Îµ÷Õû£¬ÐèÒªµÈ´ýADC²ÉÑùÐÂµÄÊäÈë½á¹ûÖ®ºóÊäÈëÏÞÁ÷bit²Å»áË¢ÐÂ£¬ËùÒÔÒªµ¹¼ÆÊ±
-  72   3            if(MPPTStepdownWaitTimer)return;
-  73   3            //¼ÆÊ±½áÊø£¬¿ªÊ¼ÏÂµ÷
-  74   3            TurboILIM-=CalcIREFValue(50);
-  75   3            MPPTStepdownWaitTimer=4; //Ã¿´ÎÏÂµ÷¼õÉÙ50mA£¬µÈ´ý0.5Ãë
-  76   3            //ÅÐ¶ÏµçÁ÷ÊÇ·ñÈÔÔÚ¼«ÁÁÇø¼äÄÚ
-  77   3            if(TurboILIM>CalcIREFValue(13000))return;
-  78   3            //³¢ÊÔµ½13AÈÔÈ»ÎÞ·¨Âú×ã¼«ÁÁ£¬ÍË³ö¼«ÁÁ
-  79   3            TurboILIM=CalcIREFValue(13000);
-  80   3            SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
+  54   2          //Ê±¼äµ½£¬Á¢¼´»»µ²
+  55   2          BattAlertTimer=0; 
+  56   2          SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
+  57   2          }
+  58   1        //´¥·¢ÊäÈëÏÞÁ÷,Á¢¼´Í£Ö¹MPPTÐ­ÉÌ
+  59   1        else if(IsInputLimited)
+  60   1          {
+  61   2          //MPPTÐ­ÉÌÒÑÍ£Ö¹£¬½øÐÐÊäÈëÏÞÁ÷ÏÂµ÷ÅÐ¶Ï
+  62   2          if(IsCurrentRampUp)
+  63   2            {
+  64   3            //¸ÕÍê³ÉÒ»´Îµ÷Õû£¬ÐèÒªµÈ´ýADC²ÉÑùÐÂµÄÊäÈë½á¹ûÖ®ºóÊäÈëÏÞÁ÷bit²Å»áË¢ÐÂ£¬ËùÒÔÒªµ¹¼ÆÊ±
+  65   3            if(MPPTStepdownWaitTimer)return;
+  66   3            //¼ÆÊ±½áÊø£¬¿ªÊ¼ÏÂµ÷
+  67   3            TurboILIM-=CalcIREFValue(50);
+  68   3            MPPTStepdownWaitTimer=4; //Ã¿´ÎÏÂµ÷¼õÉÙ50mA£¬µÈ´ý0.5Ãë
+  69   3            //ÅÐ¶ÏµçÁ÷ÊÇ·ñÈÔÔÚ¼«ÁÁÇø¼äÄÚ
+  70   3            if(TurboILIM>CalcIREFValue(13000))return;
+  71   3            //³¢ÊÔµ½13AÈÔÈ»ÎÞ·¨Âú×ã¼«ÁÁ£¬ÍË³ö¼«ÁÁ
+  72   3            TurboILIM=CalcIREFValue(13000);
+  73   3            SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
+  74   3            }
+  75   2          //ÔÚµçÁ÷RampUpµÄ¹ý³ÌÖÐÈç¹û´¥·¢ÊäÈëÏÞÁ÷ÔòÁ¢¼´½«µ±Ç°µçÁ÷ÖµÉèÖÃÎª¼«ÁÁÏÞÁ÷
+  76   2          else if(CurrentBuf<QueryCurrentGearILED())
+  77   2            {
+  78   3            MPPTStepdownWaitTimer=8; //MPPTÐ­ÉÌÍ£Ö¹£¬µÈ´ý1ÃëµÄÏûÒþ¼ä¸ôÖ®ºóÔÙ½øÐÐÊäÈëÏÞÁ÷ÅÐ¶Ï
+  79   3            TurboILIM=CurrentBuf; //Ê¹ÓÃµ±Ç°Ó¦ÓÃµÄµçÁ÷×÷Îª¼«ÁÁµçÁ÷ÏÞÖÆ
+  80   3            IsCurrentRampUp=1; //Ç¿ÖÆset±ê¼ÇÎ»£¬±ê¼ÇMPPTÊÔÌ½Í£Ö¹
   81   3            }
-  82   2          //ÔÚµçÁ÷RampUpµÄ¹ý³ÌÖÐÈç¹û´¥·¢ÊäÈëÏÞÁ÷ÔòÁ¢¼´½«µ±Ç°µçÁ÷ÖµÉèÖÃÎª¼«ÁÁÏÞÁ÷
-  83   2          else if(CurrentBuf<QueryCurrentGearILED())
-  84   2            {
-  85   3            MPPTStepdownWaitTimer=8; //MPPTÐ­ÉÌÍ£Ö¹£¬µÈ´ý1ÃëµÄÏûÒþ¼ä¸ôÖ®ºóÔÙ½øÐÐÊäÈëÏÞÁ÷ÅÐ¶Ï
-  86   3            TurboILIM=CurrentBuf; //Ê¹ÓÃµ±Ç°Ó¦ÓÃµÄµçÁ÷×÷Îª¼«ÁÁµçÁ÷ÏÞÖÆ
-  87   3            IsCurrentRampUp=1; //Ç¿ÖÆset±ê¼ÇÎ»£¬±ê¼ÇMPPTÊÔÌ½Í£Ö¹
-  88   3            }
-  89   2          }
-  90   1        //Ã»ÓÐ¸æ¾¯£¬¸´Î»¶¨Ê±Æ÷
-  91   1        else BattAlertTimer=0;
-  92   1        }
-  93          
-  94          //µç³ØµÍµçÁ¿±£»¤º¯Êý
-  95          void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump)
-  96            {
-  97   1        char Thr=BatteryFaultDelay;
-  98   1        bit IsChangingGear;
-  99   1        //»ñÈ¡ÊÖµç°´¼üµÄ×´Ì¬
- 100   1        if(getSideKey1HEvent())IsChangingGear=1;
- 101   1        else IsChangingGear=getSideKeyHoldEvent();
- 102   1        //¿ØÖÆ¼ÆÊ±Æ÷ÆôÍ£
- 103   1        if(!IsBatteryFault) //µç³ØÃ»ÓÐ·¢ÉúµÍÑ¹¹ÊÕÏ
- 104   1          {
- 105   2          Thr=BatteryAlertDelay; //Ã»ÓÐ¹ÊÕÏ¿ÉÒÔÂýÒ»µã½µµµ
- 106   2          //µ±Ç°ÔÚ»»µ²½×¶Î»òÕßÃ»ÓÐ¸æ¾¯£¬Í£Ö¹¼ÆÊ±Æ÷,·ñÔòÆô¶¯
- 107   2          if(!IsBatteryAlert||IsChangingGear)BattAlertTimer=0;
- 108   2          else StartBattAlertTimer();
- 109   2          }
- 110   1        else StartBattAlertTimer();//·¢ÉúµÍÑ¹¸æ¾¯Á¢¼´Æô¶¯¶¨Ê±Æ÷
- 111   1        //¶¨Ê±Æ÷¼ÆÊ±ÒÑÂú£¬Ö´ÐÐ¶ÔÓ¦µÄ¶¯×÷
- 112   1        if(BattAlertTimer>Thr)
- 113   1          {
- 114   2          //µ±Ç°µ²Î»´¦ÓÚÐèÒªÔÚ´¥·¢µÍµçÁ¿±£»¤Ê±Ö÷¶¯¹Ø»úµÄ×´Ì¬  
- 115   2          if(IsNeedToShutOff)ReturnToOFFState();
-C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/17/2025 10:41:11 PAGE 3   
+  82   2          }
+  83   1        //Ã»ÓÐ¸æ¾¯£¬¸´Î»¶¨Ê±Æ÷
+  84   1        else BattAlertTimer=0;
+  85   1        }
+  86          
+  87          //µç³ØµÍµçÁ¿±£»¤º¯Êý
+  88          void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump)
+  89            {
+  90   1        char Thr=BatteryFaultDelay;
+  91   1        bit IsChangingGear;
+  92   1        //»ñÈ¡ÊÖµç°´¼üµÄ×´Ì¬
+  93   1        if(getSideKey1HEvent())IsChangingGear=1;
+  94   1        else IsChangingGear=getSideKeyHoldEvent();
+  95   1        //¿ØÖÆ¼ÆÊ±Æ÷ÆôÍ£
+  96   1        if(!IsBatteryFault) //µç³ØÃ»ÓÐ·¢ÉúµÍÑ¹¹ÊÕÏ
+  97   1          {
+  98   2          Thr=BatteryAlertDelay; //Ã»ÓÐ¹ÊÕÏ¿ÉÒÔÂýÒ»µã½µµµ
+  99   2          //µ±Ç°ÔÚ»»µ²½×¶Î»òÕßÃ»ÓÐ¸æ¾¯£¬Í£Ö¹¼ÆÊ±Æ÷,·ñÔòÆô¶¯
+ 100   2          if(!IsBatteryAlert||IsChangingGear)BattAlertTimer=0;
+ 101   2          else StartBattAlertTimer();
+ 102   2          }
+ 103   1        else StartBattAlertTimer();//·¢ÉúµÍÑ¹¸æ¾¯Á¢¼´Æô¶¯¶¨Ê±Æ÷
+ 104   1        //¶¨Ê±Æ÷¼ÆÊ±ÒÑÂú£¬Ö´ÐÐ¶ÔÓ¦µÄ¶¯×÷
+ 105   1        if(BattAlertTimer>Thr)
+ 106   1          {
+ 107   2          //µ±Ç°µ²Î»´¦ÓÚÐèÒªÔÚ´¥·¢µÍµçÁ¿±£»¤Ê±Ö÷¶¯¹Ø»úµÄ×´Ì¬  
+ 108   2          if(IsNeedToShutOff)ReturnToOFFState();
+ 109   2          //µ±Ç°´¦ÓÚ»»µ²Ä£Ê½²»ÔÊÐíÖ´ÐÐ½µµµµ«ÊÇÐèÒªÅÐ¶Ïµç³ØÊÇ·ñ¹ýµÍÈ»ºóÇ¿ÖÆ¹Ø±Õ
+ 110   2          else if(IsChangingGear&&IsBatteryFault)ReturnToOFFState();
+ 111   2          //²»ÐèÒª¹Ø»ú£¬´¥·¢»»µ²¶¯×÷
+ 112   2          else
+ 113   2            {
+ 114   3            BattAlertTimer=0;//ÖØÖÃ¶¨Ê±Æ÷ÖÁ³õÊ¼Öµ
+ 115   3            SwitchToGear(ModeJump); //¸´Î»µ½Ö¸¶¨µ²Î»
+C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/18/2025 14:33:19 PAGE 3   
 
- 116   2          //µ±Ç°´¦ÓÚ»»µ²Ä£Ê½²»ÔÊÐíÖ´ÐÐ½µµµµ«ÊÇÐèÒªÅÐ¶Ïµç³ØÊÇ·ñ¹ýµÍÈ»ºóÇ¿ÖÆ¹Ø±Õ
- 117   2          else if(IsChangingGear&&IsBatteryFault)ReturnToOFFState();
- 118   2          //²»ÐèÒª¹Ø»ú£¬´¥·¢»»µ²¶¯×÷
- 119   2          else
- 120   2            {
- 121   3            BattAlertTimer=0;//ÖØÖÃ¶¨Ê±Æ÷ÖÁ³õÊ¼Öµ
- 122   3            SwitchToGear(ModeJump); //¸´Î»µ½Ö¸¶¨µ²Î»
- 123   3            }
- 124   2          }
- 125   1        }   
- 126          
- 127          //ÎÞ¼«µ÷¹â¿ª»úÊ±»Ö¸´µÍÑ¹±£»¤ÏÞÁ÷µÄ´¦Àí  
- 128          void RampRestoreLVProtToMax(void)
- 129            {
- 130   1        if(IsBatteryAlert||IsBatteryFault)return;
- 131   1        if(BattState==Battery_Plenty)SysCfg.RampCurrentLimit=CurrentMode->Current; //µç³ØµçÁ¿»ØÉýµ½³ä×ã×´Ì¬£¬¸´Î»
+ 116   3            }
+ 117   2          }
+ 118   1        }   
+ 119          
+ 120          //ÎÞ¼«µ÷¹â¿ª»úÊ±»Ö¸´µÍÑ¹±£»¤ÏÞÁ÷µÄ´¦Àí  
+ 121          void RampRestoreLVProtToMax(void)
+ 122            {
+ 123   1        if(IsBatteryAlert||IsBatteryFault)return;
+ 124   1        if(BattState==Battery_Plenty)SysCfg.RampCurrentLimit=CurrentMode->Current; //µç³ØµçÁ¿»ØÉýµ½³ä×ã×´Ì¬£¬¸´Î»
              -µçÁ÷ÏÞÖÆ
- 132   1        }
- 133            
- 134          //ÎÞ¼«µ÷¹âµÄµÍµçÑ¹±£»¤
- 135          void RampLowVoltHandler(void)
- 136            {
- 137   1        if(!IsBatteryAlert&&!IsBatteryFault)//Ã»ÓÐ¸æ¾¯
- 138   1          {
- 139   2          BattAlertTimer=0;
- 140   2          if(BattState==Battery_Plenty) //µç³ØµçÁ¿»ØÉýµ½³ä×ã×´Ì¬£¬»ºÂýÔö¼ÓµçÁ÷ÏÞÖÆ
- 141   2            {
- 142   3            if(SysCfg.RampCurrentLimit<CurrentMode->Current)
- 143   3               {
- 144   4               if(!RampCurrentRiseAttmTIM)RampCurrentRiseAttmTIM=1; //Æô¶¯¶¨Ê±Æ÷¿ªÊ¼¼ÆÊ±
- 145   4               else if(RampCurrentRiseAttmTIM<9)return; //Ê±¼äÎ´µ½
- 146   4               RampCurrentRiseAttmTIM=1;
- 147   4               if(SysCfg.RampBattThres>CurrentMode->LowVoltThres)SysCfg.RampBattThres=CurrentMode->LowVoltThres; //µ
+ 125   1        }
+ 126            
+ 127          //ÎÞ¼«µ÷¹âµÄµÍµçÑ¹±£»¤
+ 128          void RampLowVoltHandler(void)
+ 129            {
+ 130   1        if(!IsBatteryAlert&&!IsBatteryFault)//Ã»ÓÐ¸æ¾¯
+ 131   1          {
+ 132   2          BattAlertTimer=0;
+ 133   2          if(BattState==Battery_Plenty) //µç³ØµçÁ¿»ØÉýµ½³ä×ã×´Ì¬£¬»ºÂýÔö¼ÓµçÁ÷ÏÞÖÆ
+ 134   2            {
+ 135   3            if(SysCfg.RampCurrentLimit<CurrentMode->Current)
+ 136   3               {
+ 137   4               if(!RampCurrentRiseAttmTIM)RampCurrentRiseAttmTIM=1; //Æô¶¯¶¨Ê±Æ÷¿ªÊ¼¼ÆÊ±
+ 138   4               else if(RampCurrentRiseAttmTIM<9)return; //Ê±¼äÎ´µ½
+ 139   4               RampCurrentRiseAttmTIM=1;
+ 140   4               if(SysCfg.RampBattThres>CurrentMode->LowVoltThres)SysCfg.RampBattThres=CurrentMode->LowVoltThres; //µ
              -çÑ¹¼ì²â´ïµ½ÉÏÏÞ£¬½ûÖ¹¼ÌÐøÔö¼Ó
- 148   4               else SysCfg.RampBattThres+=50; //µçÑ¹¼ì²âÉÏµ÷50mV
- 149   4               if(SysCfg.RampCurrentLimit>CurrentMode->Current)SysCfg.RampCurrentLimit=CurrentMode->Current;//Ôö
+ 141   4               else SysCfg.RampBattThres+=50; //µçÑ¹¼ì²âÉÏµ÷50mV
+ 142   4               if(SysCfg.RampCurrentLimit>CurrentMode->Current)SysCfg.RampCurrentLimit=CurrentMode->Current;//Ôö
              -¼ÓµçÁ÷Ö®ºó¼ì²âµçÁ÷ÖµÊÇ·ñ³¬³öÔÊÐíÖµ
- 150   4               else SysCfg.RampCurrentLimit+=250; //µçÁ÷ÉÏµ÷250mA    
- 151   4               }
- 152   3            else RampCurrentRiseAttmTIM=0; //ÒÑ´ïµ½µçÁ÷ÉÏÏÞ½ûÖ¹¼ÌÐøÔö¼Ó
- 153   3            }
- 154   2          return;
- 155   2          }
- 156   1        else RampCurrentRiseAttmTIM=0; //´¥·¢¾¯±¨£¬¸´Î»³¢ÊÔÔö¼ÓµçÁ÷µÄ¶¨Ê±Æ÷
- 157   1        //µÍÑ¹¸æ¾¯·¢Éú£¬Æô¶¯¶¨Ê±Æ÷
- 158   1        StartBattAlertTimer(); //·¢ÉúÃüÁîÆô¶¯¶¨Ê±Æ÷
- 159   1        if(IsBatteryFault&&BattAlertTimer>4)ReturnToOFFState(); //µç³ØµçÑ¹µÍÓÚ¹Ø»úãÐÖµ´óÓÚ0.5Ãë£¬Á¢¼´¹Ø±Õ
- 160   1        else if(BattAlertTimer>BatteryAlertDelay) //µç³Øµ²Î»´¥·¢
- 161   1          {
- 162   2          if(SysCfg.RampCurrentLimit>CalcIREFValue(500))SysCfg.RampCurrentLimit-=250; //µçÁ÷ÏÂµ÷250mA
- 163   2          if(SysCfg.RampBattThres>2750)SysCfg.RampBattThres-=25; //¼õÉÙ25mV
- 164   2          BattAlertTimer=1;//ÖØÖÃ¶¨Ê±Æ÷
- 165   2          }
- 166   1        }
+ 143   4               else SysCfg.RampCurrentLimit+=250; //µçÁ÷ÉÏµ÷250mA    
+ 144   4               }
+ 145   3            else RampCurrentRiseAttmTIM=0; //ÒÑ´ïµ½µçÁ÷ÉÏÏÞ½ûÖ¹¼ÌÐøÔö¼Ó
+ 146   3            }
+ 147   2          return;
+ 148   2          }
+ 149   1        else RampCurrentRiseAttmTIM=0; //´¥·¢¾¯±¨£¬¸´Î»³¢ÊÔÔö¼ÓµçÁ÷µÄ¶¨Ê±Æ÷
+ 150   1        //µÍÑ¹¸æ¾¯·¢Éú£¬Æô¶¯¶¨Ê±Æ÷
+ 151   1        StartBattAlertTimer(); //·¢ÉúÃüÁîÆô¶¯¶¨Ê±Æ÷
+ 152   1        if(IsBatteryFault&&BattAlertTimer>4)ReturnToOFFState(); //µç³ØµçÑ¹µÍÓÚ¹Ø»úãÐÖµ´óÓÚ0.5Ãë£¬Á¢¼´¹Ø±Õ
+ 153   1        else if(BattAlertTimer>BatteryAlertDelay) //µç³Øµ²Î»´¥·¢
+ 154   1          {
+ 155   2          if(SysCfg.RampCurrentLimit>CalcIREFValue(500))SysCfg.RampCurrentLimit-=250; //µçÁ÷ÏÂµ÷250mA
+ 156   2          if(SysCfg.RampBattThres>2750)SysCfg.RampBattThres-=25; //¼õÉÙ25mV
+ 157   2          BattAlertTimer=1;//ÖØÖÃ¶¨Ê±Æ÷
+ 158   2          }
+ 159   1        }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    675    ----
+   CODE SIZE        =    643    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =      4    ----
+   XDATA SIZE       =      8    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =      1       3
-C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/17/2025 10:41:11 PAGE 4   
-
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =   ----       2
+   BIT SIZE         =   ----       1
    EDATA SIZE       =   ----    ----
    HDATA SIZE       =   ----    ----
    XDATA CONST SIZE =   ----    ----
    FAR CONST SIZE   =   ----    ----
 END OF MODULE INFORMATION.
+
+C51 COMPILER V9.60.0.0   LOWVOLTAGEPROT                                                    05/18/2025 14:33:19 PAGE 4   
 
 
 C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

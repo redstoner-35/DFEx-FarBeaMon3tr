@@ -173,9 +173,18 @@ static bit IsNotifyMaxRampLimitReached=0; //标记无极调光达到最大电流
 	
 //软件计时变量
 xdata char HoldChangeGearTIM; //挡位模式下长按换挡
-xdata char DisplayLockedTIM=0; //锁定和战术模式进入退出显示	
+xdata char DisplayLockedTIM; //锁定和战术模式进入退出显示	
 static xdata char RampDIVCNT; //分频计时器	
 	
+//获取极亮电流
+static int QueryTurboCurrent(void)	
+	{
+	//极亮MPPT限流启动，从动态极亮限流函数取电流限制
+	if(TurboILIM<QueryCurrentGearILED())return TurboILIM;
+	//其余情况，从当前挡位拿电流	
+	return QueryCurrentGearILED();  
+	}
+
 //初始化模式状态机
 void ModeFSMInit(void)
 {
@@ -183,19 +192,15 @@ void ModeFSMInit(void)
 	//初始化无极调光
 	SysCfg.RampLimitReachDisplayTIM=0;
   ReadSysConfig(); //从EEPROM内读取无极调光配置
-  for(i=0;i<ModeTotalDepth;i++) //遍历挡位设置结构体寻找极亮所在的挡位和无极调光的挡位并读取配置
+  for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp) //遍历挡位设置结构体寻找无极调光的挡位并读取配置
 		{
-		//读取极亮的数据并初始化电流限制
-		if(ModeSettings[i].ModeIdx==Mode_Turbo)TurboILIM=ModeSettings[i].Current;
-		//读取无极调光的数据
-		if(ModeSettings[i].ModeIdx==Mode_Ramp)
-			{
-			SysCfg.RampBattThres=ModeSettings[i].LowVoltThres; //低压检测上限恢复
-			SysCfg.RampCurrentLimit=ModeSettings[i].Current; //找到挡位数据中无极调光的挡位，电流上限恢复
-			//读取数据结束后，检查读入的数据是否合法，不合法就直接修正
-			if(SysCfg.RampCurrent<ModeSettings[i].MinCurrent)SysCfg.RampCurrent=ModeSettings[i].MinCurrent;
-			if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;
-			}
+		SysCfg.RampBattThres=ModeSettings[i].LowVoltThres; //低压检测上限恢复
+		SysCfg.RampCurrentLimit=ModeSettings[i].Current; //找到挡位数据中无极调光的挡位，电流上限恢复
+		//读取数据结束后，检查读入的数据是否合法，不合法就直接修正
+		if(SysCfg.RampCurrent<ModeSettings[i].MinCurrent)SysCfg.RampCurrent=ModeSettings[i].MinCurrent;
+		if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;
+		//读取结束，跳出循环
+		break;
 		}
 	//复位变量
 	RampDIVCNT=3; 	
@@ -225,18 +230,27 @@ void SwitchToGear(ModeIdxDef TargetMode)
 	{
 	char i;
   int LastICC;
+	bool IsLastModeNeedStepDown;
 	//记录换档前的结果
-	ModeIdxDef BeforeMode=CurrentMode->ModeIdx; //存储当前模式				
-	LastICC=CurrentMode->Current; //存储之前的挡位
+	ModeIdxDef BeforeMode=CurrentMode->ModeIdx; 			
+	IsLastModeNeedStepDown=CurrentMode->IsNeedStepDown; //存下是否需要降档
+	if(CurrentMode->ModeIdx==Mode_Turbo)LastICC=QueryTurboCurrent(); //如果是极亮挡位则需要取当前的电流限制作为最终电流
+	else LastICC=CurrentMode->Current; //存储换挡之前的挡位和电流值
 	//开始寻找
 	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==TargetMode)
 		{
+		//复位特殊功能挡位至初始状态
     ResetSOSModule();		//复位整个SOS模块
 		BeaconFSM_Reset(); //复位整个信标模块
 		ResetStrobeModule(); //复位爆闪控制
-		CurrentMode=&ModeSettings[i]; //找到匹配index，赋值结构体
+		
+		//找到匹配index，将对应的结构体基地址赋值给指针
+		CurrentMode=&ModeSettings[i]; 
+		//进行换挡之后的温控交接和重新计算极亮电流限制
 		if(BeforeMode!=Mode_Turbo&&TargetMode==Mode_Turbo)CalcTurboILIM(); //从非极亮挡位进入极亮重新计算电流值并重置MPPT系统
-		if(BeforeMode==Mode_Turbo&&TargetMode!=Mode_Turbo)RecalcPILoop(LastICC); //从极亮切换到其他挡位，重新设置PI环
+		if(IsLastModeNeedStepDown)RecalcPILoop(LastICC); //重新设置PI环避免电流过调
+		//已找到目标挡位，退出循环
+		break;
 		}
 	}
 	
@@ -252,7 +266,7 @@ void ReturnToOFFState(void)
 void HoldSwitchGearCmdHandler(void)
 	{
 	char buf;
-	if(SysMode||IsRampEnabled)HoldChangeGearTIM=0; //战术模式或者进入锁定、或者处于无极调光模式，禁止换挡系统运行
+	if(SysMode||CurrentMode->ModeIdx==Mode_Ramp)HoldChangeGearTIM=0; //战术模式或者进入锁定，以及位于无极调光模式下，禁止换挡系统运行
 	else if(!getSideKeyHoldEvent()&&!getSideKey1HEvent())HoldChangeGearTIM=0; //按键松开，计时器复位
 	else //执行换挡程序
 		{
@@ -495,10 +509,7 @@ void ModeSwitchFSM(void)
 	if(DisplayLockedTIM||IsDisplayLocked)Current=CalcIREFValue(50); //用户进入或者退出锁定，用50mA短暂点亮提示一下
 	else switch(CurrentMode->ModeIdx)	
 		{
-		case Mode_Turbo: //极亮模式
-			 if(TurboILIM<QueryCurrentGearILED())Current=TurboILIM;
-		   else Current=QueryCurrentGearILED();  //从动态极亮限流函数取电流限制
-		   break;
+		case Mode_Turbo:Current=QueryTurboCurrent();break; //极亮模式
 		case Mode_Beacon: //信标模式			
 		case Mode_SOS: 
 		case Mode_Strobe://爆闪模式和SOS模式	     

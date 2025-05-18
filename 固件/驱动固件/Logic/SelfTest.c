@@ -4,6 +4,7 @@
 #include "BattDisplay.h"
 #include "ModeControl.h"
 #include "SelfTest.h"
+#include "LowVoltProt.h"
 #include "OutputChannel.h"
 
 //内部变量
@@ -88,7 +89,12 @@ void OutputFaultDetect(void)
 	{
 	char buf,OErrID;
 	//输入MPPT限流监测
-	if(Data.FBInjectVolt<0.2&&Data.RawBattVolt<12.0&&Data.OutputVoltage>16)IsInputLimited=1; //电池总电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发
+	if(Data.RawBattVolt<BeforeRawBattVolt) //电池动态压降过大，禁止电流继续增加
+		{
+		IsInputLimited=1;
+		BeforeRawBattVolt=-10; //复位采样缓存确保条件只成立一次
+		}
+	else if(Data.FBInjectVolt<0.2&&Data.RawBattVolt<12.0&&Data.OutputVoltage>16)IsInputLimited=1; //电池总电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发
 	else IsInputLimited=0;
 	//输出故障监测
 	if(!GetIfOutputEnabled())ShortBlankTIM=0; //DCDC关闭

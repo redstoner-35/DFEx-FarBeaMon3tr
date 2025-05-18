@@ -27,22 +27,26 @@ bit IsForceLeaveTurbo; //是否强制离开极亮档
 //内部宏定义
 #define MinumumILED CalcIREFValue(ILEDStepDown)
 
-
 //换挡的时候根据当前恒温的电流重新PI值
 void RecalcPILoop(int LastCurrent)	
 	{
 	int buf,ModeCur;
-	//目标挡位不需要计算
-	if(!CurrentMode->IsNeedStepDown)return;
-	//获取当前挡位电流
-	ModeCur=QueryCurrentGearILED();
-	//计算P值缓存
-	buf=TempProtBuf+(TempIntegral/IntegralFactor); //计算电流扣减值
-	if(buf<0)buf=0; //电流扣减值不能小于0
-  buf=LastCurrent-buf; //旧挡位电流减去扣减值得到实际电流(mA)
-	TempProtBuf=ModeCur-LastCurrent; //P值缓存等于新挡位的电流-旧挡位实际电流(mA)
-	if(TempProtBuf<0)TempProtBuf=0; //不允许比例缓存小于0
-	TempIntegral=0; //积分缓存=0
+	//目标挡位不需要计算,复位比例缓存
+	if(!CurrentMode->IsNeedStepDown)TempProtBuf=0;
+	//需要复位，执行对应处理
+	else
+		{	
+		//获取当前挡位电流
+		ModeCur=QueryCurrentGearILED();
+		//计算P值缓存
+		buf=TempProtBuf+(TempIntegral/IntegralFactor); //计算电流扣减值
+		if(buf<0)buf=0; //电流扣减值不能小于0
+		buf=LastCurrent-buf; //旧挡位电流减去扣减值得到实际电流(mA)
+		TempProtBuf=ModeCur-LastCurrent; //P值缓存等于新挡位的电流-旧挡位实际电流(mA)
+		if(TempProtBuf<0)TempProtBuf=0; //不允许比例缓存小于0
+		}
+	//清除积分器缓存
+	TempIntegral=0;
 	}
 	
 //输出当前温控的限流值
@@ -74,6 +78,12 @@ static int QueryConstantTemp(void)
 	//极亮的时候使用更高的温控拉长降档时间
 	return CurrentMode->ModeIdx==Mode_Turbo?TurboConstantTemperature:ConstantTemperature;
 	}
+	
+//获取温控环路的常亮电流配置
+static int QueryConstantILED(void)
+	{
+	return CurrentMode->ModeIdx==Mode_Turbo?CalcIREFValue(ILEDConstantGlowMinTurbo):CalcIREFValue(ILEDConstantGlowMin);
+	}
 
 //温控PI环计算
 void ThermalPILoopCalc(void)	
@@ -100,9 +110,22 @@ void ThermalPILoopCalc(void)
 			StepUpLockTIM=24; //升档之后温度过高则之后停止3秒
 			if(Err>2)
 				{
+				//比例项提交
 				ProtFact=(CurrentBuf/2300)+1;
 			  if(Data.Systemp>(ForceDisableTurboTemp-5))ProtFact*=5; //温度过高，扩张比例系数
-				TempProtBuf+=(ProtFact*Err);	//向buf提交比例项
+			  //当前LED电流已被限制到常亮电流范围内，阻止快速降档
+				if(CurrentBuf<QueryConstantILED())	
+					{
+					//积分器一直累加加满了，应用一次输出电流并清零积分器
+					if(TempIntegral==(SlowStepDownTime*8))
+						{
+						TempProtBuf+=((SlowStepDownTime*8)/IntegralFactor);
+						TempIntegral=0;
+						}
+					}
+				//电流没有达到常亮下限，继续提交电流设置
+				else TempProtBuf+=(ProtFact*Err);	//向buf提交比例项	
+				//限制比例项最大只能达到ILEDMIN
 				if(TempProtBuf>(CurrentMode->Current-MinumumILED))TempProtBuf=(CurrentMode->Current-MinumumILED); 
 				StepUpLockTIM=60; //触发比例项降档，停7.5秒
 				}
@@ -118,9 +141,25 @@ void ThermalPILoopCalc(void)
 			if(StepUpLockTIM)StepUpLockTIM--; //当前触发降档还没达到快速升档的时间
 			else
 				{
-				if(Err&0x7E)TempProtBuf-=Err; //进行升档
-				if(TempProtBuf<0)TempProtBuf=0;
+				//电流达到回升限制值，开始使用积分器监测缓慢回升
+				if(CurrentBuf>(QueryConstantILED()-CalcIREFValue(1500)))	
+					{
+					//积分器一直累加加满了，应用一次输出电流并清零积分器
+					if(TempIntegral==-(ILEDRecoveryTime*8))
+						{
+						TempProtBuf-=((ILEDRecoveryTime*8)/IntegralFactor);
+						TempIntegral=0;						
+						}
+					}
+				//执行比例升温
+				else
+					{
+					if(Err&0x7E)TempProtBuf-=Err; //进行升档
+					if(TempProtBuf<0)TempProtBuf=0;
+					}
 				}
+			//比例项数值限幅(不能是负数)
+			if(TempProtBuf<0)TempProtBuf=0; 
 			//积分项
 			if(TempIntegral>(-IntegrateFullScale))TempIntegral--;		
 			}

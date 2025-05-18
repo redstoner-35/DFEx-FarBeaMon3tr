@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   SYSCONFIG                                                         05/17/2025 13:41:16 PAGE 1   
+C51 COMPILER V9.60.0.0   SYSCONFIG                                                         05/18/2025 17:01:21 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SYSCONFIG
@@ -18,151 +18,153 @@ line level    source
    7          #include "SpecialMode.h"
    8          #include "delay.h"
    9          #include "LEDMgmt.h"
-  10          #include "SysReset.h"
-  11          
-  12          //内部全局
-  13          static xdata int CurrentIdx=0;
-  14          static xdata u8 CurrentCRC=0;
-  15          
-  16          //CRC-8计算 
-  17          static u8 PEC8Check(char *DIN,char Len)
-  18          {
-  19   1       unsigned char crcbuf=0xFF;
-  20   1       char i;
-  21   1       do
-  22   1        {
-  23   2        //载入数据
-  24   2        crcbuf^=*DIN++;
-  25   2        //计算
-  26   2        for(i=8;i;i--)
-  27   2         {
-  28   3         if(crcbuf&0x80)crcbuf=(crcbuf<<1)^0x07;//最高位为1，左移之后和多项式XOR
-  29   3         else crcbuf<<=1;//最高位为0，只移位不XOR
-  30   3         }
-  31   2        }
-  32   1       while(--Len);
-  33   1       //输出结果
-  34   1       return crcbuf;
-  35   1      }
-  36          
-  37          //从EEPROM内寻找最后的一组Sys配置
-  38          static int SearchSysConfig(SysROMImg *ROMData)
-  39            {
-  40   1        char i;
-  41   1        int Len=0;
-  42   1        //解锁flash并开始读取
-  43   1        SetFlashState(1);
-  44   1        do
-  45   1          {   
-  46   2          for(i=0;i<sizeof(SysROMImageDef);i++)Flash_Operation(DataFlash_Read,i+(Len*sizeof(SysROMImg)),&ROMData->
+  10          
+  11          //内部全局
+  12          static xdata int CurrentIdx=0;
+  13          static xdata u8 CurrentCRC=0;
+  14          
+  15          //CRC-8计算 
+  16          static u8 PEC8Check(char *DIN,char Len)
+  17          {
+  18   1       unsigned char crcbuf=0xFF;
+  19   1       char i;
+  20   1       do
+  21   1        {
+  22   2        //载入数据
+  23   2        crcbuf^=*DIN++;
+  24   2        //计算
+  25   2        for(i=8;i;i--)
+  26   2         {
+  27   3         if(crcbuf&0x80)crcbuf=(crcbuf<<1)^0x07;//最高位为1，左移之后和多项式XOR
+  28   3         else crcbuf<<=1;//最高位为0，只移位不XOR
+  29   3         }
+  30   2        }
+  31   1       while(--Len);
+  32   1       //输出结果
+  33   1       return crcbuf;
+  34   1      }
+  35          
+  36          //从EEPROM内寻找最后的一组Sys配置
+  37          static int SearchSysConfig(SysROMImg *ROMData)
+  38            {
+  39   1        char i;
+  40   1        int Len=0;
+  41   1        //解锁flash并开始读取
+  42   1        SetFlashState(1);
+  43   1        do
+  44   1          {   
+  45   2          for(i=0;i<sizeof(SysROMImageDef);i++)Flash_Operation(DataFlash_Read,i+(Len*sizeof(SysROMImg)),&ROMData->
              -ByteBuf[i]); //从ROM内读取数据
-  47   2          if(ROMData->Data.CheckSum!=PEC8Check(ROMData->Data.SysConfig.ByteBuf,sizeof(SysStorDef)))break; //找到了
+  46   2          if(ROMData->Data.CheckSum!=PEC8Check(ROMData->Data.SysConfig.ByteBuf,sizeof(SysStorDef)))break; //找到了
              -没有被写入CRC校验不过的地方，就是你了
-  48   2          Len++;
-  49   2          }
-  50   1        while(Len<SysCfgGroupLen);
-  51   1        //读取上一组正确的配置
-C51 COMPILER V9.60.0.0   SYSCONFIG                                                         05/17/2025 13:41:16 PAGE 2   
+  47   2          Len++;
+  48   2          }
+  49   1        while(Len<SysCfgGroupLen);
+  50   1        //读取上一组正确的配置
+  51   1        if(Len>0)Len--;
+C51 COMPILER V9.60.0.0   SYSCONFIG                                                         05/18/2025 17:01:21 PAGE 2   
 
-  52   1        if(Len>0)Len--;
-  53   1        for(i=0;i<sizeof(SysROMImageDef);i++)Flash_Operation(DataFlash_Read,i+(Len*sizeof(SysROMImg)),&ROMData->B
+  52   1        for(i=0;i<sizeof(SysROMImageDef);i++)Flash_Operation(DataFlash_Read,i+(Len*sizeof(SysROMImg)),&ROMData->B
              -yteBuf[i]);
-  54   1        //读取结束，返回上一组有数据的index
-  55   1        return Len;
-  56   1        }
-  57          
-  58          //读取无极调光配置
-  59          void ReadSysConfig(void)
-  60            {
-  61   1        extern code ModeStrDef ModeSettings[ModeTotalDepth];
-  62   1        SysROMImg ROMData;
-  63   1        bit KState=GetIfKeyPressed();
-  64   1        //读取数据
-  65   1        CurrentIdx=SearchSysConfig(&ROMData);
-  66   1        //进行读出数据的校验
-  67   1        if(!KState&&ROMData.Data.CheckSum==PEC8Check(ROMData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)))
-  68   1          {
-  69   2          //校验成功，加载数据
-  70   2          SysMode=ROMData.Data.SysConfig.Data.IsSystemLocked?Operation_Locked:Operation_Normal;
-  71   2          SysCfg.LocatorCfg=ROMData.Data.SysConfig.Data.LocatorCfg; 
-  72   2          SysCfg.RampCurrent=ROMData.Data.SysConfig.Data.SysCurrent;
-  73   2          IsRampEnabled=ROMData.Data.SysConfig.Data.IsRampEnabled?1:0;
-  74   2          //存储当前的index值
-  75   2          CurrentCRC=ROMData.Data.CheckSum;
-  76   2          CurrentIdx++; //当前位置有数据，需要让index+1移动到未写入的位置
-  77   2          }
-  78   1        //校验失败重建数据
-  79   1        else 
-  80   1          {
-  81   2          SysMode=Operation_Normal; //默认处于解锁模式
-  82   2          SysCfg.LocatorCfg=Locator_Green; //默认是绿灯亮
-  83   2          RestoreToMinimumSysCurrent();
-  84   2          IsRampEnabled=0; //默认为挡位模式
-  85   2          SaveSysConfig(1); //重建数据后立即保存参数
-  86   2          if(KState)while(GetIfKeyPressed())
+  53   1        //读取结束，返回上一组有数据的index
+  54   1        return Len;
+  55   1        }
+  56          
+  57          //读取无极调光配置
+  58          void ReadSysConfig(void)
+  59            {
+  60   1        extern code ModeStrDef ModeSettings[ModeTotalDepth];
+  61   1        SysROMImg ROMData;
+  62   1        bit KState=GetIfKeyPressed();
+  63   1        //读取数据
+  64   1        CurrentIdx=SearchSysConfig(&ROMData);
+  65   1        //进行读出数据的校验
+  66   1        if(!KState&&ROMData.Data.CheckSum==PEC8Check(ROMData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)))
+  67   1          {
+  68   2          //校验成功，加载数据
+  69   2          SysMode=ROMData.Data.SysConfig.Data.IsSystemLocked?Operation_Locked:Operation_Normal;
+  70   2          SysCfg.LocatorCfg=ROMData.Data.SysConfig.Data.LocatorCfg; 
+  71   2          SysCfg.RampCurrent=ROMData.Data.SysConfig.Data.SysCurrent;
+  72   2          IsRampEnabled=ROMData.Data.SysConfig.Data.IsRampEnabled?1:0;
+  73   2          //存储当前的index值
+  74   2          CurrentCRC=ROMData.Data.CheckSum;
+  75   2          CurrentIdx++; //当前位置有数据，需要让index+1移动到未写入的位置
+  76   2          }
+  77   1        //校验失败重建数据
+  78   1        else 
+  79   1          {
+  80   2          SysMode=Operation_Normal; //默认处于解锁模式
+  81   2          SysCfg.LocatorCfg=Locator_Green; //默认是绿灯亮
+  82   2          RestoreToMinimumSysCurrent();
+  83   2          IsRampEnabled=0; //默认为挡位模式
+  84   2          SaveSysConfig(1); //重建数据后立即保存参数
+  85   2          //按键按下重置，提示用户松开按键
+  86   2          if(KState)
   87   2            {
-  88   3            IsHalfBrightness=0;
-  89   3            MakeFastStrobe(LED_Amber);
-  90   3            delay_ms(40);
-  91   3            }
-  92   2          //进行系统复位
-  93   2          TriggerSoftwareReset();
-  94   2          }
-  95   1        //读取操作完毕，锁定flash 
-  96   1        SetFlashState(0);
-  97   1        }
-  98          
-  99          //恢复到无极调光模式的最低电流
- 100          void RestoreToMinimumSysCurrent(void) 
- 101            {
- 102   1        char i;
- 103   1        extern code ModeStrDef ModeSettings[ModeTotalDepth];
- 104   1        SysCfg.RampCurrent=100;
- 105   1        for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp)
- 106   1            SysCfg.RampCurrent=ModeSettings[i].MinCurrent; //找到挡位数据中无极调光的挡位
- 107   1        }
- 108          
- 109          //保存无极调光配置
- 110          void SaveSysConfig(bit IsForceSave)
- 111            {
- 112   1        char i;
-C51 COMPILER V9.60.0.0   SYSCONFIG                                                         05/17/2025 13:41:16 PAGE 3   
+  88   3            while(GetIfKeyPressed())
+  89   3              {
+  90   4              IsHalfBrightness=0;
+  91   4              MakeFastStrobe(LED_Amber);
+  92   4              delay_ms(40);
+  93   4              }
+  94   3            //按键松开，等待500mS继续启动流程
+  95   3            delay_ms(500);
+  96   3            }
+  97   2          }
+  98   1        //读取操作完毕，锁定flash 
+  99   1        SetFlashState(0);
+ 100   1        }
+ 101          
+ 102          //恢复到无极调光模式的最低电流
+ 103          void RestoreToMinimumSysCurrent(void) 
+ 104            {
+ 105   1        char i;
+ 106   1        extern code ModeStrDef ModeSettings[ModeTotalDepth];
+ 107   1        for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp)
+ 108   1            SysCfg.RampCurrent=ModeSettings[i].MinCurrent; //找到挡位数据中无极调光的挡位
+ 109   1        }
+ 110          
+ 111          //保存无极调光配置
+ 112          void SaveSysConfig(bit IsForceSave)
+C51 COMPILER V9.60.0.0   SYSCONFIG                                                         05/18/2025 17:01:21 PAGE 3   
 
- 113   1        SysROMImg SavedData;
- 114   1        //解锁flash（CRC校验模块需要读取Flash所以需要解锁）
- 115   1        SetFlashState(1);
- 116   1        //开始进行数据构建
- 117   1        SavedData.Data.SysConfig.Data.IsSystemLocked=SysMode==Operation_Locked?true:false;
- 118   1        SavedData.Data.SysConfig.Data.LocatorCfg=SysCfg.LocatorCfg;
- 119   1        SavedData.Data.SysConfig.Data.SysCurrent=SysCfg.RampCurrent;
- 120   1        SavedData.Data.SysConfig.Data.IsRampEnabled=IsRampEnabled?true:false;
- 121   1        SavedData.Data.CheckSum=PEC8Check(SavedData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)); //计算CRC
- 122   1        //进行数据比对
- 123   1        if(!IsForceSave&&SavedData.Data.CheckSum==CurrentCRC)
- 124   1          {
- 125   2          SetFlashState(0);//读取操作完毕，锁定flash  
- 126   2          return; //跳过保存操作，数据相同  
- 127   2          }
- 128   1        //数据需要保存，开始检测是否需要擦除
- 129   1        if(IsForceSave||CurrentIdx>=SysCfgGroupLen) 
- 130   1          {
- 131   2          //数据已经写满了，对扇区0和1进行完全擦除
- 132   2          Flash_Operation(DataFlash_Erase,0x200,&i);  //扇区2=512-1023
- 133   2          Flash_Operation(DataFlash_Erase,0,&i);      //扇区1=0-511
- 134   2          //从第0个位置开始写入
- 135   2          CurrentIdx=0;
- 136   2          }
- 137   1        //写入数据
- 138   1        for(i=0;i<sizeof(SysROMImageDef);i++)Flash_Operation(DataFlash_Write,i+(CurrentIdx*sizeof(SysROMImg)),&Sa
+ 113            {
+ 114   1        char i;
+ 115   1        SysROMImg SavedData;
+ 116   1        //解锁flash（CRC校验模块需要读取Flash所以需要解锁）
+ 117   1        SetFlashState(1);
+ 118   1        //开始进行数据构建
+ 119   1        SavedData.Data.SysConfig.Data.IsSystemLocked=SysMode==Operation_Locked?true:false;
+ 120   1        SavedData.Data.SysConfig.Data.LocatorCfg=SysCfg.LocatorCfg;
+ 121   1        SavedData.Data.SysConfig.Data.SysCurrent=SysCfg.RampCurrent;
+ 122   1        SavedData.Data.SysConfig.Data.IsRampEnabled=IsRampEnabled?true:false;
+ 123   1        SavedData.Data.CheckSum=PEC8Check(SavedData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)); //计算CRC
+ 124   1        //进行数据比对
+ 125   1        if(!IsForceSave&&SavedData.Data.CheckSum==CurrentCRC)
+ 126   1          {
+ 127   2          SetFlashState(0);//读取操作完毕，锁定flash  
+ 128   2          return; //跳过保存操作，数据相同  
+ 129   2          }
+ 130   1        //数据需要保存，开始检测是否需要擦除
+ 131   1        if(IsForceSave||CurrentIdx>=SysCfgGroupLen) 
+ 132   1          {
+ 133   2          //数据已经写满了，对扇区0和1进行完全擦除
+ 134   2          Flash_Operation(DataFlash_Erase,0x200,&i);  //扇区2=512-1023
+ 135   2          Flash_Operation(DataFlash_Erase,0,&i);      //扇区1=0-511
+ 136   2          //从第0个位置开始写入
+ 137   2          CurrentIdx=0;
+ 138   2          }
+ 139   1        //写入数据
+ 140   1        for(i=0;i<sizeof(SysROMImageDef);i++)Flash_Operation(DataFlash_Write,i+(CurrentIdx*sizeof(SysROMImg)),&Sa
              -vedData.ByteBuf[i]);  
- 139   1        CurrentIdx++; //本index已被写入，标记写到下个idx
- 140   1        CurrentCRC=SavedData.Data.CheckSum; //保存本次index的CRC8
- 141   1        SetFlashState(0);//写入操作完毕，锁定flash  
- 142   1        } 
+ 141   1        CurrentIdx++; //本index已被写入，标记写到下个idx
+ 142   1        CurrentCRC=SavedData.Data.CheckSum; //保存本次index的CRC8
+ 143   1        SetFlashState(0);//写入操作完毕，锁定flash  
+ 144   1        } 
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    625    ----
+   CODE SIZE        =    623    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      3    ----
    PDATA SIZE       =   ----    ----

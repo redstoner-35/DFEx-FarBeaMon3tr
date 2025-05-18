@@ -243,7 +243,7 @@ void BatteryTelemHandler(void)
 	if(CurrentMode->ModeIdx==Mode_Ramp)AlertThr=SysCfg.RampBattThres; //无极调光模式下，使用结构体内的动态阈值
 	else AlertThr=CurrentMode->LowVoltThres; //从当前目标挡位读取模式值  
 	VBatt=(int)(Battery*1000); //得到电池电压(mV)
-	IsBatteryFault=VBatt>2550?0:1; //当电池电压低于2.55V之后置起故障bit
+	IsBatteryFault=VBatt>2560?0:1; //当电池电压低于2.55V之后置起故障bit
 	if(IsBatteryFault)IsBatteryAlert=0; //故障bit置起后强制清除警报bit
 	else IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit
 	//电池电量指示状态机

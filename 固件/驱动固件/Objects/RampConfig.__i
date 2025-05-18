@@ -1,1 +1,0 @@
-"Logic\RampConfig.c" OMF2 OPTIMIZE (9,SPEED) BROWSE MODDP2 INCDIR(.\include;.\StdDriver\inc;.\Hardware) DEBUG PRINT(.\Listings\RampConfig.lst) TABS (2) OBJECT(.\Objects\RampConfig.obj)

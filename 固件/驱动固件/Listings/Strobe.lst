@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   STROBE                                                            04/29/2025 17:16:20 PAGE 1   
+C51 COMPILER V9.60.0.0   STROBE                                                            05/18/2025 14:33:19 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE STROBE
@@ -22,7 +22,7 @@ line level    source
   11          static xdata char StrobeCounter; //爆闪次数计时
   12          
   13          //内部爆闪事件顺序
-  14          static code char StrobeSeq[]={1,3,10,9,7,8,5,11,6,4};
+  14          static code char StrobeSeq[]={1,3,10,9,7,8,5,11,6};
   15          
   16          //爆闪控制器复位
   17          void ResetStrobeModule(void)
@@ -56,13 +56,13 @@ line level    source
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
    CODE SIZE        =     70    ----
-   CONSTANT SIZE    =     10    ----
+   CONSTANT SIZE    =      9    ----
    XDATA SIZE       =      2    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      1    ----
-C51 COMPILER V9.60.0.0   STROBE                                                            04/29/2025 17:16:20 PAGE 2   
+C51 COMPILER V9.60.0.0   STROBE                                                            05/18/2025 14:33:19 PAGE 2   
 
    EDATA SIZE       =   ----    ----
    HDATA SIZE       =   ----    ----

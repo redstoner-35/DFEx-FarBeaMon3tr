@@ -3,6 +3,7 @@
 #include "LowVoltProt.h"
 #include "OutputChannel.h"
 #include "SideKey.h"
+#include "ADCCfg.h"
 #include "SelfTest.h"
 
 //内部变量
@@ -12,7 +13,7 @@ static char MPPTStepdownWaitTimer; //MPPT下调极亮等待的计时器
 
 //全局参考
 xdata int TurboILIM; //极亮电流限制
-
+xdata float BeforeRawBattVolt; //开启极亮前的电池电压
 
 //低电量保护函数
 static void StartBattAlertTimer(void)
@@ -37,30 +38,22 @@ void BattAlertTIMHandler(void)
 void CalcTurboILIM(void)
 	{
 	IsCurrentRampUp=0; //复位标志位重置MPPT系统
-	if(Battery>3.6)TurboILIM=QueryCurrentGearILED(); //电池电压大于3.6时按照目标电流去取
-	else TurboILIM=CalcIREFValue(25000); //电池电压低，极亮锁25A输出
-	}	
-	
-//极亮挡位进行计时，降档至高亮的处理
-static void TurboStepWaitTimerHandler(bit IsFault)
-	{
-	StartBattAlertTimer();
-	if(BattAlertTimer<(IsFault?BatteryFaultDelay:BatteryAlertDelay))return;
-	//时间到，立即换挡
-	BattAlertTimer=0;	
-	SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
+	TurboILIM=QueryCurrentGearILED(); //默认上限按照目标电流去取
+	BeforeRawBattVolt=Data.RawBattVolt-1.2; //切换到极亮之前取样电池实时电压
 	}	
 	
 //极亮挡位进行MPPT输入监测和低电量保护的处理
 void TurboLVILIMProcess(void)	
 	{
-	//电池电压严重过低启动计时，如果持续过久则立即退出极亮
-	if(IsBatteryFault)TurboStepWaitTimerHandler(1);
 	//电池电压低且MPPT协商已结束,执行正常低电量判断
-	else if(IsBatteryAlert&&IsCurrentRampUp)	
+	if(IsBatteryAlert&&IsCurrentRampUp)	
 		{
-		//进行计时，时间到则执行跳档
-		TurboStepWaitTimerHandler(0);
+		//启动定时器并开始计时
+		StartBattAlertTimer();
+		if(BattAlertTimer<BatteryAlertDelay)return;
+		//时间到，立即换挡
+		BattAlertTimer=0;	
+		SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_High);
 		}
 	//触发输入限流,立即停止MPPT协商
 	else if(IsInputLimited)

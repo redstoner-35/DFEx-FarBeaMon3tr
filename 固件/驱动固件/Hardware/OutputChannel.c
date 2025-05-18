@@ -42,7 +42,7 @@ static float Duty_Calc(int CurrentInput)
 	buf/=Data.MCUVDD*(float)1000; //计算出目标DAC输出电压和PWMDAC缓冲器供电电压(MCUVDD)之间的比值
 	buf*=102; //转换为百分比(乘以102补偿掉系统的换算误差)
 	//结果输出	
-	return buf>100?100:buf;
+	return buf;
 	}
 	
 /*********************************************************************************************************************
@@ -57,45 +57,23 @@ void OutputChannel_Init(void)
 	OCInitCfg.Mode=GPIO_Out_PP;
   OCInitCfg.Slew=GPIO_Fast_Slew;		
 	OCInitCfg.DRVCurrent=GPIO_High_Current; //推MOSFET,需要高上升斜率
-	//初始化bit
-  AUXEN=0;
-	BOOSTRUN=0;
-	PWMDACEN=0;
-	SYSHBLED=0; //所有bit都为0
+	//调用复位函数重置所有状态
+  OutputChannel_DeInit();
 	//开始配置IO	
 	GPIO_ConfigGPIOMode(PWMDACENIOG,GPIOMask(PWMDACENIOx),&OCInitCfg);	
 	GPIO_ConfigGPIOMode(AUXENIOG,GPIOMask(AUXENIOx),&OCInitCfg);			
 	GPIO_ConfigGPIOMode(BOOSTRUNIOG,GPIOMask(BOOSTRUNIOx),&OCInitCfg);		
 	GPIO_ConfigGPIOMode(LEDNegMOSIOG,GPIOMask(LEDNegMOSIOx),&OCInitCfg);
   GPIO_ConfigGPIOMode(SYSHBLEDIOG,GPIOMask(SYSHBLEDIOx),&OCInitCfg);		
-	//调用复位函数重置所有状态
-  OutputChannel_DeInit();
 	}
 
-//内联函数，设置心跳LED
-//void SetHBLEDState(bit State)
-//	{
-//	SYSHBLED=State;
-//	}	
-	
 //预充电状态机计时器
 void OCFSM_TIMHandler(void)
 	{
 	//心跳LED控制	
 	if(CurrentMode->ModeIdx==Mode_Fault) //发生故障时HB快闪
 		SYSHBLED=SYSHBLED?0:1; //翻转LED
-	else if(GetIfOutputEnabled())//输出已启用，LED配置为1
-		{
-		//输出系统处于待机状态，输出LED慢闪
-		if(OutputFSMState==OutCH_OutputIdle)
-			{
-			SYSHBLED=HBTimer==3?1:0; //待机状态下每隔半秒快闪一次
-			if(HBTimer<4)HBTimer++;
-			else HBTimer=0;
-			}
-		//其余状态下LED常亮
-		else SYSHBLED=1;
-		}			
+	else if(GetIfOutputEnabled())SYSHBLED=1;//输出已启用，LED配置为1		
 	else //待机状态下慢闪
 		{
 	  if(HBTimer<4)HBTimer++;
