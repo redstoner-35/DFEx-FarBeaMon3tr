@@ -48,7 +48,7 @@ extern xdata BattVshowFSMDef VshowFSMState; //状态机状态
 //函数
 void BattDisplayTIM(void); //电池电量显示函数处理
 void TriggerVshowDisplay(void); //启动电池电压显示
-void DisplayVBattAtStart(void);
+void DisplayVBattAtStart(bit IsPOR); //在启动时显示电池电压
 void BatteryTelemHandler(void);  //电池测量和指示灯控制
 bit LowPowerStrobe(void); //低电量提示闪
 	

@@ -89,7 +89,7 @@ void OutputFaultDetect(void)
 	{
 	char buf,OErrID;
 	//输入MPPT限流监测
-	if(Data.RawBattVolt<BeforeRawBattVolt) //电池动态压降过大，禁止电流继续增加
+	if(!IsCurrentRampUp&&Data.RawBattVolt<BeforeRawBattVolt) //极亮爬升期间检测到电池动态压降过大，禁止电流继续增加
 		{
 		IsInputLimited=1;
 		BeforeRawBattVolt=-10; //复位采样缓存确保条件只成立一次

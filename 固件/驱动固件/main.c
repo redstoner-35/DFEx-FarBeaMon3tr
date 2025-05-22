@@ -34,7 +34,7 @@ void main()
 	ModeFSMInit(); //初始化挡位状态机
   SideKeyInit(); //侧按初始化	
 	OutputChannel_TestRun(); //进行输出通道试运行
-	DisplayVBattAtStart(); //显示输出电压
+	DisplayVBattAtStart(1); //显示输出电压
 	EnableADCAsync(); //启动ADC的异步模式提高处理速度
 	//主循环	
   while(1)

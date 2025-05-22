@@ -172,8 +172,8 @@ bit IsRampEnabled; //是否开启无极调光
 static bit IsNotifyMaxRampLimitReached=0; //标记无极调光达到最大电流	
 	
 //软件计时变量
-xdata char HoldChangeGearTIM; //挡位模式下长按换挡
-xdata char DisplayLockedTIM; //锁定和战术模式进入退出显示	
+xdata char HoldChangeGearTIM=0; //挡位模式下长按换挡
+xdata char DisplayLockedTIM=0; //锁定和战术模式进入退出显示	
 static xdata char RampDIVCNT; //分频计时器	
 	
 //获取极亮电流

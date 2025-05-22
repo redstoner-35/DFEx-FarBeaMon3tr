@@ -23,6 +23,8 @@ void SystemPeripheralCTRL(bit IsEnable)
 		PWM_Init(); //初始化PWM发生器
 		LED_Init(); //初始化侧按LED
 		OutputChannel_Init(); //初始化输出通道
+		SystemTelemHandler(); //启动一次ADC，进行初始测量
+		DisplayVBattAtStart(0); //执行一遍电池初始化函数	
 		return;
 		}
 	//关闭所有外设
@@ -65,7 +67,6 @@ void SleepMgmt(void)
 	else
 		{		
 		if(SysMode>Operation_Locked)SysMode=Operation_Normal; //强制退出战术模式
-		C0CON0=0; //侧按关机后关闭比较器
 		SystemPeripheralCTRL(0);//关闭所有外设
 		STOP();  //令STOP=1，使单片机进入睡眠
 		//系统已唤醒，立即开始检测
@@ -85,7 +86,7 @@ void SleepMgmt(void)
 		while(!IsKeyEventOccurred()); //等待按键唤醒
 		//系统已被唤醒，立即进入工作模式			
 		SystemPeripheralCTRL(1);
-		//所有外设初始化完毕，启动ADC异步处理模式并打开系统中断
+		//所有外设初始化完毕，启动ADC异步处理模式
 		EnableADCAsync(); 
 		}
 	}

@@ -39,7 +39,7 @@ void CalcTurboILIM(void)
 	{
 	IsCurrentRampUp=0; //复位标志位重置MPPT系统
 	TurboILIM=QueryCurrentGearILED(); //默认上限按照目标电流去取
-	BeforeRawBattVolt=Data.RawBattVolt-1.2; //切换到极亮之前取样电池实时电压
+	BeforeRawBattVolt=Data.RawBattVolt-BatteryMaximumTurboVdroop; //切换到极亮之前取样电池实时电压并减去允许压差作为实时采样值
 	}	
 	
 //极亮挡位进行MPPT输入监测和低电量保护的处理

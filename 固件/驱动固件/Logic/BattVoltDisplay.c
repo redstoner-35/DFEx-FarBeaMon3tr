@@ -187,23 +187,24 @@ static void ResetBattAvg(void)
 	BattVolt.Count=0;
   BattVolt.AvgBuf=0; //清除平均计数器和缓存
 	}
-
+	
 //在启动时显示电池电压
-void DisplayVBattAtStart(void)
+void DisplayVBattAtStart(bit IsPOR)
 	{
-	char i;
+	char i=10;
 	//初始化平均值缓存,复位标志位
 	ResetBattAvg();
   //复位电池电压状态和电池显示状态机
   VshowFSMState=BattVdis_Waiting;		
-	for(i=0;i<6;i++)
+	do
 		{
 		SystemTelemHandler();
 		Battery=Data.BatteryVoltage; //获取并更新电池电压
 		BatteryStateFSM(); //反复循环执行状态机更新到最终的电池状态
 		}
+	while(--i);
 	//启动电池电量显示(仅无错误的情况下)
-	if(CurrentMode->ModeIdx!=Mode_OFF)return;
+	if(!IsPOR||CurrentMode->ModeIdx!=Mode_OFF)return;
 	BattShowTimer=12;
 	}
 //电池电量显示延时的处理

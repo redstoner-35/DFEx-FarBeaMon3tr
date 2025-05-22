@@ -4,6 +4,7 @@
 #include "stdbool.h"
 
 //参数配置
+#define BatteryMaximumTurboVdroop 1.2  //极亮启动过程中，电池最大允许的和运行前的压差(V)
 #define BatteryAlertDelay 10 //电池警报延迟	
 #define BatteryFaultDelay 2 //电池故障强制跳档/关机的延迟
 #define TurboILIMTryCDTime 4 //每次极亮尝试下调电流的冷却时间（单位是1/8秒）
