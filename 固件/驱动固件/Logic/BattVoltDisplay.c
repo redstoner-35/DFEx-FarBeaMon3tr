@@ -13,9 +13,10 @@ bit IsBatteryFault; //电池电压低于保护值
 
 //内部变量
 static char BattShowTimer; //电池电量显示计时
+static xdata char OneLMShowBattStateTimer; //1LM模式下显示电池状态的计时器
 static xdata AverageCalcDef BattVolt;	
-static xdata int VshowTIM;
-static char LowVoltStrobeTIM;
+static xdata unsigned char VshowTIM;
+static xdata char LowVoltStrobeTIM;
 static xdata float VbattSample; //取样的电池电压
 
 //外部全局变量
@@ -38,8 +39,8 @@ void TriggerVshowDisplay(void)
 //生成低电量提示报警
 bit LowPowerStrobe(void)
 	{
-	//电量正常
-	if(BattState!=Battery_VeryLow)LowVoltStrobeTIM=0;
+	//电量正常,或者是1LM模式，不启动计时
+	if(CurrentMode->ModeIdx==Mode_1Lumen||BattState!=Battery_VeryLow)LowVoltStrobeTIM=0;
 	//电量异常开始计时
 	else if(!LowVoltStrobeTIM)LowVoltStrobeTIM=1; //启动计时器
 	else if(LowVoltStrobeTIM>((LowVoltStrobeGap*8)-4))return 1; //触发闪烁标记电流为0
@@ -78,6 +79,24 @@ static void VshowFSMGenTIMValue(int Vsample,BattVshowFSMDef NextStep)
 //根据电池状态机设置LED指示电池电量
 static void SetPowerLEDBasedOnVbatt(void)	
 	{
+	/*********************************************
+	1LM挡位，只有电量极低时点亮电量提示，其他时候
+	电量指示功能改为每10秒闪烁一次，节约电量。
+	（当然为了不影响电量查询模块显示总体电量的功能
+	在查询期间会暂时使能电量指示器）
+	*********************************************/
+	if(CurrentMode->ModeIdx==Mode_1Lumen&&BattState!=Battery_VeryLow)
+		{
+		//倒计时，每10秒闪烁一次侧按指示电量(电量指示器不激活时进行)
+		if(VshowFSMState!=BattVdis_ShowChargeLvl&&OneLMShowBattStateTimer)
+			{
+			OneLMShowBattStateTimer--;
+			if(OneLMShowBattStateTimer>2)return;
+			}
+		//倒计时时间到，复位标志位
+		else OneLMShowBattStateTimer=82;
+		}
+	//进行指示灯控制
 	switch(BattState)
 		{
 		 case Battery_Plenty:LEDMode=LED_Green;break; //电池电量充足绿色常亮
@@ -244,9 +263,16 @@ void BatteryTelemHandler(void)
 	if(CurrentMode->ModeIdx==Mode_Ramp)AlertThr=SysCfg.RampBattThres; //无极调光模式下，使用结构体内的动态阈值
 	else AlertThr=CurrentMode->LowVoltThres; //从当前目标挡位读取模式值  
 	VBatt=(int)(Battery*1000); //得到电池电压(mV)
-	IsBatteryFault=VBatt>2560?0:1; //当电池电压低于2.55V之后置起故障bit
-	if(IsBatteryFault)IsBatteryAlert=0; //故障bit置起后强制清除警报bit
-	else IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit
+  if(VBatt>2650)		
+		{
+		IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit根据各个挡位的阈值进行判断
+		IsBatteryFault=0; //电池电压没有低于危险值，fault=0
+		}
+	else
+		{
+		IsBatteryAlert=0; //故障bit置起后强制清除警报bit
+		IsBatteryFault=1; //故障bit=1
+		}
 	//电池电量指示状态机
 	BatteryStateFSM();
 	//LED控制

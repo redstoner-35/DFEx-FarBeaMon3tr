@@ -14,7 +14,7 @@
 #include "Strobe.h"
 
 //极亮和爆闪电流选择
-//#define TurboCurrent32A  //注释掉开启36A极亮，否则极亮电流为31.75A（适配FV7212D）
+//#define TurboCurrent30A  //注释掉开启33.5A极亮，否则极亮电流为30A（适配FV7212D）
 #define FullPowerStrobe //保留则开启全功率爆闪
 #define FullPowerBeacon //全功率信标
 
@@ -42,12 +42,21 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		//月光
 		{
 		Mode_Moon,
-		CalcIREFValue(20),  //实际是20
+		CalcIREFValue(25),  //实际是20
 		0,   //最小电流没用到，无视
-		2500,  //2.5V关断
+		2650,  //2.65V关断
 		false, //月光档有专用入口，无需带记忆
 		false,
 		}, 	
+		//1流明挡位
+		{
+		Mode_1Lumen,
+		2,  //电流随便填的
+		0,   //最小电流没用到，无视
+		2500,  //2.5V关断（1流明没有保护）
+		false, //1流明档有专用入口，无需带记忆
+		false,		
+		},
 		//极低亮
 		{
 		Mode_ExtremelyLow,
@@ -96,10 +105,10 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
     //极亮
 		{
 		Mode_Turbo,
-		#ifdef TurboCurrent32A
-		CalcIREFValue(31750),  //31.75A电流
+		#ifdef TurboCurrent30A
+		CalcIREFValue(30000),  //30A电流
 		#else
-    CalcIREFValue(36000),  //36A电流(针对7175)
+    CalcIREFValue(33500),  //33A电流(针对7175)
 	  #endif		
 		0,   //最小电流没用到，无视
 		3400,  //3.4V关断
@@ -114,13 +123,13 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		#else
 			//全功率爆闪激活
 			#ifdef TurboCurrent31A
-			CalcIREFValue(31750),  //31.75A电流
+			CalcIREFValue(30000),  //30A电流
 			#else
-			CalcIREFValue(36000),  //36A电流(针对7175)
+			CalcIREFValue(33500),  //33A电流(针对7175)
 			#endif		
     #endif			
 		0,   //最小电流没用到，无视
-		2500,  //2.5V关断(实际上2.7就会拉闸，这里调成2.5是为了避免低电压处理反复触发导致爆闪工作异常)
+		2500,  //2.5V关断(实际上2.65就会拉闸，这里调成2.5是为了避免低电压处理反复触发导致爆闪工作异常)
 		false, //爆闪不能带记忆
 		true,
 		}, 
@@ -139,15 +148,15 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		#ifdef FullPowerBeacon
 			//全功率信标模式激活
 			#ifdef TurboCurrent31A
-			CalcIREFValue(31750),  //31.75A电流
+			CalcIREFValue(30000),  //30A电流
 			#else
-			CalcIREFValue(36000),  //36A电流(针对7175)
+			CalcIREFValue(33500),  //33A电流(针对7175)
 			#endif	
     #else	
 			CalcIREFValue(22000),  //22A电流
 		#endif
 		0,   //最小电流没用到，无视
-		2500,  //2.5V关断(实际上2.7就会拉闸，实际上这里调成2.5是为了避免低电压处理反复触发重置SOS状态机导致SOS工作异常)
+		2500,  //2.5V关断(实际上2.65就会拉闸，实际上这里调成2.5是为了避免低电压处理反复触发重置SOS状态机导致SOS工作异常)
 		false,	//SOS不能带记忆
 		true,
 		}, 
@@ -156,7 +165,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_SOS,
 		CalcIREFValue(14000),  //14A电流
 		0,   //最小电流没用到，无视
-		2500,  //2.5V关断(实际上2.7就会拉闸，实际上这里调成2.5是为了避免低电压处理反复触发重置SOS状态机导致SOS工作异常)
+		2500,  //2.5V关断(实际上2.65就会拉闸，实际上这里调成2.5是为了避免低电压处理反复触发重置SOS状态机导致SOS工作异常)
 		false,	//SOS不能带记忆
 		true,
 		}, 
@@ -169,11 +178,13 @@ SysConfigDef SysCfg; //系统配置
 
 //全局变量(状态位)
 bit IsRampEnabled; //是否开启无极调光
+static bit IsRampKeyPressed=0;  //标志位，用户是否按下按键对无极调光进行调节
 static bit IsNotifyMaxRampLimitReached=0; //标记无极调光达到最大电流	
-	
+static bit TemporaryDisableVoltageQuery=0; //标记位，进入1LM的时候需要暂时禁止电压查询
+
 //软件计时变量
-xdata char HoldChangeGearTIM=0; //挡位模式下长按换挡
-xdata char DisplayLockedTIM=0; //锁定和战术模式进入退出显示	
+xdata char HoldChangeGearTIM; //挡位模式下长按换挡
+xdata char DisplayLockedTIM=0; //锁定和战术模式进入退出显示
 static xdata char RampDIVCNT; //分频计时器	
 	
 //获取极亮电流
@@ -215,7 +226,7 @@ void ModeFSMInit(void)
 void ModeFSMTIMHandler(void)
 {
 	//无极调光相关的定时器
-	if(SysCfg.CfgSavedTIM<32)SysCfg.CfgSavedTIM++;
+	if(SysCfg.CfgSavedTIM>0)SysCfg.CfgSavedTIM--;
 	if(SysCfg.RampLimitReachDisplayTIM>0)
 		{
 		SysCfg.RampLimitReachDisplayTIM--;
@@ -297,8 +308,7 @@ static void SideKey1HRevGearHandler(ModeIdxDef TargetMode)
 	
 //无极调光处理
 static void RampAdjHandler(void)
-	{
-	static bit IsKeyPressed=0;	
+	{	
   int Limit;
 	bit IsPress;
   //计算出无极调光上限
@@ -306,7 +316,7 @@ static void RampAdjHandler(void)
 	Limit=SysCfg.RampCurrentLimit<CurrentMode->Current?SysCfg.RampCurrentLimit:CurrentMode->Current;
 	if(Limit<CurrentMode->Current&&IsPress&&SysCfg.RampCurrent>Limit)SysCfg.RampCurrent=Limit; //在电流被限制的情况下用户按下按键尝试调整电流，立即限幅
 	//进行亮度调整
-	if(getSideKeyHoldEvent()&&!IsKeyPressed) //长按增加电流
+	if(getSideKeyHoldEvent()&&!IsRampKeyPressed) //长按增加电流
 			{	
 			if(RampDIVCNT>0)RampDIVCNT--;
 			else 
@@ -318,13 +328,13 @@ static void RampAdjHandler(void)
 					IsNotifyMaxRampLimitReached=1; //标记已达到上限
 					SysCfg.RampLimitReachDisplayTIM=4; //熄灭0.5秒指示已经到上限
 					SysCfg.RampCurrent=Limit; //限制电流最大值	
-					IsKeyPressed=1;
+					IsRampKeyPressed=1;
 					}
 				//计时时间到，复位变量
 				RampDIVCNT=3;
 				}
 			}	
-	else if(getSideKey1HEvent()&&!IsKeyPressed) //单击+长按减少电流
+	else if(getSideKey1HEvent()&&!IsRampKeyPressed) //单击+长按减少电流
 		 {
 			if(RampDIVCNT>0)RampDIVCNT--;
 			else
@@ -335,34 +345,52 @@ static void RampAdjHandler(void)
 					IsNotifyMaxRampLimitReached=0;
 					SysCfg.RampLimitReachDisplayTIM=4; //熄灭0.5秒指示已经到下限
 					SysCfg.RampCurrent=CurrentMode->MinCurrent; //限制电流最小值
-					IsKeyPressed=1;
+					IsRampKeyPressed=1;
 					}
 				//计时时间到，复位变量
 				RampDIVCNT=3;
 				}
 		 }
-  else if(!IsPress&&IsKeyPressed)
+  else if(!IsPress&&IsRampKeyPressed)
 		{
-	  IsKeyPressed=0; //用户放开按键，允许调节		
+	  IsRampKeyPressed=0; //用户放开按键，允许调节		
 		RampDIVCNT=3; //复位分频计时器
 		}
 	//进行数据保存的判断
-	if(IsPress)SysCfg.CfgSavedTIM=0; //按键按下说明正在调整，复位计时器
-	else if(SysCfg.CfgSavedTIM==32)
-			{
-			SysCfg.CfgSavedTIM++;
-			SaveSysConfig(0);  //一段时间内没操作说明已经调节完毕，保存数据
-			}
+	if(IsPress)SysCfg.CfgSavedTIM=32; //按键按下说明正在调整，复位计时器
+	else if(!SysCfg.CfgSavedTIM)
+		{
+		SysCfg.CfgSavedTIM--;
+		SaveSysConfig(0);  //一段时间内没操作说明已经调节完毕，保存数据
+		}
 	}
 
 //检测是否需要关机
 static void DetectIfNeedsOFF(int ClickCount)
 	{
-	if(getSideKeyNClickAndHoldEvent()==2)TriggerVshowDisplay();
+	if(TemporaryDisableVoltageQuery)
+		{
+		//按键放开之后reset标志位
+		if(!getSideKeyNClickAndHoldEvent())TemporaryDisableVoltageQuery=0;
+		}
+	//标志位无效之后触发电量显示
+	else if(getSideKeyNClickAndHoldEvent()==2)TriggerVshowDisplay();
 	if(!SysMode&&ClickCount!=1)return;
 	if(SysMode&&getSideKeyHoldEvent())return;
 	ReturnToOFFState();//侧按单击或者在战术模式下松开按钮时关机
 	}	
+//尝试进入月光
+static void TryToEnterMoon(void)	
+	{
+	if(!getSideKeyLongPressEvent())return;
+	//电池电压足够的时候进入月光，否则进入1LM
+	if(Battery>2.65)SwitchToGear(Mode_Moon);
+	else
+		{		
+		TemporaryDisableVoltageQuery=1;
+		SwitchToGear(Mode_1Lumen);
+		}
+	}
 
 //挡位状态机
 void ModeSwitchFSM(void)
@@ -393,24 +421,43 @@ void ModeSwitchFSM(void)
 				}
 		  //处理定位LED变更
 			if(LocateLED_Edit(ClickCount))break;
-		  //非特殊模式正常单击开关机的事项
-			if(ClickCount==1)PowerToNormalMode(LastMode); //侧按单击开机进入循环	
-			//进入极亮和爆闪
-			else EnterTurboStrobe(ClickCount);		
-      if(getSideKeyLongPressEvent())SwitchToGear(Mode_Moon); //长按开机直接进月光					
-			if(ClickCount==4) //四击切换挡位模式和无极调光
-					{	
-					IsRampEnabled=~IsRampEnabled; //转换无极调光状态	
+		  //非特殊模式正常单击开关机，执行一键极亮，爆闪和转换无极调光
+			switch(ClickCount)
+				{
+				case 1:PowerToNormalMode(LastMode);break; //侧按单击开机进入循环	
+				case 4:	//四击转换挡位模式和无极调光
+					IsRampEnabled=~IsRampEnabled; 	
 					LEDMode=IsRampEnabled?LED_GreenBlinkThird:LED_RedBlinkThird; //显示是否开启
 					SaveSysConfig(0); //保存配置到ROM内
-					}
-		  //查询电压
-			if(getSideKeyNClickAndHoldEvent())TriggerVshowDisplay();
+				  break;
+				//其余情况执行极亮和爆闪进入检测
+				default:EnterTurboStrobe(ClickCount);
+				}
+			//长按开机进入月光挡位	
+      TryToEnterMoon(); 				
+		  //查询电压和进入1流明挡位
+			switch(getSideKeyNClickAndHoldEvent())
+				{
+				case 1:TriggerVshowDisplay();break; //单击+长按查询电量
+				case 2:	//2击+长按进入1流明挡位
+					TemporaryDisableVoltageQuery=1;
+					SwitchToGear(Mode_1Lumen);
+				  break; 
+				//其余情况什么都不做
+				default:break;
+				}
   		break;
+		//1流明挡位			
+	  case Mode_1Lumen:
+			 IsHalfBrightness=1; //月光模式按键灯亮度减半
+		   DetectIfNeedsOFF(ClickCount); //执行关机动作检测		 	
+			 //长按，尝试进入月光
+		   TryToEnterMoon();
+			 break;		
 		//月光状态
 		 case Mode_Moon:
 			 IsHalfBrightness=1; //月光模式按键灯亮度减半
-			 BatteryLowAlertProcess(true,Mode_Moon);
+			 BatteryLowAlertProcess(false,Mode_1Lumen);
 		   DetectIfNeedsOFF(ClickCount); //执行关机动作检测	
 			 //电池电压充足，长按进入低亮挡位
 		   if(getSideKeyLongPressEvent())  

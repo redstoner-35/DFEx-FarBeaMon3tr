@@ -66,8 +66,8 @@ void PWM_Init(void)
 	PWMP4L=0x5F; //PWM通道周期(48MHz/20KHz)-1=2399(0x95F)
 	//配置占空比数据
   PWMD0H=0;
+  PWMD4H=0x0;
 	PWMD0L=0;	
-	PWMD4H=0x0;
 	PWMD4L=0x0;
 	//初始化变量
 	PWMDuty=0;

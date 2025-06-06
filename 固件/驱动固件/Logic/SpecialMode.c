@@ -32,7 +32,7 @@ static void EnterExitTac(void)
 void PowerToNormalMode(ModeIdxDef Mode)
 	{
 	if(Battery>2.9)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode); //正常开启
-	else if(Battery>2.55)SwitchToGear(Mode_Moon);	 //大于2.5V的时候只能开月光
+	else if(Battery>2.65)SwitchToGear(Mode_Moon);	 //大于2.5V的时候只能开月光
 	else LEDMode=LED_RedBlinkFifth; //电池电量严重不足，红色闪五次
 	//如果成功进入了无级模式，则进行复位处理
 	if(CurrentMode->ModeIdx==Mode_Ramp)RampRestoreLVProtToMax();

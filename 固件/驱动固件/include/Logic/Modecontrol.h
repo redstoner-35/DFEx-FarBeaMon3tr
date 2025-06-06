@@ -27,6 +27,7 @@ typedef enum
 	Mode_Fault, //出现错误
 		
 	Mode_Ramp, //无极调光
+	Mode_1Lumen, //1流明极低挡位
   Mode_Moon, //月光
 	Mode_ExtremelyLow, //极低亮
 	Mode_Low, //低亮
@@ -65,7 +66,7 @@ extern bit IsRampEnabled; //是否启用无极调光
 //参数配置
 #define HoldSwitchDelay 6 // 长按换挡延迟	
 #define SleepTimeOut 5 //休眠状态延时	
-#define ModeTotalDepth 13 //系统一共有几个挡位			
+#define ModeTotalDepth 14 //系统一共有几个挡位			
 	
 //函数
 void ModeFSMTIMHandler(void);//挡位状态机所需的软件定时器处理

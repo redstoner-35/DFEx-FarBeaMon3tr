@@ -7,8 +7,8 @@
 #include "SelfTest.h"
 
 //内部变量
-static xdata char BattAlertTimer=0; //电池低电压告警处理
-static xdata char RampCurrentRiseAttmTIM=0; //无极调光恢复电流的计时器	
+static xdata char BattAlertTimer; //电池低电压告警处理
+static xdata char RampCurrentRiseAttmTIM; //无极调光恢复电流的计时器	
 static char MPPTStepdownWaitTimer; //MPPT下调极亮等待的计时器
 
 //全局参考

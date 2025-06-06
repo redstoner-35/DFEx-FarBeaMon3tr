@@ -43,12 +43,6 @@ void Key_IRQHandler(void) interrupt SideKeyIRQ
   ClearKeyIntFlag();
 	}
 
-//获取按键是否按下
-bit GetIfKeyPressed(void)
-	{
-	return KeyPress?0:1;
-	}	
-	
 //初始化侧按键
 void SideKeyInit(void)
   {
@@ -193,7 +187,7 @@ void SideKey_LogicHandler(void)
 		KeyTimer[0]=0;//关闭定时器
 		}
 	//连续短按序列已经结束
-	if(!IsKeyPressed&&KeyTimer[1]==0x80+(unsigned char)ContShortPressWindow)
+	if(!IsKeyPressed&&KeyTimer[1]==(0x80+(unsigned char)ContShortPressWindow))
 	  {
 		KeyTimer[1]=0;//关闭定时器1
 		if(!Keyevent.LongPressDetected)	

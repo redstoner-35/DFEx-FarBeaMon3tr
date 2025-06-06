@@ -10,7 +10,7 @@
 
 //内部全局
 static xdata int CurrentIdx=0;
-static xdata u8 CurrentCRC=0;
+static xdata u8 CurrentCRC;
 
 //CRC-8计算 
 static u8 PEC8Check(char *DIN,char Len)
@@ -57,13 +57,11 @@ static int SearchSysConfig(SysROMImg *ROMData)
 //读取无极调光配置
 void ReadSysConfig(void)
 	{
-	extern code ModeStrDef ModeSettings[ModeTotalDepth];
 	SysROMImg ROMData;
-	bit KState=GetIfKeyPressed();
 	//读取数据
 	CurrentIdx=SearchSysConfig(&ROMData);
 	//进行读出数据的校验
-	if(!KState&&ROMData.Data.CheckSum==PEC8Check(ROMData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)))
+	if(ROMData.Data.CheckSum==PEC8Check(ROMData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)))
 		{
 		//校验成功，加载数据
 		SysMode=ROMData.Data.SysConfig.Data.IsSystemLocked?Operation_Locked:Operation_Normal;
@@ -82,18 +80,6 @@ void ReadSysConfig(void)
 		RestoreToMinimumSysCurrent();
 		IsRampEnabled=0; //默认为挡位模式
 		SaveSysConfig(1); //重建数据后立即保存参数
-		//按键按下重置，提示用户松开按键
-		if(KState)
-			{
-			while(GetIfKeyPressed())
-				{
-				IsHalfBrightness=0;
-				MakeFastStrobe(LED_Amber);
-				delay_ms(40);
-				}
-			//按键松开，等待500mS继续启动流程
-			delay_ms(500);
-			}
 		}
 	//读取操作完毕，锁定flash	
 	SetFlashState(0);

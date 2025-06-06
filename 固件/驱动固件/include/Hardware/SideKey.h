@@ -33,7 +33,6 @@ bit IsKeyEventOccurred(void); //检测是否有事件发生
 char getSideKeyNClickAndHoldEvent(void); //获取侧按按下N次+长按的按键数
 void MarkAsKeyPressed(void); //标记按键按下
 bit getSideKey1HEvent(void); //获取侧按按键单击
-bit GetIfKeyPressed(void); //获取按键当前的实时状态（没有任何的去抖处理）
 
 //回调处理
 void SideKey_Int_Callback(void);//侧按中断的处理

@@ -11,7 +11,7 @@
 //全局变量
 xdata LocLEDEditDef LocLEDState=LocateLED_NotEdit;
 static xdata char LocLEDTIM;
-static u8 LocSetTimeOutTIM=0;
+static u8 LocSetTimeOutTIM;
 
 //定位LED设置最大超时时间
 #define LocateLEDTimeOut 30

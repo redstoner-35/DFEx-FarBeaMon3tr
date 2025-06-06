@@ -3,6 +3,14 @@
 
 typedef enum
 	{
+	LED_BothOFF=0x0C,  //Mask位=11，关闭所有LED
+	LED_ROnly=0x08,   //Mask位=10，打开红灯
+	LED_GOnly=0x04,   //Mask位=01，打开绿灯
+	LED_RPlusG=0x00   //Mask位=00，打开所有LED
+	}LEDCommandDef;
+
+typedef enum
+	{
 	LED_OFF=0, //关闭
 	//常亮
 	LED_Red=1, //红色常亮
@@ -30,6 +38,6 @@ extern bit IsHalfBrightness; //版亮度模式
 //LED控制函数
 void LED_Init(void);
 void LEDControlHandler(void);	
-void MakeFastStrobe(LEDStateDef LEDMode);	
+void MakeFastStrobe(LEDStateDef Mode);	
 
 #endif
