@@ -11,7 +11,7 @@
 //全局变量
 xdata LocLEDEditDef LocLEDState=LocateLED_NotEdit;
 static xdata char LocLEDTIM;
-static u8 LocSetTimeOutTIM;
+static xdata u8 LocSetTimeOutTIM;
 
 //定位LED设置最大超时时间
 #define LocateLEDTimeOut 30
@@ -19,8 +19,8 @@ static u8 LocSetTimeOutTIM;
 //定位LED显示计时器
 void LocateLED_TIMHandler(void)
 	{
-	if(LocLEDTIM>0)LocLEDTIM--;
-	if(LocSetTimeOutTIM>0)LocSetTimeOutTIM--;
+	if(LocLEDTIM)LocLEDTIM--;
+	if(LocSetTimeOutTIM)LocSetTimeOutTIM--;
 	}
 
 //显示当前系统配置的定位LED类型

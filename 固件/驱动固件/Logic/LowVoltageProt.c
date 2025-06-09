@@ -9,7 +9,7 @@
 //内部变量
 static xdata char BattAlertTimer; //电池低电压告警处理
 static xdata char RampCurrentRiseAttmTIM; //无极调光恢复电流的计时器	
-static char MPPTStepdownWaitTimer; //MPPT下调极亮等待的计时器
+static char MPPTStepdownWaitTimer=0; //MPPT下调极亮等待的计时器
 
 //全局参考
 xdata int TurboILIM; //极亮电流限制
@@ -27,7 +27,7 @@ static void StartBattAlertTimer(void)
 void BattAlertTIMHandler(void)
 	{
 	//MPPT下调判断
-	if(MPPTStepdownWaitTimer>0)MPPTStepdownWaitTimer--;
+	if(MPPTStepdownWaitTimer)MPPTStepdownWaitTimer--;
 	//无极调光警报定时
 	if(RampCurrentRiseAttmTIM>0&&RampCurrentRiseAttmTIM<9)RampCurrentRiseAttmTIM++;
 	//电量警报

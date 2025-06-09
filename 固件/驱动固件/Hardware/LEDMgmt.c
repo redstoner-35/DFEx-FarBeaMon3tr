@@ -136,15 +136,12 @@ void LEDControlHandler(void)
 			Command=ConvertLEDModeToCmd(LEDMode);
 			break;
 		case LED_RedBlink: //红色闪烁
-		  //如果计时变量bit2=1说明已经计数到4
-			if(timer&0x04)
-				{
-				timer&=0x80; //复位掉计数部分
-				timer^=0x80; //和0x80 XOR取反bit7
-				}
+		  //如果计时变量bit2=1说明已经计数到4，此时首先和0x80相与清除掉计数部分，然后和0x80 XOR翻转bit7实现反复取反
+			if(timer&0x04)timer=(timer&0x80)^0x80;
 			//否则继续计数
 			else timer++;
-			if(timer&0x80)Command=LED_ROnly; //根据bit 7载入LED控制位
+			//根据bit 7状态设置指示灯，如果bit7=1，则发送红色点亮指令让LED点亮
+			if(timer&0x80)Command=LED_ROnly; 
 			break;
 		case LED_GreenBlinkThird:
 		case LED_RedBlinkThird: //LED红色闪烁3次
@@ -153,8 +150,9 @@ void LEDControlHandler(void)
 			if(timer>((LEDMode==LED_RedBlinkThird||LEDMode==LED_GreenBlinkThird)?6:10))LEDMode=LED_OFF; //时间到，关闭识别
 			else if((timer++)%2)//继续计时,符合条件则点亮LED
 				{
-				if(LEDMode==LED_GreenBlinkThird)Command=LED_ROnly;
-				else Command=LED_GOnly;
+				//根据LED颜色输出对应的指令，点亮对应的LED
+				if(LEDMode==LED_GreenBlinkThird)Command=LED_GOnly;
+				else Command=LED_ROnly;
 				}		
 		  break;
 		}
@@ -166,10 +164,9 @@ void LEDControlHandler(void)
 //制造一次快闪
 void MakeFastStrobe(LEDStateDef Mode)
 	{
-	//参数检查，其余传入值都无效
-	if(Mode<1||Mode>3)return;
+  LEDCommandDef Command=ConvertLEDModeToCmd(Mode);
 	//打开LED
-	SetLEDONOFF(ConvertLEDModeToCmd(Mode));
+	SetLEDONOFF(Command);
 	delay_ms(20);
 	//关闭LED
 	SetLEDONOFF(LED_BothOFF);

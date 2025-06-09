@@ -17,7 +17,7 @@ static void SOSFSM_Jump(SOSStateDef State,char Time)
 void SOSTIMHandler(void)
 {
 	//对计时器数值进行递减
-	if(SOSTIM>0)SOSTIM--;
+	if(SOSTIM)SOSTIM--;
 }
 
 //复位整个SOS模块

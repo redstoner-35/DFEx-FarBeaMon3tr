@@ -116,7 +116,7 @@ void PWM_OutputCtrlHandler(void)
 	if(PreChargeDACDuty<0)PreChargeDACDuty=0;
 	//根据PWM数值选择MASK寄存器是否启用
 	IsNeedToEnableOutput=PWMDuty>0?1:0; //是否需要启用输出
-	IsNeedToEnableMOS=PreChargeDACDuty>0?1:0;  //配置是否需要使能FET
+	IsNeedToEnableMOS=PreChargeDACDuty?1:0;  //配置是否需要使能FET
 	//配置寄存器装载PWM设置数值
 	buf=PWMDuty*(float)PWMStepConstant;
 	buf/=(float)100;

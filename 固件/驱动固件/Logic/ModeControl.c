@@ -12,11 +12,7 @@
 #include "SOS.h"
 #include "Beacon.h"
 #include "Strobe.h"
-
-//极亮和爆闪电流选择
-//#define TurboCurrent30A  //注释掉开启33.5A极亮，否则极亮电流为30A（适配FV7212D）
-#define FullPowerStrobe //保留则开启全功率爆闪
-#define FullPowerBeacon //全功率信标
+#include "TurboICCMAX.h"
 
 //挡位结构体
 code ModeStrDef ModeSettings[ModeTotalDepth]=
@@ -105,11 +101,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
     //极亮
 		{
 		Mode_Turbo,
-		#ifdef TurboCurrent30A
-		CalcIREFValue(30000),  //30A电流
-		#else
-    CalcIREFValue(33500),  //33A电流(针对7175)
-	  #endif		
+		CalcIREFValue(TurboICCMAX),  //30A电流	
 		0,   //最小电流没用到，无视
 		3400,  //3.4V关断
 		false, //极亮不能带记忆
@@ -118,16 +110,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
     //爆闪		
 		{
 		Mode_Strobe,
-		#ifndef FullPowerStrobe		
-		CalcIREFValue(22000),  //22A电流
-		#else
-			//全功率爆闪激活
-			#ifdef TurboCurrent31A
-			CalcIREFValue(30000),  //30A电流
-			#else
-			CalcIREFValue(33500),  //33A电流(针对7175)
-			#endif		
-    #endif			
+		CalcIREFValue(StrobeICCMAX),		
 		0,   //最小电流没用到，无视
 		2500,  //2.5V关断(实际上2.65就会拉闸，这里调成2.5是为了避免低电压处理反复触发导致爆闪工作异常)
 		false, //爆闪不能带记忆
@@ -145,16 +128,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		//信标模式
 		{
 		Mode_Beacon,
-		#ifdef FullPowerBeacon
-			//全功率信标模式激活
-			#ifdef TurboCurrent31A
-			CalcIREFValue(30000),  //30A电流
-			#else
-			CalcIREFValue(33500),  //33A电流(针对7175)
-			#endif	
-    #else	
-			CalcIREFValue(22000),  //22A电流
-		#endif
+		CalcIREFValue(BeaconICCMAX),
 		0,   //最小电流没用到，无视
 		2500,  //2.5V关断(实际上2.65就会拉闸，实际上这里调成2.5是为了避免低电压处理反复触发重置SOS状态机导致SOS工作异常)
 		false,	//SOS不能带记忆
@@ -177,14 +151,14 @@ xdata ModeIdxDef LastMode; //挡位记忆存储
 SysConfigDef SysCfg; //系统配置	
 
 //全局变量(状态位)
-bit IsRampEnabled; //是否开启无极调光
+bit IsRampEnabled=0; //是否开启无极调光
 static bit IsRampKeyPressed=0;  //标志位，用户是否按下按键对无极调光进行调节
-static bit IsNotifyMaxRampLimitReached=0; //标记无极调光达到最大电流	
+static bit IsNotifyMaxRampLimitReached; //标记无极调光达到最大电流	
 static bit TemporaryDisableVoltageQuery=0; //标记位，进入1LM的时候需要暂时禁止电压查询
 
 //软件计时变量
 xdata char HoldChangeGearTIM; //挡位模式下长按换挡
-xdata char DisplayLockedTIM=0; //锁定和战术模式进入退出显示
+xdata char DisplayLockedTIM; //锁定和战术模式进入退出显示
 static xdata char RampDIVCNT; //分频计时器	
 	
 //获取极亮电流
