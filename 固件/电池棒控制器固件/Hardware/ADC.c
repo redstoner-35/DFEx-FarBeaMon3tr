@@ -14,6 +14,9 @@
 //变量
 static bool ADCEOCFlag=false;
 ADCOutTypeDef ADCO;
+static bool IsADCLoadCalibrationVal=false;
+static int VbattCal=1000;
+static int IbattCal=1000;
 
 //ADC结束转换回调
 void ADC_EOC_interrupt_Callback(void)
@@ -59,7 +62,11 @@ bool ADC_GetResult(void)
 	buf=((float)ADCResult[ISenseOut_IOPN]*(VREF/(float)4096))-Comp; //VINA=IOUT-IREF
 	buf/=SenseAmpGain; //Vshunt=VINA/Sense
 	ADCO.Ibatt=(buf*(-1000))/SenseShuntmOhm; //IBatt=Vshunt/Rshunt(因为硬件上检流NP对调了所以输出电流要反相)
-	ADCO.Ibatt*=1.012; //实际电流是1.2%误差
+	if(IsADCLoadCalibrationVal)
+		{
+		ADCO.Ibatt*=(float)IbattCal;
+		ADCO.Ibatt/=(float)1000;  //应用校准系数修正电流
+		}
 	//根据采样结果更新温度和电压
   buf=(float)ADCResult[TempVBatt_IOPN]*(VREF/(float)4096); //得到引脚对应电压
   if(GPIO_ReadOutBit(TVSEL_IOG,TVSEL_IOP)==SET)		
@@ -67,6 +74,11 @@ bool ADC_GetResult(void)
 		//当前测量结果为电压
 		Comp=(float)VsenseLowRes/(float)(VsenseUpRes+VsenseLowRes); //计算比例值
 		ADCO.Vbatt=buf/Comp; //原始电压值/上下桥分压系数=电池电压
+		if(IsADCLoadCalibrationVal)
+			{
+			ADCO.Vbatt*=(float)VbattCal;
+			ADCO.Vbatt/=(float)1000;  //应用校准系数修正电压
+			}
 		GPIO_ClearOutBits(TVSEL_IOG,TVSEL_IOP); //令TVSEL=0，选择温度测量	
 		}
 	else
@@ -91,6 +103,14 @@ bool ADC_GetResult(void)
 	//测量完毕，返回结果
 	return true;
 	}		
+	
+//ADC加载校准数值
+void InternalADC_LoadCalibration(int Vcal,int Ical)
+	{
+	IsADCLoadCalibrationVal=true;
+	VbattCal=Vcal;
+	IbattCal=Ical;	
+	}	
 	
 //内部ADC初始化
 void InternalADC_Init(void)
@@ -120,6 +140,7 @@ void InternalADC_Init(void)
    NVIC_EnableIRQ(ADC0_IRQn);
 	 //复位传感数据并启用ADC
 	 ADCO.Ibatt=0;
+	 IsADCLoadCalibrationVal=false; //重置校准状态
 	 ADCO.IsNTCOK=false;
 	 ADCO.Systemp=0;
 	 ADCO.Vbatt=0;

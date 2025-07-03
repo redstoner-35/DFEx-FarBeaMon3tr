@@ -82,7 +82,7 @@ int main(void)
  PushDefaultResultToVBat(); //将电池电压数据默认应用给结构体进行显示
  //自检结束,将进度条跳到100%
  ShowPostInfo(100,"系统初始化完成","AA",Msg_POSTOK);
- if(!CfgData.EnableFastBoot)delay_ms(300); //关闭快速启动则多延时一会让人可以看清
+ delay_ms(!CfgData.EnableFastBoot?400:150); //关闭快速启动则多延时一会让人可以看清
  WatchDog_Init(); //启动看门狗
  ClearScreen();
  EnteredInstantCapTest(); //尝试进入测试菜单

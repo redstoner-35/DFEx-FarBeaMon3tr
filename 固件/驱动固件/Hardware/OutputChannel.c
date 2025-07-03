@@ -23,9 +23,9 @@ bit IsCurrentRampUp;  //电流正在上升过程中的标记位（用于和MPPT试探联动）
 
 //内部变量
 static bit IsEnableSlowILEDRamp; //标志位，是否启用慢速电流斜率控制
-static xdata char PreChargeFSMTimer; //预充电状态机计时器
+static xdata unsigned char PreChargeFSMTimer; //预充电状态机计时器
 static xdata OutChFSMStateDef OutputFSMState; //输出控制状态机
-static xdata char HBTimer; //心跳计时器
+static xdata unsigned char HBTimer; //心跳计时器
 
 //内部状态表
 static code OutChFSMStateDef NeedsOFFStateTable[]=

@@ -16,7 +16,7 @@
 //PWM输出配置结构体
 extern xdata float PWMDuty;	
 extern bit IsNeedToUploadPWM; //需要更新PWM寄存器应用输出
-extern xdata int PreChargeDACDuty; //预充电PWMDAC的输出
+extern xdata unsigned int PreChargeDACDuty; //预充电PWMDAC的输出
 	
 //函数
 void PWM_Init(void);

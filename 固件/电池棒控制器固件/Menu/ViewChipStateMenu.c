@@ -14,6 +14,7 @@ static void ShowHPGaugeState(void)
 	{
 	extern bool IsEnableHPGauge;
 	bool Result;
+	int PPS1ICC,PPS2ICC;
 	LCD_ShowChinese(4,21,"高精度功率计",WHITE,LGRAY,0);
 	if(!CfgData.EnableHPGauge)LCD_ShowChinese(131,21,"禁用",WHITE,LGRAY,0);
 	else if(!IsEnableHPGauge)LCD_ShowChinese(131,21,"故障",RED,LGRAY,0);
@@ -23,7 +24,22 @@ static void ShowHPGaugeState(void)
 	LCD_ShowChinese(4,35,"主动均衡模块",WHITE,LGRAY,0);
 	if(!Result)LCD_ShowChinese(131,35,"故障",RED,LGRAY,0);
 	else LCD_ShowChinese(131,35,"正常",GREEN,LGRAY,0);		
-	
+	//显示PPS1和PPS2电流
+	Result=IP2366_GetPPSCurrent(&PPS1ICC,&PPS2ICC);
+	LCD_ShowHybridString(4,49,"PPS1广播电流",WHITE,LGRAY,0);
+	LCD_ShowHybridString(4,64,"PPS2广播电流",WHITE,LGRAY,0);	
+	if(!Result)
+		{
+		LCD_ShowChinese(131,49,"未知",WHITE,LGRAY,0);
+		LCD_ShowChinese(131,64,"未知",WHITE,LGRAY,0);
+		}
+	else
+		{
+		LCD_ShowIntNum(95,49,PPS1ICC,4,WHITE,LGRAY,12);
+		LCD_ShowString(137,49,"mA",WHITE,LGRAY,12,0);
+		LCD_ShowIntNum(95,64,PPS2ICC,4,WHITE,LGRAY,12);
+		LCD_ShowString(137,64,"mA",WHITE,LGRAY,12,0);		
+		}		
 	}
 
 //显示芯片充电配置

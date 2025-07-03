@@ -40,7 +40,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Moon,
 		CalcIREFValue(25),  //实际是20
 		0,   //最小电流没用到，无视
-		2650,  //2.65V关断
+		2750,  //2.5V关断
 		false, //月光档有专用入口，无需带记忆
 		false,
 		}, 	
@@ -58,7 +58,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_ExtremelyLow,
 		CalcIREFValue(200),  //200mA
 		0,   //最小电流没用到，无视
-		2600,  //2.6V关断
+		2850,  //2.85V关断
 		true, //带记忆
 		false,
 		}, 	
@@ -67,7 +67,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Low,
 		CalcIREFValue(1000),  //1000mA电流
 		0,   //最小电流没用到，无视
-		2800,  //2.8V关断
+		2950,  //2.8V关断
 		true,
 		false,
 		},
@@ -76,7 +76,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Mid,
 		CalcIREFValue(2000),  //2000mA电流
 		0,   //最小电流没用到，无视
-		2900,  //2.9V关断
+		3050,  //3.0V关断
 		true,
 		false,
 		}, 	
@@ -85,7 +85,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_MHigh,
 		CalcIREFValue(4000),  //4000mA电流
 		0,   //最小电流没用到，无视
-		3000,  //3V关断
+		3150,  //3.1V关断
 		true,
 		true,
 		}, 	
@@ -94,7 +94,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_High,
 		CalcIREFValue(8000),  //8000mA电流
 		0,   //最小电流没用到，无视
-		3100,  //3.1V关断
+		3250,  //3.2V关断
 		true,
 		true,
 		}, 	
@@ -151,15 +151,19 @@ xdata ModeIdxDef LastMode; //挡位记忆存储
 SysConfigDef SysCfg; //系统配置	
 
 //全局变量(状态位)
-bit IsRampEnabled=0; //是否开启无极调光
+bit IsRampEnabled; //是否开启无极调光
+bit TemporaryDisableVoltageQuery; //标记位，进入1LM的时候需要暂时禁止电压查询
+	
+//全局软件计时变量
+xdata unsigned char HoldChangeGearTIM; //挡位模式下长按换挡
+xdata unsigned char DisplayLockedTIM=0; //锁定和战术模式进入退出显示
+
+//内部变量和标志位
+static xdata char RampDIVCNT; //无极调光降低调光速度的分频计时器		
 static bit IsRampKeyPressed=0;  //标志位，用户是否按下按键对无极调光进行调节
 static bit IsNotifyMaxRampLimitReached; //标记无极调光达到最大电流	
-static bit TemporaryDisableVoltageQuery=0; //标记位，进入1LM的时候需要暂时禁止电压查询
 
-//软件计时变量
-xdata char HoldChangeGearTIM; //挡位模式下长按换挡
-xdata char DisplayLockedTIM; //锁定和战术模式进入退出显示
-static xdata char RampDIVCNT; //分频计时器	
+
 	
 //获取极亮电流
 static int QueryTurboCurrent(void)	
@@ -188,7 +192,7 @@ void ModeFSMInit(void)
 		break;
 		}
 	//复位变量
-	RampDIVCNT=3; 	
+	RampDIVCNT=RampAdjustDividingFactor; 	
 	//挡位模式配置
 	ResetSOSModule(); //复位SOS模块
 	LastMode=Mode_Low;
@@ -207,7 +211,7 @@ void ModeFSMTIMHandler(void)
 		if(!SysCfg.RampLimitReachDisplayTIM)IsNotifyMaxRampLimitReached=0; //当无极调光显示计时器变为0之后，复位标志位
 		}
 	//锁定操作提示计时器
-  if(DisplayLockedTIM>0)DisplayLockedTIM--;
+  if(DisplayLockedTIM)DisplayLockedTIM--;
 }
 
 //挡位跳转
@@ -305,7 +309,7 @@ static void RampAdjHandler(void)
 					IsRampKeyPressed=1;
 					}
 				//计时时间到，复位变量
-				RampDIVCNT=3;
+				RampDIVCNT=RampAdjustDividingFactor;
 				}
 			}	
 	else if(getSideKey1HEvent()&&!IsRampKeyPressed) //单击+长按减少电流
@@ -322,13 +326,13 @@ static void RampAdjHandler(void)
 					IsRampKeyPressed=1;
 					}
 				//计时时间到，复位变量
-				RampDIVCNT=3;
+				RampDIVCNT=RampAdjustDividingFactor;
 				}
 		 }
   else if(!IsPress&&IsRampKeyPressed)
 		{
 	  IsRampKeyPressed=0; //用户放开按键，允许调节		
-		RampDIVCNT=3; //复位分频计时器
+		RampDIVCNT=RampAdjustDividingFactor; //复位分频计时器
 		}
 	//进行数据保存的判断
 	if(IsPress)SysCfg.CfgSavedTIM=32; //按键按下说明正在调整，复位计时器
@@ -348,23 +352,15 @@ static void DetectIfNeedsOFF(int ClickCount)
 		if(!getSideKeyNClickAndHoldEvent())TemporaryDisableVoltageQuery=0;
 		}
 	//标志位无效之后触发电量显示
-	else if(getSideKeyNClickAndHoldEvent()==2)TriggerVshowDisplay();
-	if(!SysMode&&ClickCount!=1)return;
-	if(SysMode&&getSideKeyHoldEvent())return;
-	ReturnToOFFState();//侧按单击或者在战术模式下松开按钮时关机
-	}	
-//尝试进入月光
-static void TryToEnterMoon(void)	
-	{
-	if(!getSideKeyLongPressEvent())return;
-	//电池电压足够的时候进入月光，否则进入1LM
-	if(Battery>2.65)SwitchToGear(Mode_Moon);
-	else
-		{		
-		TemporaryDisableVoltageQuery=1;
-		SwitchToGear(Mode_1Lumen);
+	else if(getSideKeyNClickAndHoldEvent()==2)TriggerVshowDisplay();	
+	//侧按单击或者在战术模式下松开按钮时关机
+	if(!SysMode)
+		{
+		//非战术模式单击关机
+		if(ClickCount==1)ReturnToOFFState();
 		}
-	}
+	else if(!getSideKeyHoldEvent())ReturnToOFFState();
+	}	
 
 //挡位状态机
 void ModeSwitchFSM(void)
@@ -408,7 +404,7 @@ void ModeSwitchFSM(void)
 				default:EnterTurboStrobe(ClickCount);
 				}
 			//长按开机进入月光挡位	
-      TryToEnterMoon(); 				
+      if(getSideKeyLongPressEvent())EnterMoonProcess();				
 		  //查询电压和进入1流明挡位
 			switch(getSideKeyNClickAndHoldEvent())
 				{
@@ -424,14 +420,14 @@ void ModeSwitchFSM(void)
 		//1流明挡位			
 	  case Mode_1Lumen:
 			 IsHalfBrightness=1; //月光模式按键灯亮度减半
-		   DetectIfNeedsOFF(ClickCount); //执行关机动作检测		 	
-			 //长按，尝试进入月光
-		   TryToEnterMoon();
+			 //执行关机动作检测	
+		   DetectIfNeedsOFF(ClickCount); 	 	
+		   if(Data.RawBattVolt<7.2)ReturnToOFFState();	//电池电压低于7.2后关机避免DCDC工作异常
 			 break;		
 		//月光状态
 		 case Mode_Moon:
 			 IsHalfBrightness=1; //月光模式按键灯亮度减半
-			 BatteryLowAlertProcess(false,Mode_1Lumen);
+			 BatteryLowAlertProcess(true,Mode_Moon);
 		   DetectIfNeedsOFF(ClickCount); //执行关机动作检测	
 			 //电池电压充足，长按进入低亮挡位
 		   if(getSideKeyLongPressEvent())  

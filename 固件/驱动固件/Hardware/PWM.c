@@ -5,7 +5,7 @@
 
 //全局变量
 xdata float PWMDuty;
-xdata int PreChargeDACDuty; //预充电PWMDAC的输出
+xdata unsigned int PreChargeDACDuty; //预充电PWMDAC的输出
 static bit IsPWMLoading; //PWM正在加载中
 static bit IsNeedToEnableOutput; //是否需要启用输出
 static bit IsNeedToEnableMOS; //是否需要使能MOS管
@@ -95,9 +95,10 @@ void PWM_OutputCtrlHandler(void)
 	{
 	int value;
 	float buf;
-	//判断是否需要加载的逻辑运算
+	//当前系统未请求加载
 	if(!IsNeedToUploadPWM)return; //不需要加载
-	else if(IsPWMLoading) //当次加载已开始，进行结束监测
+	//当次加载已开始，进行结束监测
+	else if(IsPWMLoading) 
 		{
 	  if(PWMLOADEN&0x11)return;//加载寄存器复位为0，表示加载成功
 	  //加载结束
@@ -107,25 +108,27 @@ void PWM_OutputCtrlHandler(void)
 		else PWMMASKE|=0x01;   //更新PWMMASKE寄存器根据输出状态启用对应的通道
 		IsNeedToUploadPWM=0;
 		IsPWMLoading=0;  //正在加载状态为清除
-		return;
 		}
-	//PWM占空比参数限制
-	if(PWMDuty>100)PWMDuty=100;
-	if(PWMDuty<0)PWMDuty=0;
-	if(PreChargeDACDuty>2399)PreChargeDACDuty=2399;
-	if(PreChargeDACDuty<0)PreChargeDACDuty=0;
-	//根据PWM数值选择MASK寄存器是否启用
-	IsNeedToEnableOutput=PWMDuty>0?1:0; //是否需要启用输出
-	IsNeedToEnableMOS=PreChargeDACDuty?1:0;  //配置是否需要使能FET
-	//配置寄存器装载PWM设置数值
-	buf=PWMDuty*(float)PWMStepConstant;
-	buf/=(float)100;
-	value=(int)buf;
-	PWMD4H=(PreChargeDACDuty>>8)&0xFF;
-	PWMD4L=PreChargeDACDuty&0xFF;
-	PWMD0H=(value>>8)&0xFF;
-	PWMD0L=value&0xFF;			
-	//PWM寄存器数值已装入，应用数值		
-	IsPWMLoading=1; //标记加载过程进行中
-	PWMLOADEN|=0x11; //开始加载
+	//当次加载已被请求开始，进行加载处理
+	else
+		{
+		//PWM占空比参数限制
+		if(PWMDuty>100)PWMDuty=100;
+		if(PWMDuty<0)PWMDuty=0;
+		if(PreChargeDACDuty>2399)PreChargeDACDuty=2399;
+		//根据PWM数值选择MASK寄存器是否启用
+		IsNeedToEnableOutput=PWMDuty>0?1:0; //是否需要启用输出
+		IsNeedToEnableMOS=PreChargeDACDuty?1:0;  //配置是否需要使能FET
+		//配置寄存器装载PWM设置数值
+		buf=PWMDuty*(float)PWMStepConstant;
+		buf/=(float)100;
+		value=(int)buf;
+		PWMD4H=(PreChargeDACDuty>>8)&0xFF;
+		PWMD4L=PreChargeDACDuty&0xFF;
+		PWMD0H=(value>>8)&0xFF;
+		PWMD0L=value&0xFF;			
+		//PWM寄存器数值已装入，应用数值		
+		IsPWMLoading=1; //标记加载过程进行中
+		PWMLOADEN|=0x11; //开始加载
+		}
 	}

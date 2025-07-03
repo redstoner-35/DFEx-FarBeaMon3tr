@@ -2,8 +2,8 @@
 
 //内部标志位
 static xdata BeaconStateDef State;
-static xdata char BeaconOnTIM;
-static xdata char BeaconOffTIM;
+static xdata unsigned char BeaconOnTIM;
+static xdata unsigned char BeaconOffTIM;
 
 //复位状态机
 void BeaconFSM_Reset(void)
@@ -16,7 +16,7 @@ void BeaconFSM_Reset(void)
 //关闭时间计时
 void BeaconFSM_TIMHandler(void)
 	{
-	if(BeaconOffTIM>0)BeaconOffTIM--;
+	if(BeaconOffTIM)BeaconOffTIM--;
 	}
 
 //信标模式状态机

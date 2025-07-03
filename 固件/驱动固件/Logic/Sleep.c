@@ -12,7 +12,7 @@
 #include "LocateLED.h"
 
 //睡眠定时器
-volatile int SleepTimer;
+volatile unsigned int SleepTimer;
 
 //禁用/启用所有系统外设
 void SystemPeripheralCTRL(bit IsEnable)

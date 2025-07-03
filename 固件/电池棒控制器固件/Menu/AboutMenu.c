@@ -40,6 +40,8 @@ void AboutEasterEgg(void)
 	LCD_ShowChinese(10,33,"¹Ø×¢ßÙÁ¨ßÙÁ¨",WHITE,LGRAY,0);
 	LCD_ShowString(91,33,"@MP86957",YELLOW,LGRAY,12,0);	
 	LCD_ShowChinese(56,49,"Ð»Ð»ß÷£¡",WHITE,LGRAY,0);
+  LCD_ShowHybridString(10,64,__DATE__,CYAN,LGRAY,0);			
+	LCD_ShowHybridString(10+(sizeof(__DATE__)*7),64,__TIME__,ORANGE,LGRAY,0);
 	}	
 	
 static u16 ColorTextGen(void)
@@ -148,7 +150,7 @@ void AboutMenuRender(void)
 	LCD_ShowChinese(133,40,"Éè¼Æ",WHITE,LGRAY,0);	
 	LCD_ShowChinese(7,61,"¹Ì¼þ°æ±¾",WHITE,LGRAY,0);
 	LCD_ShowChar(57,61,':',WHITE,LGRAY,12,0);
-	LCD_ShowString(64,61,"V1.2 Build2",CYAN,LGRAY,12,0);	
+	LCD_ShowString(64,61,"V1.3 Build5",CYAN,LGRAY,12,0);	
 	AboutIsRendered=true;
 	}
 

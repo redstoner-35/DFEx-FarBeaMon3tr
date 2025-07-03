@@ -24,20 +24,20 @@ typedef struct
 typedef enum
 	{
 	Mode_OFF=0, //关机
-	Mode_Fault, //出现错误
+	Mode_Fault=1, //出现错误
 		
-	Mode_Ramp, //无极调光
-	Mode_1Lumen, //1流明极低挡位
-  Mode_Moon, //月光
-	Mode_ExtremelyLow, //极低亮
-	Mode_Low, //低亮
-	Mode_Mid, //中亮
-	Mode_MHigh,   //中高亮
-	Mode_High,   //高亮
+	Mode_Ramp=2, //无极调光
+	Mode_1Lumen=3, //1流明极低挡位
+  Mode_Moon=4, //月光
+	Mode_ExtremelyLow=5, //极低亮
+	Mode_Low=6, //低亮
+	Mode_Mid=7, //中亮
+	Mode_MHigh=8,   //中高亮
+	Mode_High=9,   //高亮
 		
-	Mode_Turbo, //极亮
+	Mode_Turbo=10, //极亮
 	//特殊模式
-  Mode_Beacon, //信标挡位 		
+  Mode_Beacon=11, //信标挡位 		
   Mode_Strobe, //爆闪		
 	Mode_SOS, //SOS挡位
 	}ModeIdxDef;
@@ -54,7 +54,7 @@ typedef struct
 	}ModeStrDef; 
 
 //外部引用
-extern xdata char DisplayLockedTIM; //锁定提示计时器
+extern xdata unsigned char DisplayLockedTIM; //锁定提示计时器
 extern ModeStrDef *CurrentMode; //当前模式结构体
 extern xdata ModeIdxDef LastMode; //上一个挡位	
 extern SysConfigDef SysCfg; //无极调光配置	
@@ -64,6 +64,7 @@ extern bit IsRampEnabled; //是否启用无极调光
 #define QueryCurrentGearILED() CurrentMode->Current //获取当前挡位的电流函数
 	
 //参数配置
+#define RampAdjustDividingFactor 3 //无极调光模式下控制调光速度的分频比例，越大则调光速度越慢
 #define HoldSwitchDelay 6 // 长按换挡延迟	
 #define SleepTimeOut 5 //休眠状态延时	
 #define ModeTotalDepth 14 //系统一共有几个挡位			

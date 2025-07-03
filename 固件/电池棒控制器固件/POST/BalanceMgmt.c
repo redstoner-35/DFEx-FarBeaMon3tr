@@ -33,6 +33,9 @@ void BalanceMgmt_Init(void)
 		ShowPostInfo(52,"均衡控制器异常","3E",Msg_Fault);
 		SelfTestErrorHandler();
 		}
+	//应用校准数据
+	ShowPostInfo(53,"应用ADC校准数据","31",Msg_Statu);
+	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor);
 	}
 	
 //强制关闭均衡

@@ -9,7 +9,7 @@
 #include "LEDMgmt.h"
 
 //内部全局
-static xdata int CurrentIdx=0;
+static xdata unsigned int CurrentIdx;
 static xdata u8 CurrentCRC;
 
 //CRC-8计算 

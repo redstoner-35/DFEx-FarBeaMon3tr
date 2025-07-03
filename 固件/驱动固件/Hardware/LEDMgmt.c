@@ -6,8 +6,8 @@
 
 //全局变量
 volatile LEDStateDef LEDMode; 
-static char timer;
-bit IsHalfBrightness;
+static unsigned char timer;    //内部使用的定时器
+bit IsHalfBrightness;					 //标志位，是否使能指示灯半亮度模式
 
 //函数
 bit ShowThermalStepDown(void);	//显示温度控制启动	

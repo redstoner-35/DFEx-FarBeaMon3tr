@@ -22,6 +22,7 @@ void OverChargeDetectModule(void)
 	{
 	float IDiff;
 	bool IsAssert,IsDeAssert;
+	extern BatteryStateDef BATT;
 	//计算电流差值	
 	IDiff=fabsf(IBattBuf-ADCO.Ibatt);
 	if(ADCO.Ibatt<0||IBattBuf<0)IDiff=0; //电流差为0
@@ -41,6 +42,7 @@ void OverChargeDetectModule(void)
 	//判断是否满足DeAssert条件
 	if(IsAssert||!OCState)IsDeAssert=false; //不满足退出条件
 	else if(ADCO.Vbatt>(4.2075*BattCellCount))IsDeAssert=false;	 //电池电压超了
+	else if(BATT==Batt_StandBy)IsDeAssert=true; //拔掉充电器强制解除过充
 	else if(ADCO.Ibatt>0.3||ADCO.Ibatt<-0.05)IsDeAssert=true; //电池电流跑起来了或者处于过充状态
 	else IsDeAssert=false;
 	//退出操作处理

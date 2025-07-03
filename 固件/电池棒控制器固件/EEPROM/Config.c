@@ -6,12 +6,29 @@
 
 //配置结构体
 CfgUnionDef CfgUnion;
+StorageModeDef StorageMode;
+bool DCDCOutputBit;
 
 //将魔人配置加载到指定位置
 void LoadDefaultConfig(CfgUnionDef *IN)
 	{
 	extern bool IsEnable17AMode;	
+	extern bool IsSupportExterndPDO;
+	//校准系数配置
+	IN->ROMImage.Data.Data.BatteryCurrentCalFactor=1012;
+	IN->ROMImage.Data.Data.BatteryVoltageCalFactor=1000;
+	//存储模式和低压保护配置
+	IN->ROMImage.Data.Data.StorageModeINROM=StorageMode_OFF;	
 	IN->ROMImage.Data.Data.Vlow=VLow_2V8;
+	//固定挡位PDO配置	
+	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable12VPDOSet=false;
+	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable15VPDOSet=false;
+	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable9VPDOSet=false;
+	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable20VPDOSet=false;
+	IN->ROMImage.Data.Data.FixedPDOCfg.PDO9VICCMAX=3000;
+	IN->ROMImage.Data.Data.FixedPDOCfg.PDO12VICCMAX=3000;
+	IN->ROMImage.Data.Data.FixedPDOCfg.PDO15VICCMAX=3000;
+	IN->ROMImage.Data.Data.FixedPDOCfg.PDO20VICCMAX=IsSupportExterndPDO?7000:4000;
 	//输入配置
 	IN->ROMImage.Data.Data.VRecharge=Recharge_0V1;
 	IN->ROMImage.Data.Data.IStop=IStop_200mA;
@@ -31,7 +48,7 @@ void LoadDefaultConfig(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.PDOCFG.EnablePPS2=true;
 	IN->ROMImage.Data.Data.PDOCFG.Enable20V=true;
 	IN->ROMImage.Data.Data.PDOCFG.Enable15V=true;
-	IN->ROMImage.Data.Data.PDOCFG.Enable12V=true;
+	IN->ROMImage.Data.Data.PDOCFG.Enable12V=false; //屏蔽掉12V fixed PDO解决啸叫问题
 	IN->ROMImage.Data.Data.PDOCFG.Enable9V=true;
 	//安全配置
 	IN->ROMImage.Data.Data.EnableThermalStepdown=true;
@@ -43,7 +60,12 @@ void LoadDefaultConfig(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.EnablePDOConfig=true;
   IN->ROMImage.Data.Data.EnableOTPConfig=false;
 	IN->ROMImage.Data.Data.EnableTCCalibration=false;
-	IN->ROMImage.Data.Data.OverHeatLockTemp=90;
+	IN->ROMImage.Data.Data.OverHeatLockTemp=85;
+	//PPS1和PPS2电流
+	IN->ROMImage.Data.Data.PPSConfig.PPS1Current=3000;
+  IN->ROMImage.Data.Data.PPSConfig.PPS2Current=IsEnable17AMode?3000:5000;
+	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS1Set=false;
+	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS2Set=false;
 	//TypeC矫正设置
   IN->ROMImage.Data.Data.TypeCVoltageCal=1000;
 	IN->ROMImage.Data.Data.TypeCAmpereCal=1000;
@@ -198,6 +220,8 @@ void LoadConfig(void)
 			}
 		}
 	//读取配置后如果关闭快速启动则显示剩下的操作
+	DCDCOutputBit=CfgData.OutputConfig.IsEnableOutput; //更新输出bit
+	StorageMode=CfgData.StorageModeINROM; //从ROM内更新存储模式的处理
 	if(!CfgData.EnableFastBoot)EnableDetailOutput=true;
 	else EnableDetailOutput=false;
 	}

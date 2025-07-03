@@ -4,7 +4,7 @@
 #include <string.h>
 
 //字符串
-static char PDO20VMsg[16]={0};
+static char PDO20VMsg[20]={0};
 
 const BoolListEntryDef PDOParam[7]=
 	{
@@ -30,21 +30,21 @@ const BoolListEntryDef PDOParam[7]=
 		false
 		},
 		{
-		"15V",
+		"15V Fixed",
 		false,
 		&CfgData.PDOCFG.Enable15V,
 		false,
 		false
 		},
 		{
-		"12V PDO",
+		"12V Fixed",
 		false,
 		&CfgData.PDOCFG.Enable12V,
 		false,
 		false
 		},
 		{
-		"9V PDO",
+		"9V Fixed",
 		false,
 		&CfgData.PDOCFG.Enable9V,
 		false,
@@ -63,12 +63,12 @@ const BoolListEntryDef PDOParam[7]=
 void PreparePDO20VStr(void)
 	{
 	memset(PDO20VMsg,0x00,sizeof(PDO20VMsg));
-	if(CfgData.MaxVPD==PDMaxIN_20V)strncpy(PDO20VMsg,"20V",sizeof(PDO20VMsg));
-  else strncpy(PDO20VMsg,"20V和28V EPR",sizeof(PDO20VMsg));
+	if(CfgData.MaxVPD==PDMaxIN_20V)strncpy(PDO20VMsg,"20V Fixed",sizeof(PDO20VMsg));
+  else strncpy(PDO20VMsg,"20V和28V Fixed",sizeof(PDO20VMsg));
 	}
 	
 //函数声明
-void LeaveDisMgmtMenu(void);
+void ReturnFromPPSIset(void);
 
 const MenuConfigDef PDOCfgMenu=
 	{
@@ -86,7 +86,7 @@ const MenuConfigDef PDOCfgMenu=
 	"PDO广播配置",
 	NULL,
 	NULL,
-	&LeaveDisMgmtMenu, 
+	&ReturnFromPPSIset, 
 	//进入和退出构造函数
 	&PreparePDO20VStr,  //进入前需要复制一下字符串根据PDO模式决定是否有EPR相关的提示
 	NULL

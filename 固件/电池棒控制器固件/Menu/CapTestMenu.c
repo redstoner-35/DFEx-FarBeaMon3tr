@@ -24,6 +24,7 @@ typedef enum
 	CapTest_ErrorBattToHigh,
 	CapTest_ErrorDischarging,
 	CapTest_ErrorChipHang,
+	CapTest_ErrorStorageModeEnabled,
 	}CapTestFSMDef;
 	
 //外部变量
@@ -133,6 +134,7 @@ void CTestKeyHandler(void)
 		case CapTest_ErrorChipHang:
 		case CapTest_ErrorDischarging:
 		case CapTest_Finish:
+		case CapTest_ErrorStorageModeEnabled:
 			if(KeyState.KeyEvent!=KeyEvent_ESC)break;
 			if(!IsEnableAdvancedMode)SwitchingMenu(&EasySetMainMenu);
 			else SwitchingMenu(&SetMainMenu); //处于退出状态,按下ESC后回到主菜单
@@ -344,6 +346,14 @@ void CTestGUIHandler(void)
 		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
 		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
 		  break;
+		//存储模式开启
+		case CapTest_ErrorStorageModeEnabled:
+			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
+		  LCD_ShowChinese(21,41,"长期存储模式已激活",YELLOW,LGRAY,0);
+			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
+		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
+		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+		  break;		
 		case CapTest_ErrorChipHang:
 			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
 		  LCD_ShowChinese(21,41,"充放电管理芯片异常",RED,LGRAY,0);
@@ -387,7 +397,8 @@ void CTestFSMHandler(void)
 					 }
 				break;
 				}
-	    if(BATT==Batt_discharging)CFSMState=CapTest_ErrorDischarging;
+			if(StorageMode!=StorageMode_OFF)CFSMState=CapTest_ErrorStorageModeEnabled;  //存储模式开启，禁止容量测试
+	    else if(BATT==Batt_discharging)CFSMState=CapTest_ErrorDischarging;
 	    else if(BATT==Batt_ChgError)CFSMState=CapTest_ErrorChipHang;
 		  else if(BATT!=Batt_StandBy||VBUS.IsTypeCConnected)CFSMState=CapTest_ErrorAlreadyCharging;
 		  else if(ADCO.Vbatt>12.3)CFSMState=CapTest_ErrorBattToHigh;

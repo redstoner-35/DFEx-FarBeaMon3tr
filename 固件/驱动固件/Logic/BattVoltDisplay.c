@@ -6,16 +6,17 @@
 #include "BattDisplay.h"
 #include "SelfTest.h"
 #include "LocateLED.h"
+#include "FastOp.h"
 
 //内部flag
 bit IsBatteryAlert; //电池电压低于警告值	
 bit IsBatteryFault; //电池电压低于保护值		
 
 //内部变量
-static char BattShowTimer; //电池电量显示计时
-static char OneLMShowBattStateTimer=0; //1LM模式下显示电池状态的计时器
+static unsigned char BattShowTimer; //电池电量显示计时
+static unsigned char OneLMShowBattStateTimer=0; //1LM模式下显示电池状态的计时器
 static xdata AverageCalcDef BattVolt;	
-static xdata signed char VshowTIM;  //电压显示计时器
+static xdata unsigned char VshowTIM;  //电压显示计时器
 static char LowVoltStrobeTIM;
 static xdata int VbattSample; //取样的电池电压
 
@@ -50,7 +51,7 @@ void TriggerVshowDisplay(void)
 bit LowPowerStrobe(void)
 	{
 	//电量正常,或者是1LM模式，不启动计时
-	if(CurrentMode->ModeIdx==Mode_1Lumen||BattState!=Battery_VeryLow)LowVoltStrobeTIM=0;
+	if(CurrentMode->ModeIdx==Mode_1Lumen||CurrentMode->ModeIdx==Mode_Moon||BattState!=Battery_VeryLow)LowVoltStrobeTIM=0;
 	//电量异常开始计时
 	else if(!LowVoltStrobeTIM)LowVoltStrobeTIM=1; //启动计时器
 	else if(LowVoltStrobeTIM>((LowVoltStrobeGap*8)-4))return 1; //触发闪烁标记电流为0
@@ -61,8 +62,8 @@ bit LowPowerStrobe(void)
 //控制LED侧按产生闪烁指示电池电压的处理
 static void VshowGenerateSideStrobe(LEDStateDef Color,BattVshowFSMDef NextStep)
 	{
-	//传入负数，通过快闪一次表示是0
-	if(VshowTIM&0x80)
+	//传入的是负数，符号位=1，通过快闪一次表示是0
+	if(IsNegative8(VshowTIM))
 		{
 		MakeFastStrobe(Color);
 		VshowTIM=0; 
@@ -82,7 +83,7 @@ static void VshowFSMGenTIMValue(int Vsample,BattVshowFSMDef NextStep)
 	{
 	if(!VshowTIM)	//时间到允许配置
 		{	
-		if(!Vsample)VshowTIM=-1; //0=瞬间闪一下
+		if(!Vsample)VshowTIM=0x80; //0x80=瞬间闪一下
 		else VshowTIM=(4*Vsample)-1; //配置显示的时长
 		VshowFSMState=NextStep; //执行下一步显示
 		}
@@ -172,9 +173,9 @@ static void BatVshowFSM(void)
 			break;
 		//等待一段时间后显示当前电量
 		case BattVdis_WaitShowChargeLvl:
-			if(VshowTIM>0)break;
-			if(CurrentMode->ModeIdx==Mode_1Lumen)BattShowTimer=12; //1LM模式下电量指示灯不常驻点亮，所以需要额外给个延时让LED点亮
-		  else BattShowTimer=CurrentMode->ModeIdx!=Mode_OFF?0:12; //启动总体电量显示
+			if(VshowTIM)break;
+			if(CurrentMode->ModeIdx==Mode_1Lumen)BattShowTimer=18; //1LM模式下电量指示灯不常驻点亮，所以需要额外给个延时让LED点亮
+		  else BattShowTimer=CurrentMode->ModeIdx!=Mode_OFF?0:18; //启动总体电量显示
 			VshowFSMState=BattVdis_ShowChargeLvl; //等待电量显示状态结束
       break;
 	  //等待总体电量显示结束
@@ -200,17 +201,17 @@ static void BatteryStateFSM(void)
 			  break;
 		 //电池电量较为充足
 		 case Battery_Mid:
-			  if(Battery>(Thres+0.2))BattState=Battery_Plenty; //电池电压大于3.8，回到充足状态
+			  if(Battery>(Thres+0.4))BattState=Battery_Plenty; //电池电压大于3.8，回到充足状态
 				if(Battery<3.0)BattState=Battery_Low; //电池电压低于3.2则切换到电量低的状态
 				break;
 		 //电池电量不足
 		 case Battery_Low:
-		    if(Battery>3.2)BattState=Battery_Mid; //电池电压高于3.5，切换到电量中等的状态
-			  if(Battery<2.8)BattState=Battery_VeryLow; //电池电压低于2.8，报告严重不足
+		    if(Battery>3.4)BattState=Battery_Mid; //电池电压高于3.5，切换到电量中等的状态
+			  if(Battery<2.9)BattState=Battery_VeryLow; //电池电压低于2.8，报告严重不足
 		    break;
 		 //电池电量严重不足
 		 case Battery_VeryLow:
-			  if(Battery>3.0)BattState=Battery_Low; //电池电压回升到3.0，跳转到电量不足阶段
+			  if(Battery>3.2)BattState=Battery_Low; //电池电压回升到3.0，跳转到电量不足阶段
 		    break;
 		 }
 	}
@@ -241,7 +242,7 @@ void DisplayVBattAtStart(bit IsPOR)
 	while(--i);
 	//启动电池电量显示(仅无错误的情况下)
 	if(!IsPOR||CurrentMode->ModeIdx!=Mode_OFF)return;
-	BattShowTimer=12;
+	BattShowTimer=18;
 	}
 //电池电量显示延时的处理
 void BattDisplayTIM(void)
@@ -269,7 +270,7 @@ void BattDisplayTIM(void)
 	//1LM模式下交替显示的计时器
 	if(OneLMShowBattStateTimer)OneLMShowBattStateTimer--;	
 	//电池电压显示的计时器处理	
-	if(VshowTIM>0)VshowTIM--;
+	if(VshowTIM)VshowTIM--;
 	//电池显示定时器
 	if(BattShowTimer)BattShowTimer--;
 	}

@@ -112,7 +112,36 @@ static void LargeMenu_ShowTime(long TimeIN,bool IsDis)
 		LCD_ShowChinese12x12(144,49,"秒\0",ICONColor,BLACK,12,0);		 
 		}	
 	}	
-	
+
+//大菜单显示电池状态时进行特殊模式的显示处理
+static bool ShowSpecicalModeAtBatt(void)	
+	{	
+	extern char	DisplayLoopCounter;
+	extern bool IsEnableTempChargeOnly;
+	//仅充模式启用
+	if(IsEnableTempChargeOnly||!DCDCOutputBit)
+		{	
+		if(DisplayLoopCounter<3)return false; //非显示状态，正常显示
+		LCD_Fill(98,63,159,79,BLACK);
+		if(StorageMode!=StorageMode_OFF&&DisplayLoopCounter<5)
+			LCD_ShowHybridString(99,64,"存储模式",ORANGE,BLACK,0);  //交替显示仅充模式
+		else	
+			LCD_ShowHybridString(99,64,"仅充模式",LIGHTBLUE,BLACK,0);
+	  return true;
+		}
+	//存储模式启用		
+	else if(StorageMode!=StorageMode_OFF)
+		{
+		if(DisplayLoopCounter<4)return false; //非显示状态，正常显示
+		//显示仅充模式
+		LCD_Fill(98,63,159,79,BLACK);
+		LCD_ShowHybridString(99,64,"存储模式",ORANGE,BLACK,0);
+		return true;
+		}		
+	//其余状态返回false
+	return false;
+	}
+
 //显示电池状态
 static void RenderBattState(void)
 	{
@@ -124,6 +153,7 @@ static void RenderBattState(void)
 	extern bool IsSystemOverheating;
 	extern bool OCState;
 	extern bool IsDispChargingINFO;
+	extern bool IsEnableTempChargeOnly;
 	//检测UI是否结束渲染
 	Is2368Telem=true;
 	time=(BATT==Batt_discharging)?LogData.DischargeTime:LogData.ChargeTime; //获取充放电时间
@@ -136,19 +166,24 @@ static void RenderBattState(void)
 	else if(!IsResultUpdated)return;  //静态阶段使用快速更新系统
 	//正常渲染
 	LCD_DrawRectangle(0,0,159,79,WHITE);	
-	//电压
-	LCD_ShowFloatNum1(3,3,VBat,2,LIGHTGREEN,BLACK,24);
-	LCD_ShowChar(73,3,'V',LIGHTGREEN,BLACK,24,0);
+	//根据系统状态设置电压颜色
+  if(StorageMode!=StorageMode_OFF)Color=ORANGE; //存储模式开启强制为黄色
+	else if(IsEnableTempChargeOnly||!DCDCOutputBit)Color=LIGHTBLUE; //非存储模式下开启仅充电，电池电压为淡蓝色
+	else Color=LIGHTGREEN; //都没有开启则绿色
+	//显示电池电压
+	LCD_ShowFloatNum1(3,3,VBat,2,Color,BLACK,24);
+	LCD_ShowChar(73,3,'V',Color,BLACK,24,0);
 	//电流
 	LCD_Fill(3,28,84,76,BLACK);
 	Power=fabsf(IBat)>MinimumCurrentFactor?IBat:0;
 	if(Power<0) //电流为负数加上负号
-			{
-			LCD_ShowChar(3,28,'-',YELLOW,BLACK,24,0);	
-			if(Power>-10)LCD_ShowFloatNum1(16,28,Power,2,YELLOW,BLACK,24);
-			else LCD_ShowFloatNum1(16,28,Power,1,YELLOW,BLACK,24);
-			}
-	else LCD_ShowFloatNum1(3,28,Power,2,YELLOW,BLACK,24);
+		{
+		LCD_ShowChar(3,28,'-',YELLOW,BLACK,24,0);	
+		if(Power>-10)LCD_ShowFloatNum1(16,28,Power,2,YELLOW,BLACK,24);
+		else LCD_ShowFloatNum1(16,28,Power,1,YELLOW,BLACK,24);
+		}
+	//正常按照电流值显示
+	else LCD_ShowFloatNum1(3,28,Power,Power<10?3:2,YELLOW,BLACK,24);
 	LCD_ShowChar(73,28,'A',YELLOW,BLACK,24,0);	
 	//功率
 	Power=fabsf(VBat*Power);
@@ -193,31 +228,34 @@ static void RenderBattState(void)
 	else if(BATT!=Batt_StandBy)IsShowBatt=true;
 	else IsShowBatt=false;	
 	//显示实际的内容	
-	LCD_ShowHybridString(99,64,IsShowBatt?"电池:":"系统:",WHITE,BLACK,0);
-	if(IsSystemOverheating)
-		LCD_ShowChinese(132,64,"过热\0",RED,BLACK,0);
-	else if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt) //输出短路或者输入过压
-		LCD_ShowChinese(132,64,"故障\0",RED,BLACK,0);
-  else if(OCState)
-		LCD_ShowChinese(132,64,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
-  else switch(BATT)			//根据枚举状态显示
+  if(!ShowSpecicalModeAtBatt())	
 		{
-		case Batt_StandBy:LCD_ShowChinese(132,64,"待机\0",WHITE,BLACK,0);break;
-		case Batt_PreChage:
-			LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"涓流\0",MAGENTA,BLACK,0);
-			break;
-		case Batt_CCCharge:
-			LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"恒流\0",YELLOW,BLACK,0);
-			break;
-		case Batt_CVCharge:
-			LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"恒压\0",GBLUE,BLACK,0);
-			break;
-		case Batt_ChgWait:
-			LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"暂停\0",YELLOW,BLACK,0);
-			break;
-		case Batt_ChgDone:LCD_ShowChinese(132,64,"充满\0",LIGHTGREEN,BLACK,0);break;
-		case Batt_ChgError:LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"超时\0",ORANGE,BLACK,0);break;
-		case Batt_discharging:LCD_ShowChinese(132,64,"放电\0",CYAN,BLACK,0);break;
+		LCD_ShowHybridString(99,64,IsShowBatt?"电池:":"系统:",WHITE,BLACK,0);
+		if(IsSystemOverheating)
+			LCD_ShowChinese(132,64,"过热\0",RED,BLACK,0);
+		else if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt) //输出短路或者输入过压
+			LCD_ShowChinese(132,64,"故障\0",RED,BLACK,0);
+		else if(OCState)
+			LCD_ShowChinese(132,64,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
+		else switch(BATT)			//根据枚举状态显示
+			{
+			case Batt_StandBy:LCD_ShowChinese(132,64,"待机\0",WHITE,BLACK,0);break;
+			case Batt_PreChage:
+				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"涓流\0",MAGENTA,BLACK,0);
+				break;
+			case Batt_CCCharge:
+				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"恒流\0",YELLOW,BLACK,0);
+				break;
+			case Batt_CVCharge:
+				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"恒压\0",GBLUE,BLACK,0);
+				break;
+			case Batt_ChgWait:
+				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"暂停\0",YELLOW,BLACK,0);
+				break;
+			case Batt_ChgDone:LCD_ShowChinese(132,64,"充满\0",LIGHTGREEN,BLACK,0);break;
+			case Batt_ChgError:LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"超时\0",ORANGE,BLACK,0);break;
+			case Batt_discharging:LCD_ShowChinese(132,64,"放电\0",CYAN,BLACK,0);break;
+			}
 		}
 	//本次显示完毕，等待数据更新后再刷新
   IsTelemOK=false;	
@@ -233,7 +271,7 @@ void RenderTypeCState(void)
 	extern bool IsEnableHPGauge;	
 	//启动传输
 	Is2368Telem=true;
-	if(!VBUS.IsTypeCConnected)
+	if(!VBUS.IsTypeCConnected||CState.VBusState==VBUS_NoPower)
 		{
 		//Type-C被移除，立即退出本菜单
 		ClearScreen();
@@ -250,11 +288,14 @@ void RenderTypeCState(void)
 	LCD_Fill(3,28,84,76,BLACK);
 	Power=fabsf(ITypeC)>MinimumCurrentFactor?ITypeC:0;
 	if(Power<0) //电流为负数加上负号
-			{
-			LCD_ShowChar(3,28,'-',YELLOW,BLACK,24,0);	
-			if(Power>-10)LCD_ShowFloatNum1(16,28,Power,2,YELLOW,BLACK,24);
-			else LCD_ShowFloatNum1(16,28,Power,1,YELLOW,BLACK,24);
-			}
+		{
+		LCD_ShowChar(3,28,'-',YELLOW,BLACK,24,0);			
+		if(Power>-10)LCD_ShowFloatNum1(16,28,Power,2,YELLOW,BLACK,24);
+		else LCD_ShowFloatNum1(16,28,Power,1,YELLOW,BLACK,24);
+		}
+	//开启高精度功率计，低电流下显示精确到小数点后三位
+	else if(IsEnableHPGauge)LCD_ShowFloatNum1(3,28,Power,Power<10?3:2,YELLOW,BLACK,24);
+	//IP2366显示，默认两位精度
 	else LCD_ShowFloatNum1(3,28,Power,2,YELLOW,BLACK,24);
 	LCD_ShowChar(73,28,'A',YELLOW,BLACK,24,0);	
 	//功率
@@ -267,7 +308,8 @@ void RenderTypeCState(void)
 	LCD_Fill(102,9,152,36,BLACK);
 	LCD_DrawRectangle(102,9,152,36,WHITE);
 	LCD_Fill(104,4,150,15,BLACK);
-	if(!IsDispChargingINFO)	
+	//开启输入模式下显示PDO状态
+	if(!IsDispChargingINFO&&BATT!=Batt_discharging)	
 		{		
 		LCD_ShowHybridString(104,4,"PDO广播",WHITE,BLACK,0);
 		switch(PDO)
@@ -323,17 +365,26 @@ void EnterAdvModeProc(void);
 	
 void LargeMainMenuKeyProcess(void)
 	{
+	bool IsAllowTypecMenuShow; //是否允许typec菜单显示
+	//判断是否允许跳转到typec显示
+	if(CState.VBusState==VBUS_NoPower)IsAllowTypecMenuShow=false; //VBUS没有电源
+	else if(!VBUS.IsTypeCConnected)IsAllowTypecMenuShow=false; //Typec未连接
+	else IsAllowTypecMenuShow=true;
+	//按压Enter进入快捷菜单
+	if(KeyState.KeyEvent==KeyEvent_Enter)SwitchingMenu(&QuickAccessMenu);
 	//同时按住上下键进入设置
 	if(KeyState.KeyEvent==KeyEvent_BothEnt)
 		{
 		if(!CfgData.EnableAdvAccess)SwitchingMenu(&EasySetMainMenu); //进入简易模式
 		else EnterAdvModeProc(); //进入高级模式
 		}
-	if(KeyState.KeyEvent==KeyEvent_Up&&VBUS.IsTypeCConnected)
+	//按压上键进入typec显示
+	if(IsAllowTypecMenuShow&&KeyState.KeyEvent==KeyEvent_Up)
 		{
 		if(!IsShowTypeCState)ClearScreen();
 		IsShowTypeCState=true;
 		}
+	//按压下键返回主菜单
 	if(KeyState.KeyEvent==KeyEvent_Down)
 		{
 		if(IsShowTypeCState)ClearScreen();

@@ -7,9 +7,8 @@
 #include "SysConfig.h"
 #include "LowVoltProt.h"
 
-//全局变量和外部声明
-extern xdata char DisplayLockedTIM;
-static xdata char ShowTacModeTIM;
+//全局变量
+static xdata unsigned char ShowTacModeTIM;
 bit IsDisplayLocked;
 SpecialOperationDef SysMode; //系统模式
 
@@ -28,12 +27,29 @@ static void EnterExitTac(void)
 	SysMode=!SysMode?Operation_TacTurbo:Operation_Normal;
 	}	
 
+//进入月光处理
+void EnterMoonProcess(void)
+	{
+	extern bit TemporaryDisableVoltageQuery;
+	//电池电压足够的时候进入月光
+	if(Battery>2.8)SwitchToGear(Mode_Moon);
+	//高于2.4V每节则进入月光
+	else if(Battery>2.4)
+		{		
+		TemporaryDisableVoltageQuery=1;
+		SwitchToGear(Mode_1Lumen);
+		}
+	//电量已经低于DCDC可工作的水平，系统禁止开机并红色闪5次
+	else LEDMode=LED_RedBlinkFifth; 
+	}	
+
 //开启到普通模式
 void PowerToNormalMode(ModeIdxDef Mode)
 	{
-	if(Battery>2.9)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode); //正常开启
-	else if(Battery>2.65)SwitchToGear(Mode_Moon);	 //大于2.5V的时候只能开月光
-	else LEDMode=LED_RedBlinkFifth; //电池电量严重不足，红色闪五次
+	if(Battery>3.0)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode); //正常开启
+	else if(Battery>2.65)EnterMoonProcess();  //电池电压大于2.7，执行进入月光判断    		
+	else if(CurrentMode->ModeIdx==Mode_OFF)LEDMode=LED_RedBlinkFifth;	//手电处于关机状态下且电池电量不足，闪烁五次提示进不去	
+	else ReturnToOFFState();	 //电池电量严重不足，且手电开着，直接关机
 	//如果成功进入了无级模式，则进行复位处理
 	if(CurrentMode->ModeIdx==Mode_Ramp)RampRestoreLVProtToMax();
 	}
@@ -44,22 +60,25 @@ void EnterTurboStrobe(char ClickCount)
 	//双击极亮
 	if(ClickCount==2)
 		{
-		if(Battery>3.1)SwitchToGear(Mode_Turbo); //电池电量充足正常开启
-		else PowerToNormalMode(LastMode);  //电池电池电量不足时双击进入普通模式
+		//电池电量充足且没有触发关闭极亮的保护，正常开启
+		if(Battery>3.45&&!IsDisableTurbo)SwitchToGear(Mode_Turbo); 
+		//电池电池电量不足或者极亮被锁定尝试开到高亮去
+		else PowerToNormalMode(Mode_High);	
 		}
 	//三击爆闪
-	if(ClickCount==3)
+	else if(ClickCount==3)
 		{
 		if(Battery>2.7)SwitchToGear(Mode_Strobe);   //进入爆闪
 		else LEDMode=LED_RedBlinkFifth; //电量不足五次闪烁提示
+		if(CurrentMode->ModeIdx!=Mode_OFF)LastMode=CurrentMode->ModeIdx; //在开机状态下三击爆闪，记忆进入前的挡位
 		}
 	}
 	
 //特殊模式下回到特殊功能里面的切换
 void LeaveSpecialMode(char ClickCount)	
 	{
-	if(ClickCount==2&&!IsDisableTurbo)SwitchToGear(Mode_Turbo); //双击极亮
-	if(ClickCount==3)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode_Low); //三击退回到普通模式
+	if(ClickCount==3)PowerToNormalMode(LastMode); //三击调用退回函数，退回到普通模式
+  else EnterTurboStrobe(ClickCount); //其他按键次数，直接call尝试极亮函数让他自己判断去
 	}	
 
 //显示战术模式启用

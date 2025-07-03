@@ -21,7 +21,7 @@ typedef struct
 	
 //温度电压和电流监测配置	
 #define SenseAmpGain 50 //检流放大器的增益，单位为(V/V)	
-#define SenseShuntmOhm 1.5 //检流电阻阻值(mR)	
+#define SenseShuntmOhm 1.00f //检流电阻阻值(mR)	
 #define VsenseUpRes 100 //
 #define VsenseLowRes 10 //电池电压测量的分压电阻阻值(K)	
 #define NTCUpperResValueK	10 //NTC热敏电阻上拉阻值(K)	
@@ -59,6 +59,7 @@ typedef struct
 extern ADCOutTypeDef ADCO;
 
 //函数
+void InternalADC_LoadCalibration(int Vcal,int Ical); //应用校准值
 bool ADC_GetResult(void);
 void InternalADC_Init(void); //ADC初始化
 

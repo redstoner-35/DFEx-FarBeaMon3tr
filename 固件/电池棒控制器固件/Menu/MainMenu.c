@@ -24,6 +24,7 @@ float VTypec=0,ITypeC=0,VBat=0,IBat=0;
 bool IsResultUpdated=true;
 RecvPDODef PDO=RecvPDO_None;
 static char ChargerAltDisplayTIM=0;
+char DisplayLoopCounter=0;	 //实现交替显示的处理
 bool IsDispChargingINFO=false; //实现涓流恒流指示和充电字样交替显示
 ChipStatDef CState;
 static bool IsShowEff=false;
@@ -53,11 +54,11 @@ void IP2366_Telem(void)
 		//高精度测量正常完成，直接使用INA226读回来的数据	
 		else
 			{		
-			//对数据进行替换
-			VBUS.VBUSVolt=VBUSData.BusVolt;
+			//对电流数据进行替换
 			VBUS.VBUSCurrent=fabsf(VBUSData.BusCurrent); 
-			//电池处于放电状态，电流*-1表示正在放电
-			if(BATT==Batt_discharging)VBUS.VBUSCurrent*=-1;
+			if(BATT==Batt_discharging)VBUS.VBUSCurrent*=-1;	//电池处于放电状态，电流*-1表示正在放电		
+			//对电压数据进行替换
+			VBUS.VBUSVolt=(VBUS.VBUSCurrent*0.0027)+VBUSData.BusVolt; //补偿路径开关管的Rdson（实物中使用BSZ018N04，5V下加上Rdson和Rpcv大概是2.7mR）计算得出Typec位置的电压
 			}
 		}
 	//测量成功结束开始累加
@@ -67,6 +68,8 @@ void IP2366_Telem(void)
 		if(ChargerAltDisplayTIM>0)ChargerAltDisplayTIM--;
 		else
 			{
+			if(DisplayLoopCounter<7)DisplayLoopCounter++;
+			else DisplayLoopCounter=0;
 			IsDispChargingINFO=IsDispChargingINFO?false:true;
 			ChargerAltDisplayTIM=16;
 			}
@@ -94,7 +97,7 @@ void IP2366_Telem(void)
 			Result=VBUSAvgBuf[1]/(float)SADCAvgCount;
 			Result*=(float)CfgData.TypeCAmpereCal;
 			Result/=(float)1000;
-			if(fabsf(Result)<7.5)ITypeC=Result;
+			if(fabsf(Result)<7.6)ITypeC=Result;
 			for(i=0;i<4;i++)VBUSAvgBuf[i]=0;
 			}		
 		if(VBUS.IsTypeCConnected)SleepTimer=480; //禁止睡眠
@@ -127,6 +130,34 @@ static float CalcEfficiency(void)
 	return eff;
 	}
 
+//主菜单处理仅充电和其他状态的显示
+static bool ProcessStorageChgOnlyDisplay(void)
+	{
+  extern bool IsEnableTempChargeOnly;
+	//仅充模式启用
+	if(IsEnableTempChargeOnly||!DCDCOutputBit)
+		{	
+		if(DisplayLoopCounter<4)return false; //非显示状态，正常显示
+		switch(DisplayLoopCounter)
+			{
+			case 4:LCD_ShowChinese(86,61,"仅充\0",LIGHTBLUE,BLACK,0);break;
+			case 5:LCD_ShowChinese(86,61,"模式\0",LIGHTBLUE,BLACK,0);break;
+			case 6:LCD_ShowChinese(86,61,StorageMode!=StorageMode_OFF?"存储\0":"仅充\0",StorageMode!=StorageMode_OFF?ORANGE:LIGHTBLUE,BLACK,0);break;
+			case 7:LCD_ShowChinese(86,61,"模式\0",StorageMode!=StorageMode_OFF?ORANGE:LIGHTBLUE,BLACK,0);break;
+			}
+		return true;
+		}
+	//存储模式启用
+	else if(StorageMode!=StorageMode_OFF)
+		{
+		if(DisplayLoopCounter<4)return false; //非显示状态，正常显示
+	  LCD_ShowChinese(86,61,DisplayLoopCounter<=5?"存储\0":"模式\0",ORANGE,BLACK,0);
+		return true;
+		}
+	//其余状态返回false
+	return false;
+	}
+
 //渲染函数
 void MainMenuRenderProcess(void)
 	{
@@ -136,6 +167,7 @@ void MainMenuRenderProcess(void)
 	extern bool IsSystemOverheating;
 	extern bool OCState;
 	extern bool IsEnableHPGauge;
+	extern bool IsEnableTempChargeOnly;
 	//判断是否启用老人模式	
 	if(CfgData.EnableLargeMenu)
 		{
@@ -239,9 +271,13 @@ void MainMenuRenderProcess(void)
 	LCD_ShowPicture(105,1,24,15,BattICON);
 	LCD_DrawLine(81,7,102,7,WHITE);
 	LCD_DrawLine(131,7,152,7,WHITE);
-	//电压
-	LCD_ShowFloatNum1(86,18,VBat,2,LIGHTGREEN,BLACK,12);
-	LCD_ShowChar(139,18,'V',LIGHTGREEN,BLACK,12,0);
+	//根据系统状态设置电压颜色
+  if(StorageMode!=StorageMode_OFF)Color=ORANGE; //存储模式开启强制为黄色
+	else if(IsEnableTempChargeOnly||!DCDCOutputBit)Color=LIGHTBLUE; //非存储模式下开启仅充电，电池电压为淡蓝色
+	else Color=LIGHTGREEN; //都没有开启则绿色
+	//显示电池电压
+	LCD_ShowFloatNum1(86,18,VBat,2,Color,BLACK,12);
+	LCD_ShowChar(139,18,'V',Color,BLACK,12,0);
 	//电流
 	LCD_Fill(86,32,135,57,BLACK);
 	Power=fabsf(IBat)>MinimumCurrentFactor?IBat:0;
@@ -266,9 +302,11 @@ void MainMenuRenderProcess(void)
 		LCD_ShowChinese(86,61,"故障\0",RED,BLACK,0);
   else if(OCState)
 		LCD_ShowChinese(86,61,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
-  else switch(BATT)			//根据枚举状态显示
+  else if(!ProcessStorageChgOnlyDisplay())switch(BATT)			//根据枚举状态显示
 		{
-		case Batt_StandBy:LCD_ShowChinese(86,61,"待机\0",WHITE,BLACK,0);break;
+		case Batt_StandBy:
+      LCD_ShowChinese(86,61,"待机\0",WHITE,BLACK,0);	
+			break;
 		case Batt_PreChage:
 			LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"涓流\0",MAGENTA,BLACK,0);
 			break;
@@ -319,6 +357,8 @@ void EnterAdvModeProc(void);
 	
 void MainMenuKeyProcess(void)
 	{
+	//按压Enter进入快捷菜单
+	if(KeyState.KeyEvent==KeyEvent_Enter)SwitchingMenu(&QuickAccessMenu);
 	//同时按住上下键进入设置
 	if(KeyState.KeyEvent==KeyEvent_BothEnt)
 		{

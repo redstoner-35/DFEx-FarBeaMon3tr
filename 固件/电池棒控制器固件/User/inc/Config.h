@@ -19,6 +19,14 @@ typedef enum
 	
 typedef enum
 	{
+	StorageMode_OFF, //存储模式禁用
+	StorageMode_3V6, //存储模式启用，电池最大电压3.6V
+	StorageMode_3V7, //存储模式启用，电池最大电压3.7V
+	StorageMode_3V8 //存储模式启用，电池最大电压3.8V
+	}StorageModeDef;	
+	
+typedef enum
+	{
 	Balance_Diasbled, //永久关闭主动均衡
 	Balance_ChgDisOnly, //仅充放电时启用
 	Balance_ChgOnly, //仅在充电时启用
@@ -61,6 +69,15 @@ typedef struct
 	MaximumPDVoltageDef MaxVPD;
   //均衡系统模式配置
   BalanceModeDef BalanceMode;
+  //PPS输出电流设置
+	IP2366PPSPDOSetDef PPSConfig;
+	//Fixed PDO电流配置
+	IP2366FixPDOSetDef FixedPDOCfg;
+  //存储模式配置
+	StorageModeDef StorageModeINROM;
+  //本地电池测量校准设置
+	int BatteryVoltageCalFactor;
+	int BatteryCurrentCalFactor; //电池电压电流校准系数
 	}SystemCfgDef;
 
 typedef union
@@ -83,6 +100,8 @@ typedef union
 
 //外部参考
 extern CfgUnionDef CfgUnion;
+extern bool DCDCOutputBit; //输出bit
+extern StorageModeDef StorageMode; //存储模式缓存
 #define CfgFileSize sizeof(CfgUnion)	
 #define CfgData CfgUnion.ROMImage.Data.Data
 #define CfgChecksum CfgUnion.ROMImage.CRCResult

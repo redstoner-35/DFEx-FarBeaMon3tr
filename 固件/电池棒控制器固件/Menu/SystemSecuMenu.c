@@ -60,7 +60,7 @@ const BoolListEntryDef SecuParam[10]=
 		false
 		},	
 		{
-		"使能TypeC校准配置",
+		"使能测量系统配置",
 		true,
 		&CfgData.EnableTCCalibration,
 		false,

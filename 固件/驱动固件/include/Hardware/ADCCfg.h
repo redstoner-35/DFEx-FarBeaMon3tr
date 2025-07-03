@@ -41,9 +41,6 @@ typedef struct
 #define VBattLowerResK 100 //电池检测分压的上下拉电阻
 #define NTCUpperResValueK 330 //NTC热敏电阻的上拉阻值
 
-//绝对值宏
-#define fabs(x) x>0?x:x*-1  //浮点求绝对值
-
 //外部ADC数据引用
 extern ADCResultStrDef Data;
 extern xdata bool IsNotAllowAsync; //是否启用异步转换

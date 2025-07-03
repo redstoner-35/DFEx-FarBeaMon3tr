@@ -92,7 +92,13 @@ void LeaveDisMgmtMenu(void)
 	{
 	SwitchingMenu(&SetMainMenu);
 	}
-
+	
+void SyncDCDCOutConfig(void)
+	{
+	extern bool IsEnableTempChargeOnly;
+	DCDCOutputBit=CfgData.OutputConfig.IsEnableOutput;
+	if(DCDCOutputBit)IsEnableTempChargeOnly=false; //关闭仅充电模式
+	}
 	
 const MenuConfigDef DisChgCfgMenuNoHSCP=
 	{
@@ -113,7 +119,7 @@ const MenuConfigDef DisChgCfgMenuNoHSCP=
 	&LeaveDisMgmtMenu, 
 	//进入和退出构造函数没有事情要做
 	NULL,
-	NULL
+	&SyncDCDCOutConfig
 	};
 	
 const MenuConfigDef DisChgCfgMenu=
@@ -135,5 +141,5 @@ const MenuConfigDef DisChgCfgMenu=
 	&LeaveDisMgmtMenu, 
 	//进入和退出构造函数没有事情要做
 	NULL,
-	NULL
+	&SyncDCDCOutConfig
 	};	

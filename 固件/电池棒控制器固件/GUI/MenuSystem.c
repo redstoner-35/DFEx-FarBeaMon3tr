@@ -64,6 +64,12 @@ void GUIDelayHandler(void)
 	if(GUIDelay>0)GUIDelay--;
 	}
 
+//清除菜单index
+void ClearMenuIndex(void)
+	{
+	SetupMenuIdx=0;
+	}	
+	
 //切换菜单
 void SwitchingMenu(const MenuConfigDef *TargetMenuIdx)
 	{
@@ -285,6 +291,8 @@ void MenuRenderProcess(void)
 	//布尔变量list
 	else if(MenuIdx->Type==MenuType_BoolListSetup)
 		{
+		//如果系统有指定持续运行的特殊操作或者渲染函数，则执行
+		if(MenuIdx->CustomMenuRender!=NULL)MenuIdx->CustomMenuRender();
 		if(IsSetupRendered&&KeyState.KeyEvent==KeyEvent_None)return;
 		//渲染背景
 		RenderMenuBG();	

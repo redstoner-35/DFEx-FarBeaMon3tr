@@ -49,7 +49,7 @@ void TCResetFSM(void)
 		  IP2366_ClearOCFlag();
 			if(IsSystemOverheating)Role=TypeC_Disconnect;	//系统过热，关闭充放电
 			else if(IsEnableAdapterEmu)Role=TypeC_UFP;	//开启适配器模拟，开启放电关闭充电
-			else Role=CfgData.OutputConfig.IsEnableOutput?TypeC_DRP:TypeC_DFP;
+			else Role=TypeC_DRP; //设置为DRP模式
 		  //根据确定的角色决定Type-C模式
 		  if(!IP2366_SetTypeCRole(Role))
 					TCFSMState=TCResetFSM_Failed;

@@ -24,24 +24,27 @@ void IP2366_SetIBatLIMBaseOnSysCfg(void);
 void UpdateIfSysCanOFF(void)
 	{
 	BatteryStateDef State;
+	extern bool CurrentStorDisState;
 	//Type-C断开连接才允许关机
 	IP2366_GetChargerState(&State);
 	IsEnablePowerOFF=State==Batt_StandBy?true:false;
-	if(!CfgData.OutputConfig.IsEnableOutput)IsEnableAdapEmu=false;
+	if(!DCDCOutputBit)IsEnableAdapEmu=false;
 	if(State==Batt_StandBy)IsEnableAdapEmu=true;
 	else if(State==Batt_discharging)IsEnableAdapEmu=true;
 	else IsEnableAdapEmu=false;
 	//检查PDO设置是否开启
 	if(!CfgData.EnablePDOConfig)IsPDOCanConfig=false;
-	else if(!CfgData.OutputConfig.IsEnableOutput)IsPDOCanConfig=false;
 	else if(!CfgData.OutputConfig.IsEnablePDOut)IsPDOCanConfig=false;
+	else if(StorageMode!=StorageMode_OFF&&CurrentStorDisState)IsPDOCanConfig=true;  //开启存储模式且系统正在放电时，启动检测
+	else if(!DCDCOutputBit)IsPDOCanConfig=false; 
 	else IsPDOCanConfig=true;
 	//设置是否能配置输出
 	if(!CfgData.EnableLVProtectConfig)IsEnableLVConfig=false;
-	else if(!CfgData.OutputConfig.IsEnableOutput)IsEnableLVConfig=false;
+	else if(!DCDCOutputBit)IsEnableLVConfig=false;
 	else IsEnableLVConfig=true;
 	//启用一次性测容
-	EnableOneShotAct=CfgData.InstantCTest==InstantCTest_NotTriggered?true:false;
+	if(StorageMode!=StorageMode_OFF)EnableOneShotAct=false;  //存储模式下开启时不允许激活一次性测容
+	else EnableOneShotAct=CfgData.InstantCTest==InstantCTest_NotTriggered?true:false;
 	//设置是否启用手动均衡	
 	if(ADCO.Vbatt<10.1||!IsEnablePowerOFF)EnableManuBal=false;
 	else EnableManuBal=true;
@@ -127,9 +130,9 @@ void ViewChipState(void)
 	SwitchingMenu(&ChipStatMenu);
 	}
 
-void EnterPDOConfig(void)	
+void EnterPDOutCfg(void)	
 	{
-	SwitchingMenu(&PDOCfgMenu);
+	SwitchingMenu(&PDOutputSetMenu);
 	}
 
 void EnterSecuCfg(void)
@@ -185,8 +188,13 @@ void EnterTypeCGaugeConfig(void)
 	SwitchingMenu(&TypeCGaugeSetMenu);
 	}	
 	
+void EnterStorageModePref(void)
+	{
+	SwitchingMenu(&StorageModeSetMenu);
+	}
+
 //菜单项参数
-const SetupMenuSelDef MainSetup[23]=
+const SetupMenuSelDef MainSetup[24]=
 	{
 		{
 		"系统安全设置",
@@ -213,6 +221,12 @@ const SetupMenuSelDef MainSetup[23]=
 		&EnterGUIPref
 		},
 		{
+		"长期存储模式设置",
+		false,		
+		&AlwaysTrue,
+		&EnterStorageModePref
+		},
+		{
 		"过热保护温度设置",
 		false,
 		&CfgData.EnableOTPConfig,
@@ -237,10 +251,10 @@ const SetupMenuSelDef MainSetup[23]=
 		&EnterDisMgmt
 		},
 		{
-		"PDO广播配置",
+		"PD输出配置",
 		false,
 		&IsPDOCanConfig,
-		&EnterPDOConfig
+		&EnterPDOutCfg
 		},
 		{
 		"充电系统配置",
@@ -291,7 +305,7 @@ const SetupMenuSelDef MainSetup[23]=
 		&EnterManuBal,
 		},
 		{
-		"TypeC功率计配置",
+		"测量系统配置",
 		false,
 		&CfgData.EnableTCCalibration,
 		&EnterTypeCGaugeConfig

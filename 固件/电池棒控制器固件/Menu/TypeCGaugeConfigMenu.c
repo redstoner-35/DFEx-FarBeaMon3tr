@@ -18,8 +18,18 @@ void EnterDsourceSel(void)
 	SwitchingMenu(&TypeCCgaugeDSourceMenu);
 	}	
 	
+void EnterBattICAL(void)
+	{
+	SwitchingMenu(&BattICALMenu);
+	}	
+	
+void EnterBattVCAL(void)
+	{
+	SwitchingMenu(&BattVCALMenu);
+	}
+	
 //菜单项参数
-const SetupMenuSelDef TCGaugeSetup[4]=
+const SetupMenuSelDef TCGaugeSetup[6]=
 	{
 		{
 		"TypeC功率数据源",
@@ -28,16 +38,28 @@ const SetupMenuSelDef TCGaugeSetup[4]=
 		&EnterDsourceSel
 		},
 		{
-		"功率计电压校准",
+		"TypeC电压校准",
 		false,
 		&AlwaysTrue,
 		&EnterTCVCAL
 		},
 		{
-		"功率计电流校准",
+		"TypeC电流校准",
 		false,
 		&AlwaysTrue,
 		&EnterTCICAL
+		},
+		{
+		"电池电压校准",
+		false,
+		&AlwaysTrue,
+		&EnterBattVCAL
+		},
+		{
+		"电池电流校准",
+		false,
+		&AlwaysTrue,
+		&EnterBattICAL
 		},
 		{
 		"\0",
@@ -63,7 +85,7 @@ const MenuConfigDef TypeCGaugeSetMenu=
 	NULL, //渲染函数
 	NULL, //按键处理
 	//主设置菜单
-	"TypeC功率计配置",
+	"测量系统配置",
 	TCGaugeSetup,
 	NULL,
 	&ReturnToMainSetMenu, 

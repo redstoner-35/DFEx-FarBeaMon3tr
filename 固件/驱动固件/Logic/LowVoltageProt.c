@@ -7,9 +7,9 @@
 #include "SelfTest.h"
 
 //内部变量
-static xdata char BattAlertTimer; //电池低电压告警处理
-static xdata char RampCurrentRiseAttmTIM; //无极调光恢复电流的计时器	
-static char MPPTStepdownWaitTimer=0; //MPPT下调极亮等待的计时器
+static xdata unsigned char BattAlertTimer; //电池低电压告警处理
+static xdata unsigned char RampCurrentRiseAttmTIM; //无极调光恢复电流的计时器	
+static unsigned char MPPTStepdownWaitTimer; //MPPT下调极亮等待的计时器
 
 //全局参考
 xdata int TurboILIM; //极亮电流限制
@@ -29,9 +29,9 @@ void BattAlertTIMHandler(void)
 	//MPPT下调判断
 	if(MPPTStepdownWaitTimer)MPPTStepdownWaitTimer--;
 	//无极调光警报定时
-	if(RampCurrentRiseAttmTIM>0&&RampCurrentRiseAttmTIM<9)RampCurrentRiseAttmTIM++;
+	if(RampCurrentRiseAttmTIM&&RampCurrentRiseAttmTIM<9)RampCurrentRiseAttmTIM++;
 	//电量警报
-	if(BattAlertTimer>0&&BattAlertTimer<(BatteryAlertDelay+1))BattAlertTimer++;
+	if(BattAlertTimer&&BattAlertTimer<(BatteryAlertDelay+1))BattAlertTimer++;
 	}	
 	
 //计算极亮挡位电流的限制值
@@ -87,7 +87,7 @@ void TurboLVILIMProcess(void)
 //电池低电量保护函数
 void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump)
 	{
-	char Thr=BatteryFaultDelay;
+	unsigned char Thr=BatteryFaultDelay;
 	bit IsChangingGear;
 	//获取手电按键的状态
 	if(getSideKey1HEvent())IsChangingGear=1;

@@ -8,14 +8,16 @@
 #include "PWMCfg.h"
 #include "LowVoltProt.h"
 #include "SelfTest.h"
+#include "FastOp.h"
 
 //内部变量
 static xdata int TempIntegral;
 static xdata int TempProtBuf;
-static char StepDownTIM;  //降档显示计时
+static unsigned char StepDownTIM;  //降档显示计时
 static unsigned char StepUpLockTIM; //计时器
 
 //内部状态位
+static bit IsNearThermalFoldBack; //标记位，是否接近于退出极亮温度
 static bit IsThermalStepDown; //标记位，是否降档
 static bit IsTempLIMActive;  //温控是否已经启动
 static bit IsSystemShutDown; //是否触发温控强制关机
@@ -26,6 +28,7 @@ bit IsForceLeaveTurbo; //是否强制离开极亮档
 
 //内部宏定义
 #define MinumumILED CalcIREFValue(ILEDStepDown)
+#define LeaveTurboTemperature ForceOffTemp-10   //退出极亮温度为关机保护温度-10
 
 //换挡的时候根据当前恒温的电流重新PI值
 void RecalcPILoop(int LastCurrent)	
@@ -40,10 +43,10 @@ void RecalcPILoop(int LastCurrent)
 		ModeCur=QueryCurrentGearILED();
 		//计算P值缓存
 		buf=TempProtBuf+(TempIntegral/IntegralFactor); //计算电流扣减值
-		if(buf<0)buf=0; //电流扣减值不能小于0
+		if(IsNegative16(buf))buf=0; //电流扣减值不能小于0
 		buf=LastCurrent-buf; //旧挡位电流减去扣减值得到实际电流(mA)
 		TempProtBuf=ModeCur-LastCurrent; //P值缓存等于新挡位的电流-旧挡位实际电流(mA)
-		if(TempProtBuf<0)TempProtBuf=0; //不允许比例缓存小于0
+		if(IsNegative16(TempProtBuf))TempProtBuf=0; //不允许比例缓存小于0
 		}
 	//清除积分器缓存
 	TempIntegral=0;
@@ -59,7 +62,7 @@ int ThermalILIMCalc(void)
 	else
 		{
 		result=TempProtBuf+(TempIntegral/IntegralFactor); //根据缓存计算结果
-		if(result<0)result=0; //不允许负值出现
+		if(IsNegative16(result))result=0; //不允许负值出现
 		result=Current-result; //计算限流值结果
 		if(result<MinumumILED) //已经调到底了，禁止PID继续累加
 			{
@@ -78,35 +81,67 @@ static int QueryConstantTemp(void)
 	//极亮的时候使用更高的温控拉长降档时间
 	return CurrentMode->ModeIdx==Mode_Turbo?TurboConstantTemperature:ConstantTemperature;
 	}
-	
-//获取温控环路的常亮电流配置
-static int QueryConstantILED(void)
-	{
-	return CurrentMode->ModeIdx==Mode_Turbo?CalcIREFValue(ILEDConstantGlowMinTurbo):CalcIREFValue(ILEDConstantGlowMin);
-	}
 
+//温控系统中积分追踪温度变化实现恒亮的处理
+static void ThermalIntegralHandler(bool IsStepDown,bool IsEnableFastAdj)
+	{
+	int Buf;
+	//条件定义，如果积分值小于上限且系统需要快速调整，则令积分器以和温度挂钩的可变速率工作
+	#define IsEnableQuickItg (abs(TempIntegral)<(IntegrateFullScale-Buf)&&IsEnableFastAdj)
+	//计算温度差和积分数值
+	if(IsStepDown)Buf=Data.Systemp-(LeaveTurboTemperature-8);
+	else Buf=(ReleaseTemperature+5)-Data.Systemp; //降档模式下系统温度误差值为强制极亮的温度-8，升档模式为恢复温度+5
+	if(IsNegative16(Buf))Buf=0; //温度差不能为负数
+	//进行积分器本次调整值的计算
+	if(IsEnableQuickItg)Buf<<=1;      //快速调整开启,令调整值=温差*2
+	else Buf=0;
+	Buf++;  													//这里需要保证Buf始终为1(快速调整被禁用后调整值将会变为0)确保积分器正常响应
+  //应用积分数值到积分缓存
+	TempIntegral+=(IsStepDown?Buf:-Buf);
+	#undef IsEnableQuickItg            //这个宏定义只是该函数的局部定义，需要在函数末尾禁用掉避免后续意外使用到导致问题
+	}
+	
+static void ThermalIntegralCommitToProtHandler(void)	
+	{
+	//当前积分器累计的参数小于复位时间，退出
+	if(abs(TempIntegral)<(ILEDRecoveryTime*8))return;
+	//将积分器内累积的变化成比例应用到比例项并清零积分器
+	TempProtBuf+=TempIntegral/IntegralFactor;
+	TempIntegral=0;						
+	}
+	
 //温控PI环计算
 void ThermalPILoopCalc(void)	
 	{
-	int ProtFact,Err;
+	int ProtFact,Err,ConstantILED;
+	bool IsSwitchToITGTrack;
 	//PI环关闭，复位数值
 	if(!IsTempLIMActive)
 		{
+		IsNearThermalFoldBack=0;
 		TempIntegral=0;
 		TempProtBuf=0;
 		IsThermalStepDown=0;
 		}
 	//进行PI环的计算(仅在输出开启的时候进行或者爆闪模式运行过程中强制进行)
 	else if(GetIfOutputEnabled()||CurrentMode->ModeIdx==Mode_Strobe)
-		{
-		//获取恒温温度值
-		ProtFact=QueryConstantTemp();
-		//温度误差为正
+		{			
+
+		//获取恒温温度值和恒亮电流
+		ConstantILED=CurrentMode->ModeIdx==Mode_Turbo?CalcIREFValue(ILEDConstantGlowMinTurbo):CalcIREFValue(ILEDConstantGlowMin);  //获取常亮电流
+		if(IsNearThermalFoldBack)ConstantILED-=CalcIREFValue(2000); //接近温度上限，立即将常亮电流下调2000mA
+		ProtFact=QueryConstantTemp(); //获取目标常亮温度
+		//温度误差为正（温度大于恒温值）
 		if(Data.Systemp>ProtFact)
-			{
-			//计算误差
-			Err=Data.Systemp-ProtFact;  //误差值等于目标温度-恒温温度
+			{		
+			/**************************************************************
+			安全保护机制：马上就要摸到强制掉极亮的温度了，立刻使能标志位下
+			调常亮电流强制继续使用P项降档快速拉低电流，这样可以避免温度继
+			续上去在正常情况下触发退出极亮的保护机制
+			**************************************************************/
+			if(Data.Systemp>LeaveTurboTemperature-3)IsNearThermalFoldBack=1;
 			//比例项(P)
+			Err=Data.Systemp-ProtFact;  //误差值等于目标温度-恒温温度
 			StepUpLockTIM=24; //升档之后温度过高则之后停止3秒
 			if(Err>2)
 				{
@@ -114,15 +149,7 @@ void ThermalPILoopCalc(void)
 				ProtFact=(CurrentBuf/2300)+1;
 			  if(Data.Systemp>(ForceDisableTurboTemp-5))ProtFact*=5; //温度过高，扩张比例系数
 			  //当前LED电流已被限制到常亮电流范围内，阻止快速降档
-				if(CurrentBuf<QueryConstantILED())	
-					{
-					//积分器一直累加加满了，应用一次输出电流并清零积分器
-					if(TempIntegral==(SlowStepDownTime*8))
-						{
-						TempProtBuf+=((SlowStepDownTime*8)/IntegralFactor);
-						TempIntegral=0;
-						}
-					}
+				if(CurrentBuf<ConstantILED)ThermalIntegralCommitToProtHandler();
 				//电流没有达到常亮下限，继续提交电流设置
 				else TempProtBuf+=(ProtFact*Err);	//向buf提交比例项	
 				//限制比例项最大只能达到ILEDMIN
@@ -130,38 +157,37 @@ void ThermalPILoopCalc(void)
 				StepUpLockTIM=60; //触发比例项降档，停7.5秒
 				}
 			//积分项(I)
-			if(TempIntegral<IntegrateFullScale)TempIntegral++;
+			ThermalIntegralHandler(true,CurrentBuf<ConstantILED?true:false); //电流小于常亮值时使能快速调整
 			}
-		//温度小于恒温值
+		//温度小于恒温值（温度误差为负）
 		else if(Data.Systemp<ProtFact)
 			{
-			//计算误差
-			Err=ProtFact-Data.Systemp;	 //误差等于比例减积分	
-			//比例项
+			//判断电流是否进入积分缓调区域
+			IsSwitchToITGTrack=CurrentBuf>(ConstantILED-CalcIREFValue(650))?true:false; 
+			//比例项(P)
+			Err=ProtFact-Data.Systemp;	 //误差等于目标温度值减去系统温度
 			if(StepUpLockTIM)StepUpLockTIM--; //当前触发降档还没达到快速升档的时间
 			else
 				{
 				//电流达到回升限制值，开始使用积分器监测缓慢回升
-				if(CurrentBuf>(QueryConstantILED()-CalcIREFValue(1500)))	
-					{
-					//积分器一直累加加满了，应用一次输出电流并清零积分器
-					if(TempIntegral==-(ILEDRecoveryTime*8))
-						{
-						TempProtBuf-=((ILEDRecoveryTime*8)/IntegralFactor);
-						TempIntegral=0;						
-						}
-					}
+				if(IsSwitchToITGTrack)ThermalIntegralCommitToProtHandler();
 				//执行比例升温
 				else
 					{
 					if(Err&0x7E)TempProtBuf-=Err; //进行升档
-					if(TempProtBuf<0)TempProtBuf=0;
+					if(IsNegative16(TempProtBuf))TempProtBuf=0;
+					}			
+				//温度下来了很多，系统已经令电流回升到强制降额前的常亮电流，则复位标记位
+				if(IsNearThermalFoldBack)
+					{
+					ConstantILED+=CalcIREFValue(2000); //把减掉的2000mA加回来得到原来的目标常亮是多少电流
+					if(CurrentBuf>ConstantILED)IsNearThermalFoldBack=0;  
 					}
 				}
 			//比例项数值限幅(不能是负数)
-			if(TempProtBuf<0)TempProtBuf=0; 
-			//积分项
-			if(TempIntegral>(-IntegrateFullScale))TempIntegral--;		
+			if(IsNegative16(TempProtBuf))TempProtBuf=0; 
+			//积分项(I)
+			ThermalIntegralHandler(false,IsSwitchToITGTrack); //电流大于常亮值进入积分模式时使能快速调整
 			}
 		}
 	}
@@ -218,7 +244,7 @@ void ThermalMgmtProcess(void)
 		return;
 		}
 	//手电温度过高时对极亮进行限制
-	IsForceLeaveTurbo=TempSchmittTrigger(IsForceLeaveTurbo,ForceOffTemp-10,ForceDisableTurboTemp-10);	//温度距离关机保护的间距不到10度，立即退出极亮
+	IsForceLeaveTurbo=TempSchmittTrigger(IsForceLeaveTurbo,LeaveTurboTemperature,ForceDisableTurboTemp-10);	//温度距离关机保护的间距不到10度，立即退出极亮
 	IsDisableTurbo=TempSchmittTrigger(IsDisableTurbo,ForceDisableTurboTemp,ForceDisableTurboTemp-10); //温度达到关闭极亮档的阈值，关闭极亮
 	//过热关机保护
 	IsSystemShutDown=TempSchmittTrigger(IsSystemShutDown,ForceOffTemp,ConstantTemperature-10);
@@ -230,6 +256,6 @@ void ThermalMgmtProcess(void)
 		{
 		ThermalStatus=TempSchmittTrigger(IsTempLIMActive,QueryConstantTemp(),ReleaseTemperature); //获取施密特触发器的结果
 		if(ThermalStatus)IsTempLIMActive=1;//施密特函数要求激活温控，立即激活
-		else if(!ThermalStatus&&!TempProtBuf&&TempIntegral<0)IsTempLIMActive=0; //施密特函数要求关闭温控，等待比例缓存为0解除限流后关闭
+		else if(!ThermalStatus&&!TempProtBuf&&IsNegative16(TempIntegral))IsTempLIMActive=0; //施密特函数要求关闭温控，等待比例缓存为0解除限流后关闭
 		}
 	}	

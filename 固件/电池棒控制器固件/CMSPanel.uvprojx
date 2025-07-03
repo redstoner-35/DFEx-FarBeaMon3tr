@@ -942,6 +942,41 @@
               <FileType>1</FileType>
               <FilePath>.\Menu\TypeCCalibrationSet.c</FilePath>
             </File>
+            <File>
+              <FileName>PPSOutputCurrentSetMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\PPSOutputCurrentSetMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>PDOutputConfig.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\PDOutputConfig.c</FilePath>
+            </File>
+            <File>
+              <FileName>FixedPDORevisedENMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\FixedPDORevisedENMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>FixedPDOICCEdit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\FixedPDOICCEdit.c</FilePath>
+            </File>
+            <File>
+              <FileName>StorageModeMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\StorageModeMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>QuickAccessMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\QuickAccessMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>BatteryCalSetMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\BatteryCalSetMenu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

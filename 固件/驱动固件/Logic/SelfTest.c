@@ -8,9 +8,9 @@
 #include "OutputChannel.h"
 
 //内部变量
-static xdata int ErrDisplayIndex; //错误显示计时
-static xdata char ShortDetectTIM=0; //短路监测计时器
-static xdata char ShortBlankTIM; //短路blank定时器
+static xdata unsigned char ErrDisplayIndex; //错误显示计时
+static xdata unsigned char ShortDetectTIM=0; //短路监测计时器
+static xdata unsigned char ShortBlankTIM; //短路blank定时器
 static code FaultCodeDef NonCriticalFault[]={ //非致命的错误代码
 	Fault_DCDCOpen,
   Fault_DCDCShort, //开路和短路可能是误报，允许消除
@@ -54,7 +54,7 @@ void DisplayErrorTIMHandler(void)
 	else //发生错误，开始计时
 		{
 		ErrDisplayIndex++;
-    if(ErrDisplayIndex>=(5+(6*(int)ErrCode)+10))ErrDisplayIndex=0; //上限到了，开始翻转
+    if(ErrDisplayIndex>=(15+(6*(int)ErrCode)))ErrDisplayIndex=0; //上限到了，开始翻转
 		}
 	}
 

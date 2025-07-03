@@ -137,6 +137,18 @@ extern const MenuConfigDef TypeCGaugeSetMenu;
 extern const MenuConfigDef TypeICALMenu;
 extern const MenuConfigDef TypeCVCALMenu;
 extern const MenuConfigDef TypeCCgaugeDSourceMenu;
+extern const MenuConfigDef PPS1IsetMenu;
+extern const MenuConfigDef PPS2IsetMenu;
+extern const MenuConfigDef PDOutputSetMenu;
+extern const MenuConfigDef FixedPDOICCModifyCfgMenu;
+extern const MenuConfigDef PDO9VIsetMenu;
+extern const MenuConfigDef PDO12VIsetMenu;
+extern const MenuConfigDef PDO15VIsetMenu;
+extern const MenuConfigDef PDO20VIsetMenu;
+extern const MenuConfigDef StorageModeSetMenu;
+extern const MenuConfigDef QuickAccessMenu;
+extern const MenuConfigDef BattVCALMenu;
+extern const MenuConfigDef BattICALMenu;
 
 //内部数值增减管理
 int IntIncDec(int ValueIN,int Min,int Max,int PerStep); //
@@ -163,7 +175,7 @@ void SelfTestErrorHandler(void);
 extern bool IsEnableAdvancedMode; //是否开启高级模式
 	
 //外部调用的显示函数
-
+void ClearMenuIndex(void);  //清除菜单index
 void ShowTimeCode(u16 y,long Time);  //根据传入的秒数显示时间
 void RenderMenuBG(void);	//菜单背景渲染
 #define ClearScreen() LCD_Fill(0,0,LCD_W,LCD_H,BLACK)

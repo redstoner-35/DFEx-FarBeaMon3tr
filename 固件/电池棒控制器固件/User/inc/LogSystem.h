@@ -54,7 +54,7 @@ typedef struct
  }RunLogEntryStrDef;	//运行日志结构体的定义
  
 //定义
-#define RunTimeLoggerDepth 110  //运行日志的深度
+#define RunTimeLoggerDepth 125  //运行日志的深度
 #define RunTimeLogBase CfgFileSize+sizeof(ChargeTestStorDef) //运行日志的起始位置
 #define RunTimeLogSize RunTimeLoggerDepth*sizeof(RunLogDataStrDef)  //运行日志的大小
 #define RunTimeLogKey "RLoG" //运行log的内容检查Key

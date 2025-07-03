@@ -7,6 +7,8 @@ void EnteredInstantCapTest(void)
 	extern bool IsBootFromVBUS;
 	//没有启动一次性测容
 	if(CfgData.InstantCTest!=InstantCTest_Armed)return;
+	//存储模式激活会导致结果不准确，不允许启动	
+	if(StorageMode!=StorageMode_OFF)return;
 	//电池电压大于13V不允许启动
 	if(ADCO.Vbatt>13.0)return; 
 	//如果本次启动时保护板有输出说明没有彻底放电结束

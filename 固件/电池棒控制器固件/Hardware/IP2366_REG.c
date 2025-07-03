@@ -2,6 +2,7 @@
 #include "I2CAddr.h"
 #include "delay.h"
 #include "IP2366_REG.h"
+#include "ADC.h"
 #include <math.h>
 
 //读寄存器
@@ -338,11 +339,6 @@ bool IP2366_SetOutputState(IP2366OutConfigDef * CFG)
 	{
 	char buf;
 	extern bool IsEnableHSCPMode;
-	//设置Type-C模式
-  if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL8))return false;
-	buf&=0x3F;
-	buf|=CFG->IsEnableOutput?0xC0:0x40; //设置Type-C模式为DFP或DRP
-	if(!IP2366_WriteReg(buf,REG_TYPEC_CTL8))return false;
 	//设置输出使能寄存器
 	if(!IP2366_ReadReg(&buf,REG_SYSCTL11))return false;
 	if(CFG->IsEnableOutput)buf|=0x80;
@@ -404,8 +400,11 @@ bool IP2366_SetVLowVolt(VBatLowDef Vlow)
 //IP2366设置OTP重载监测的寄存器
 bool IP2366_SetOTPSign(void)	
 	{
-	//向不怎么会用到的Type-C CTL9写0x01用于监测
-	if(!IP2366_WriteReg(0x01,REG_TYPEC_CTL9))return false;
+	char buf;
+	if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL9))return false;	
+	//令不怎么用到EN_5VPDO_Iset位置位为1，用于监测芯片复位（该位会在芯片复位后自动reset为0）
+	buf|=0x01;	
+	if(!IP2366_WriteReg(buf,REG_TYPEC_CTL9))return false;
 	//设置Sign成功
 	return true;
 	}
@@ -416,9 +415,153 @@ bool IP2366_DetectIfChipReset(bool *IsReset)
 	char buf;
 	if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL9))return false;
 	//寄存器内容发生更改，芯片已经复位	
+	buf&=0x01; //Mask掉除了EN 5V PDO Iset之外的其他位
 	*IsReset=buf==0x01?false:true;
 	return true;
 	}	
+
+//设置固定模式PDO的输出电流（需要注意的是20V的PDO如果不是公版芯片不建议设置）
+bool IP2366_SetFixedPDO(IP2366FixPDOSetDef *Cfg)
+	{
+	char buf;
+	int buf2,V20Max;
+	extern bool IsSupportExterndPDO;
+	char PDOPlus10mA;	
+	//读取TYPEC_CTL18寄存器
+	if(!IP2366_ReadReg(&PDOPlus10mA,REG_TYPEC_CTL18))return false;	
+	//读取TYPEC_CTL9寄存器,设置对应的位并且回写
+	if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL9))return false;
+	
+	if(Cfg->IsEnable20VPDOSet)buf|=0x10;
+	else buf&=0xEF;		//设置En_20VPdo_Iset
+	
+	if(Cfg->IsEnable15VPDOSet)buf|=0x08;
+	else buf&=0xF7;		//设置En_15VPdo_Iset
+	
+	if(Cfg->IsEnable12VPDOSet)buf|=0x04;
+	else buf&=0xFB; 	//设置En_12VPdo_Iset		
+	
+	if(Cfg->IsEnable9VPDOSet)buf|=0x02;
+	else buf&=0xFD; 	//设置En_9VPdo_Iset	
+  if(!IP2366_WriteReg(buf,REG_TYPEC_CTL9))return false; 		
+	
+	//设置TypeC_CTL14寄存器的20VPdo_Iset[7:0]
+	if(Cfg->IsEnable20VPDOSet)
+		{
+		//对传入的PDO参数进行数值限幅
+		V20Max=IsSupportExterndPDO?7000:4000;
+		if(Cfg->PDO20VICCMAX>V20Max)buf2=V20Max;
+		else if(Cfg->PDO20VICCMAX<1000)buf2=1000;
+		else buf2=Cfg->PDO20VICCMAX; 
+	
+		if(!IsSupportExterndPDO&&buf2%20)PDOPlus10mA|=0x10;
+    else PDOPlus10mA&=0xEF;        //如果是公版固件且检测到电流包含奇数部分，则设置EN_20VPDO_ADD=1凑出10mA				
+			
+		if(IsSupportExterndPDO)buf2=(buf2/50)&0xFF; //非公版芯片，原始电流值转换为50mA per LSB的unsigned int
+		else buf2=(buf2/20)&0xFF; //原始电流值转换为20mA per LSB的unsigned int
+		buf=(char)buf2;
+		if(!IP2366_WriteReg(buf,REG_TYPEC_CTL14))return false; 
+		}	
+	//设置TypeC_CTL13寄存器的15VPdo_Iset[7:0]
+	if(Cfg->IsEnable15VPDOSet)
+		{
+		if(Cfg->PDO15VICCMAX>3000)buf2=3000;
+		else if(Cfg->PDO15VICCMAX<500)buf2=500;
+		else buf2=Cfg->PDO15VICCMAX;  //进行数值限幅确保读进来的数值不超过0.5A-3A范围
+	  
+		if(buf2%20)PDOPlus10mA|=0x08;
+    else PDOPlus10mA&=0xF7;        //如果检测到电流包含奇数部分，则设置EN_15VPDO_ADD=1凑出10mA
+			
+		buf2=(buf2/20)&0xFF; //原始电流值转换为20mA per LSB的unsigned int
+		buf=(char)buf2;
+		if(!IP2366_WriteReg(buf,REG_TYPEC_CTL13))return false; 
+		}		
+	//设置TypeC_CTL12寄存器的12VPdo_Iset[7:0]
+	if(Cfg->IsEnable12VPDOSet)
+		{
+		if(Cfg->PDO12VICCMAX>3000)buf2=3000;
+		else if(Cfg->PDO12VICCMAX<500)buf2=500;
+		else buf2=Cfg->PDO12VICCMAX;  //进行数值限幅确保读进来的数值不超过0.5A-3A范围
+	
+		if(buf2%20)PDOPlus10mA|=0x04;
+    else PDOPlus10mA&=0xFB;        //如果检测到电流包含奇数部分，则设置EN_12VPDO_ADD=1凑出10mA			
+			
+		buf2=(buf2/20)&0xFF; //原始电流值转换为20mA per LSB的unsigned int
+		buf=(char)buf2;
+		if(!IP2366_WriteReg(buf,REG_TYPEC_CTL12))return false; 
+		}	
+	//设置TypeC_CTL11寄存器的9VPdo_Iset[7:0]
+	if(Cfg->IsEnable9VPDOSet)
+		{
+		if(Cfg->PDO9VICCMAX>3000)buf2=3000;
+		else if(Cfg->PDO9VICCMAX<500)buf2=500;
+		else buf2=Cfg->PDO9VICCMAX;  //进行数值限幅确保读进来的数值不超过0.5A-3A范围
+	
+		if(buf2%20)PDOPlus10mA|=0x02;
+    else PDOPlus10mA&=0xFD;        //如果检测到电流包含奇数部分，则设置EN_9VPDO_ADD=1凑出10mA				
+			
+		buf2=(buf2/20)&0xFF; //原始电流值转换为20mA per LSB的unsigned int
+		buf=(char)buf2;
+		if(!IP2366_WriteReg(buf,REG_TYPEC_CTL11))return false; 
+		}	
+	//写入TYPEC_CTL18寄存器设置10mA电流递增功能
+	if(!IP2366_WriteReg(PDOPlus10mA,REG_TYPEC_CTL18))return false;		
+	//所有通信完成，返回true	
+	return true;
+	}
+
+//获取芯片PPS1和PPS2的输出电流
+bool IP2366_GetPPSCurrent(int *PPS1Current,int *PPS2Current)	
+	{
+	char buf;
+	int buf2;
+	//获取PPS1电流	
+	if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL23))return false; //获取Pps1Pdo_Iset[6:0]
+	buf2=(int)buf;
+	buf2&=0x7F;
+	buf2*=50;  //转换为mA
+	if(PPS1Current!=NULL)*PPS1Current=buf2;
+	//获取PPS2电流	
+	if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL24))return false; //获取Pps2Pdo_Iset[6:0]
+	buf2=(int)buf;
+	buf2&=0x7F;
+	buf2*=50;  //转换为mA
+	if(PPS2Current!=NULL)*PPS2Current=buf2;	
+	//通信完毕，返回结果
+	return true;
+	}
+
+//设置芯片PPS1和PPS2的输出电流
+bool IP2366_SetPPSCurrent(IP2366PPSPDOSetDef *Cfg)	
+	{
+	char buf;
+	int buf2;
+	//根据是否使能PPS电流修改设置
+	if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL9))return false;
+	if(Cfg->IsEnablePPS1Set)buf|=0x20;
+	else buf&=0xDF;  //设置En_Pps1Pdo_Iset
+	if(Cfg->IsEnablePPS2Set)buf|=0x40;
+  else buf&=0xBF;		
+  if(!IP2366_WriteReg(buf,REG_TYPEC_CTL9))return false; 		
+	//设置PPS1 PDO的输出电流
+	if(Cfg->PPS1Current>6350)buf2=6350;
+  else if(Cfg->PPS1Current<1500)buf2=1500;
+  else buf2=Cfg->PPS1Current;  //限制数值范围为3A-6.35A
+		
+	buf2=(buf2/50)&0x7F; //原始值转换为50mA per LSB
+	buf=(char)buf2;
+	if(!IP2366_WriteReg(buf,REG_TYPEC_CTL23))return false; 	//写入Pps1Pdo_Iset[6:0]
+	//设置PPS2 PDO的输出电流
+	if(Cfg->PPS2Current>6350)buf2=6350;
+  else if(Cfg->PPS2Current<2000)buf2=2000;
+  else buf2=Cfg->PPS2Current;  //限制数值范围为2A-6.35A
+		
+	buf2=(buf2/50)&0x7F; //原始值转换为50mA per LSB
+	buf=(char)buf2;
+	if(!IP2366_WriteReg(buf,REG_TYPEC_CTL24))return false; 	//写入Pps2Pdo_Iset[6:0]
+	//通信完毕，返回结果
+	return true;
+	}
 
 //设置TypeC的模式
 bool IP2366_SetTypeCRole(TypeCRoleDef Role)
@@ -433,16 +576,42 @@ bool IP2366_SetTypeCRole(TypeCRoleDef Role)
 	return true;
 	}	
 	
-//获取充电状态
+//获取充电状态	
 bool IP2366_GetChargerState(BatteryStateDef *State)	
 	{
 	char buf;
+	float Result,IMin;
+	BatteryStateDef temp;
+	bool IsEnteredCVMode=false;
 	//获取状态
 	if(!IP2366_ReadReg(&buf,REG_STATE_CTL0))return false; //STATE-CTL0
-	if(buf&0x08)*State=Batt_discharging; //输出已启用，电池正在向外放电
-	else if(buf&0x20)*State=(BatteryStateDef)(buf&0x07); //当CHGEN=1的时候获取电池充电状态
-	else *State=Batt_StandBy; //待机状态
+	if(buf&0x08)temp=Batt_discharging; //输出已启用，电池正在向外放电
+	else if(buf&0x20)
+		{
+		//获取充电状态
+		temp=(BatteryStateDef)(buf&0x07); //当CHGEN=1的时候获取电池充电状态
+		if(!IP2366_getCurrentChargeParam(NULL,&Result))return false; //获取浮充电压
+		Result-=0.2; //比目标浮充电压低0.2V作为恒流充电判断条件
+		//获取充电功率
+		if(!IP2366_ReadReg(&buf,REG_SYSCTL12))return false;
+		buf>>=5;
+		buf&=0x07;
+		switch((ChargePowerDef)buf)	
+			{
+			case Power_30W:IMin=1.50;break;
+			case Power_45W:IMin=2.50;break;
+			case Power_60W:
+			case Power_65W:IMin=4.0;break;
+			case Power_100W:IMin=5.5;break;
+			case Power_140W:IMin=8.2;break;
+			}
+		//条件判断，电池电压达到额定满充电压且电池电流小于进入浮充的最小值，指示进入浮充
+		if(ADCO.Vbatt>Result&&fabsf(ADCO.Ibatt)<IMin)IsEnteredCVMode=true;
+		if(!IsEnteredCVMode&&temp==Batt_CVCharge)temp=Batt_CCCharge;
+		}
+	else temp=Batt_StandBy; //待机状态
 	//获取成功
+	if(State!=NULL)*State=temp; //赋值结果
 	return true;
 	}
 

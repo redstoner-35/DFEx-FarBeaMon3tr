@@ -26,6 +26,7 @@ void EnterPSet(void);
 void EnterGUIPref(void);
 void ViewChipState(void);
 void EnterManuBal(void);
+void EnterStorageModePref(void);
 
 //进入高级模式之前输密码
 void EnterAdvMode(void)
@@ -34,7 +35,7 @@ void EnterAdvMode(void)
 	}
 
 //菜单项参数
-const SetupMenuSelDef EasySetup[19]=
+const SetupMenuSelDef EasySetup[20]=
 	{	
 		{
 		"一键充电测容",
@@ -47,6 +48,12 @@ const SetupMenuSelDef EasySetup[19]=
 		false,
 		&CfgData.EnableChargPowerConfig,
 		&EnterPSet
+		},
+		{
+		"长期存储模式设置",
+		false,		
+		&AlwaysTrue,
+		&EnterStorageModePref
 		},
 		{
 		"激活一次性测容",

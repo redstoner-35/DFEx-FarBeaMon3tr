@@ -162,10 +162,10 @@ typedef struct
 	
 typedef enum
 	{
-	TypeC_Disconnect=0,
-	TypeC_UFP=2,
-	TypeC_DFP=1,
-	TypeC_DRP=3
+	TypeC_Disconnect=0x00,	//Source Bit=0,Sink Bit=0 完全断开
+	TypeC_UFP=0x02,  				//Source Bit=1,Sink Bit=0 只能往外输出，用于模拟适配器
+	//TypeC_DFP=0x01,		 			//Source Bit=0,Sink Bit=1 只能往里面输入，用于仅充电功能（好像有bug,所以说禁用了）
+	TypeC_DRP=0x03					//Source Bit=1,Sink Bit=1 输入输出都可以，正常模式（默认配备TrySRC，无法给支持TrySRC的设备充电）
 	}TypeCRoleDef;	
 
 typedef enum
@@ -188,6 +188,26 @@ typedef struct
 	PDStateDef PDState;	 
 	bool IsTypeCConnected;
 	}IP2366VBUSStateDef;	
+	
+typedef struct	
+	{
+	bool IsEnable9VPDOSet;
+	bool IsEnable12VPDOSet;
+	bool IsEnable15VPDOSet;
+	bool IsEnable20VPDOSet;
+	int PDO9VICCMAX;  //9V PDO的电流设置
+	int PDO12VICCMAX; //12V PDO的电流设置
+	int PDO15VICCMAX; //15V PDO的电流设置
+	int PDO20VICCMAX; //20V PDO的电流设置
+	}IP2366FixPDOSetDef;
+
+typedef struct
+	{
+	bool IsEnablePPS1Set;
+	bool IsEnablePPS2Set;
+	int PPS1Current;
+	int PPS2Current;
+	}IP2366PPSPDOSetDef;	
 	
 typedef struct
 	{
@@ -220,6 +240,9 @@ typedef struct
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
+bool IP2366_GetPPSCurrent(int *PPS1Current,int *PPS2Current);	//获取芯片PPS1和PPS2的输出电流
+bool IP2366_SetFixedPDO(IP2366FixPDOSetDef *Cfg);	//设置固定模式PDO的输出电流（需要注意的是20V的PDO如果不是公版芯片不建议设置）
+bool IP2366_SetPPSCurrent(IP2366PPSPDOSetDef *Cfg);	//设置芯片PPS1和PPS2的输出电流
 bool IP2366_GetVRecharge(float *Vrecharge); //获取再充电电压
 bool IP2366_getCurrentChargeParam(int *Istop,float *Vstop); //获取当前芯片的充电参数(浮充电压和停充电流等)
 bool IP2366_GetCurrentPeakCurrent(int *Result); //获取峰值电流
