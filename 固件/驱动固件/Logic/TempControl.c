@@ -27,6 +27,7 @@ bit IsDisableTurbo;  //禁止再度进入到极亮档
 bit IsForceLeaveTurbo; //是否强制离开极亮档
 
 //内部宏定义
+#define InputMPPTAlertThershold (QueryCurrentGearILED()-CalcIREFValue(InputMPPTAlertOffset)) //输入MPPT执行极亮功率不足告警的阈值
 #define MinumumILED CalcIREFValue(ILEDStepDown)
 #define LeaveTurboTemperature ForceOffTemp-10   //退出极亮温度为关机保护温度-10
 
@@ -198,7 +199,7 @@ bit ShowThermalStepDown(void)
 	//判断系统是否在降档
 	if(VshowFSMState!=BattVdis_Waiting)Reason=StepDown_OFF; //当前处于电量显示状态不允许打断
 	else if(IsThermalStepDown)Reason=StepDown_Thermal; //温控降档触发
-	else if(CurrentMode->ModeIdx==Mode_Turbo&&TurboILIM<QueryCurrentGearILED())Reason=StepDowm_BattAlert; //电池撑不住
+	else if(CurrentMode->ModeIdx==Mode_Turbo&&TurboILIM<InputMPPTAlertThershold)Reason=StepDowm_BattAlert; //开启极亮模式且实际协商的极亮电流小于预设值太多，提示功率不足
 	else Reason=StepDown_OFF;
 	//进行降档处理
   switch(Reason)		

@@ -201,7 +201,7 @@ static void BatteryStateFSM(void)
 			  break;
 		 //电池电量较为充足
 		 case Battery_Mid:
-			  if(Battery>(Thres+0.4))BattState=Battery_Plenty; //电池电压大于3.8，回到充足状态
+			  if(Battery>(Thres+0.3))BattState=Battery_Plenty; //电池电压大于3.8，回到充足状态
 				if(Battery<3.0)BattState=Battery_Low; //电池电压低于3.2则切换到电量低的状态
 				break;
 		 //电池电量不足

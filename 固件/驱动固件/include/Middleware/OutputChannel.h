@@ -28,6 +28,7 @@ typedef enum
 //输出通道参数设置
 #define MainChannelShuntmOhm 1.00 //主通道的检流电阻阻值(mR)
 #define CurrentSenseOpAmpGain 100 //电流检测放大器的增益
+#define InputMPPTAlertOffset 750 //输入MPPT限制功率报警的阈值设置（当实际极亮电流低于额定极亮电流减去这个数值时，系统开始报警。单位是mA）
 
 //输出通道电流参考和PWMDAC整定计算宏（绝对不要修改！会爆炸！）	
 #define CalcIREFValue(x) ((x/2)+(x/6))

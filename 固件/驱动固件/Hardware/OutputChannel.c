@@ -282,13 +282,13 @@ void OutputChannel_Calc(void)
 			LEDMOS=1;
 			//开始逐步下调预充占空比把输出电压调到额定值
 		  if(IsNeedToUploadPWM)break; //上次调整还未完毕
-		  if(PreChargeDACDuty>0)
+		  if(PreChargeDACDuty)
 				{
 				//继续进行调整，下调占空比
 				TargetCurrent=1+(TargetCurrent/25);
 				if(TargetCurrent>200)TargetCurrent=200; //计算出每次PWMDAC递减的值
-				PreChargeDACDuty-=TargetCurrent;
-				if(PreChargeDACDuty<0)PreChargeDACDuty=0; //禁止占空比为负数
+				if(PreChargeDACDuty<TargetCurrent)PreChargeDACDuty=0;
+				else PreChargeDACDuty-=TargetCurrent;	                 //PWMDAC在接近末尾的时候改用逐次递减
 				//预充状态机计时为20，需要20个主循环确保最新值已被应用才继续
 				PreChargeFSMTimer=20;
 				//标记占空比已更新，需要上传最新值	
@@ -380,7 +380,7 @@ void OutputChannel_Calc(void)
 		  PreChargeDACDuty=CVPreStartDACVal;
 		  IsNeedToUploadPWM=1;
 			//等待输出电压下降
-		  if(CurrentMode->ModeIdx!=Mode_Beacon&&Data.OutputVoltage>17.3)break;
+		  if(CurrentMode->ModeIdx!=Mode_Beacon&&Data.OutputVoltage>18)break;
 		  LEDMOS=0; //断开LEDMOS切断电流
 		  OutputFSMState=OutCH_OutputIdle; //进入idle状态
 		  break;

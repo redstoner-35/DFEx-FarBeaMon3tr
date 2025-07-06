@@ -369,8 +369,9 @@ void ModeSwitchFSM(void)
 	//获取按键状态
 	if(GetIfSystemInPOFFSeq())return; //系统处于关机过程中，不执行按键处理
 	ClickCount=getSideKeyShortPressCount(0);	//读取按键处理函数传过来的参数
-	//挡位记忆参数检查和EEPROM记忆
-	if(LastMode==Mode_OFF||LastMode>=ModeTotalDepth)LastMode=Mode_Low;
+		
+	//挡位记忆参数检查
+	if(!LastMode||LastMode>=ModeTotalDepth)LastMode=Mode_Low;
 	//状态机
 	IsHalfBrightness=0; //按键灯默认全亮
 	switch(CurrentMode->ModeIdx)	

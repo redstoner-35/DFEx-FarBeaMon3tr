@@ -68,9 +68,11 @@ void EnterTurboStrobe(char ClickCount)
 	//三击爆闪
 	else if(ClickCount==3)
 		{
-		if(Battery>2.7)SwitchToGear(Mode_Strobe);   //进入爆闪
-		else LEDMode=LED_RedBlinkFifth; //电量不足五次闪烁提示
-		if(CurrentMode->ModeIdx!=Mode_OFF)LastMode=CurrentMode->ModeIdx; //在开机状态下三击爆闪，记忆进入前的挡位
+		//在开机状态下三击爆闪，记忆进入前的挡位
+		if(CurrentMode->ModeIdx!=Mode_OFF)LastMode=CurrentMode->ModeIdx; 
+		//尝试进入爆闪，如果电池电量不足则进入失败,电量指示五次闪烁
+		if(Battery>2.7)SwitchToGear(Mode_Strobe);
+		else LEDMode=LED_RedBlinkFifth; 
 		}
 	}
 	

@@ -31,14 +31,14 @@
 //FL7022D灯珠
 #elif defined(USING_LED_FL7022D)|defined(USING_LED_N7175HE)
 
-	#warning "Currently Selected LED is DFEx_SuperLED+ FL7022D(NightWatch N7-175HE),Turbo ICC=33.5A."
-	#define TurboICCMAX 33500
+	#warning "Currently Selected LED is DFEx_SuperLED+ FL7022D(NightWatch N7-175HE),Turbo ICC=33.0A."
+	#define TurboICCMAX 33000
 
 //FL7018I灯珠
 #elif defined(USING_LED_FL7018I)
 	
-	#warning "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=34A."
-	#define TurboICCMAX 34000
+	#warning "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35A."
+	#define TurboICCMAX 35000
 
 //Luminus SFT-90
 #elif defined(USING_LED_SFT90)
@@ -49,8 +49,8 @@
 
 #elif defined(USING_LED_NBT160)
 
-	#warning "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=28A."
-	#define TurboICCMAX 28000
+	#warning "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=29A."
+	#define TurboICCMAX 29000
 
 //安全保护机制，请勿修改！！！！
 #else
