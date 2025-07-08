@@ -3,6 +3,18 @@
 
 #include <stdbool.h>
 
+//内部enum
+typedef enum
+	{
+	AutoBalance_WaitBattCharge,
+	AutoBalance_RunningBalance,
+	AutoBalance_ReChargingWait,
+	AutoBalance_ReCharging,
+	AutoBalance_End,
+	AutoBalance_End_Abnormal
+	}AutoBalanFSMDef;
+
+
 //外部参考
 extern int BalanceForceEnableTIM; //强制启用均衡系统的变量，往该变量写大于0的值启用均衡器
 extern bool EnableExtendedBal; //手动均衡启动标志位

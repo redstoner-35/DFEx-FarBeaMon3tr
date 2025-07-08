@@ -164,7 +164,7 @@ typedef enum
 	{
 	TypeC_Disconnect=0x00,	//Source Bit=0,Sink Bit=0 完全断开
 	TypeC_UFP=0x02,  				//Source Bit=1,Sink Bit=0 只能往外输出，用于模拟适配器
-	//TypeC_DFP=0x01,		 			//Source Bit=0,Sink Bit=1 只能往里面输入，用于仅充电功能（好像有bug,所以说禁用了）
+	TypeC_DFP=0x01,		 			//Source Bit=0,Sink Bit=1 只能往里面输入，用于仅充电功能（好像有bug,所以说禁用了）
 	TypeC_DRP=0x03					//Source Bit=1,Sink Bit=1 输入输出都可以，正常模式（默认配备TrySRC，无法给支持TrySRC的设备充电）
 	}TypeCRoleDef;	
 

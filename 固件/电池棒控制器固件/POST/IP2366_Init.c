@@ -5,6 +5,15 @@
 #include "delay.h"
 #include "ADC.h"
 #include "BalanceMgmt.h"
+#include <string.h>
+
+//合法的芯片ID
+const char ValidChipFWID[3][5]=
+	{
+	"YCNNH",
+	"YFYMS",
+	"XE2TC"
+	};
 
 //全局变量
 static const char NonStdFwID[]={"YFYMS"};
@@ -39,6 +48,8 @@ bool IP2366_IsEnableDischarge(float VBatRaw)
 void IP2366_PreInit(void)
 	{
 	char i=5;
+	int j;
+	char VendorString[5];
 	IP2366InputDef ICFG;
 	IP2366OutConfigDef OCFG;
 	ShowPostInfo(25,"充电IC初配置","09",Msg_Statu);
@@ -71,22 +82,37 @@ void IP2366_PreInit(void)
 	IP2366_SetInputState(&ICFG);
 	//监测Type-C状态
   if(!IP2366_GetIfInputConnected())IP2366_SetOutputState(&OCFG); //禁用输出		
+	//读取芯片并且进行比对
+	if(!IP2366_GetFirmwareTimeStamp(VendorString))		
+		{
+		ShowPostInfo(79,"读取芯片版本失败\0","DE",Msg_Fault);
+		SelfTestErrorHandler();
+		}		
+	for(j=0;j<3;j++)if(!strncmp(ValidChipFWID[j],VendorString,5))break;
+	if(j==3)
+		{
+		ShowPostInfo(79,"不受支持的芯片版本\0","FF",Msg_Fault);
+		SelfTestErrorHandler();	
+		}
 	}
-
+	
 //设置系统的充放电使能和typec角色
-static bool SetSystemDischargeState(bool StorEmuDisState)
+bool SetSystemDischargeState(void)
 	{
 	bool ChgEN,DisEN,IsStepDown;
 	extern bool IsEnableAdapterEmu;
 	extern bool IsEnableTempChargeOnly;
+	extern AutoBalanFSMDef AutoBalState;
+	extern bool IsCPortBreaked;
 	TypeCRoleDef Role;		
 	//计算DCDC使能状态
-	if(BalanceForceEnableTIM>0)	
+	if(BalanceForceEnableTIM>0||AutoBalState==AutoBalance_RunningBalance)	
 		{
 		//手动均衡运行中，关闭充放电
 		ChgEN=false;
 		DisEN=false;
-		Role=TypeC_Disconnect;
+		if(IsCPortBreaked)Role=TypeC_DFP; //C口被打断之后禁止充电，强制断开source
+		else Role=TypeC_Disconnect;
 		}
 	else if(IsSystemOverheating)
 		{
@@ -146,13 +172,13 @@ static void StorageModeDischargeControl(void)
 		return;
 		}
 	if(CurrentStorDisState==DischargeState)return;
-  if(SetSystemDischargeState(DischargeState))CurrentStorDisState=DischargeState;
+  if(SetSystemDischargeState())CurrentStorDisState=DischargeState;
 	}	
-		
+
 //系统过热保护处理	
 void SysOverHeatProt(void)
 	{
-  //执行存储模式管理
+  //执行存储模式管理和自循环管理
 	StorageModeDischargeControl();
 	//NTC异常
 	if(!ADCO.IsNTCOK)return;
@@ -161,7 +187,7 @@ void SysOverHeatProt(void)
 	else if(ADCO.Systemp<(float)CfgData.OverHeatLockTemp-10)IsSystemOverheating=false;			
 	//同步DCDC状态
   if(IP2366DCDCState==IsSystemOverheating)return;
-	if(SetSystemDischargeState(true))IP2366DCDCState=IsSystemOverheating;
+	if(SetSystemDischargeState())IP2366DCDCState=IsSystemOverheating;
 	}	
 	
 //进行IP2366的输出初始化	

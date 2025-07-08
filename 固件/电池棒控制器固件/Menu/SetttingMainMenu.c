@@ -14,6 +14,7 @@ bool IsPDOCanConfig=false;
 bool IsEnableLVConfig=false;
 bool EnableOneShotAct=false;
 bool EnableManuBal=false;
+static bool EnableAutoBal=false;
 
 //函数声明
 void ShutSysOFF(void);
@@ -48,6 +49,9 @@ void UpdateIfSysCanOFF(void)
 	//设置是否启用手动均衡	
 	if(ADCO.Vbatt<10.1||!IsEnablePowerOFF)EnableManuBal=false;
 	else EnableManuBal=true;
+  //设置是否启用自动均衡
+	if(State==Batt_StandBy||State==Batt_discharging)EnableAutoBal=false;
+	else EnableAutoBal=true;
 	}
 	
 //关闭系统
@@ -193,8 +197,13 @@ void EnterStorageModePref(void)
 	SwitchingMenu(&StorageModeSetMenu);
 	}
 
+void EnterAutoExtBalMenu(void)
+	{
+	SwitchingMenu(&AutoBALMenu);
+	}	
+	
 //菜单项参数
-const SetupMenuSelDef MainSetup[24]=
+const SetupMenuSelDef MainSetup[25]=
 	{
 		{
 		"系统安全设置",
@@ -303,6 +312,12 @@ const SetupMenuSelDef MainSetup[24]=
 		false,
 		&EnableManuBal,
 		&EnterManuBal,
+		},
+		{
+		"激活自动均衡补电",
+		false,		
+		&EnableAutoBal,
+		&EnterAutoExtBalMenu
 		},
 		{
 		"测量系统配置",

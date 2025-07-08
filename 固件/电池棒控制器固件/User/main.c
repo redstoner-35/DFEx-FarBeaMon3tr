@@ -34,6 +34,7 @@ void AttackTimeCounter(void);
 void PushDefaultResultToVBat(void);
 void OverChargeDetectModule(void);
 void HPPowerGuage_Start(void);
+void AutoBalTIMHandler(void);
 
 //常量
 bool SensorRefreshFlag=false;
@@ -102,6 +103,7 @@ int main(void)
 	 if(WDTResetDelay>0)WDTResetDelay--; //这里是为了确保系统已经在循环内工作稳定了。才开始喂狗，不然两次喂狗间隔太短会立即触发重启
 	 else WatchDog_Feed(); //喂狗
 	 //进行其余125ms定时处理
+	 AutoBalTIMHandler(); //自动均衡计时器
 	 Balance_IOMgmt(); //进行均衡器的控制
 	 SideKey_TIMCallback(); 
 	 UpdateIfSysCanOFF(); //更新系统是否可以关闭

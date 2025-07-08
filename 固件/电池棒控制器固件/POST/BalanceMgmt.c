@@ -17,7 +17,7 @@ int BalanceDisableTIM=0; //暂时关闭均衡的计时器
 int ChargeFullTIM=0; //充电满充计时器
 
 //内部全局
-static bool BalTypeCConnectedState; //均衡连接状态
+static bool BalTypeCConnectedState=false; //均衡连接状态
 
 //配置均衡控制器
 void BalanceMgmt_Init(void)
@@ -56,7 +56,7 @@ static void Balance_ExtendBalMgmt(void)
 	if(BalTypeCConnectedState==State)return;
 	BalTypeCConnectedState=State;
 	//均衡可能需要启动，检测状态
-	if(State||!EnableManuBal)return;
+	if(!BalTypeCConnectedState||BalanceForceEnableTIM>0)return;                //检测输入状态
 	if(CfgData.BalanceMode==Balance_Diasbled)BalValue=11.50;	
 	else BalValue=16.50; //根据均衡器模式选定需要自动均衡的时间	
 	if(LogData.UnbalanceBatteryAh<BalValue)return; //循环次数还没到

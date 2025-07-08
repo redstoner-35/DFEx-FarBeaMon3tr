@@ -205,9 +205,9 @@ static void AdapterEmuRunningHandler(void)
 				{
 				Temp=(int)ADCO.Systemp;
 				if(Temp<0)Color=DARKBLUE;	
-				if(Temp<10)Color=BLUE;
-				else if(Temp<40)Color=GREEN;
-				else if(Temp<60)Color=YELLOW;
+				else if(Temp<10)Color=BLUE;
+				else if(Temp<CfgData.OverHeatLockTemp-20)Color=GREEN;
+				else if(Temp<CfgData.OverHeatLockTemp-8)Color=YELLOW;
 				else Color=RED;
 				//ÏÔÊ¾ÎÂ¶È
 				if(Temp<0)
