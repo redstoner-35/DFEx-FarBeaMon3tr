@@ -10,7 +10,7 @@
 
 //全局变量
 xdata LocLEDEditDef LocLEDState=LocateLED_NotEdit;
-static xdata char LocLEDTIM;
+static xdata unsigned char LocLEDTIM;
 static xdata u8 LocSetTimeOutTIM;
 
 //定位LED设置最大超时时间

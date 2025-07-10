@@ -12,7 +12,7 @@
 static xdata ADCConvertTemp ADCTemp;
 static ADCAsyncStateDef ADCState;	
 static xdata char ADCConvertQueue[ADCConvertQueueDepth];	
-xdata bool IsNotAllowAsync;	 //是否允许ADC引擎运行在异步模式
+bit IsNotAllowAsync;	 //是否允许ADC引擎运行在异步模式
 	
 //向ADC提交任务	
 static void ADC_SubmitMisson(char Ch)	
@@ -66,6 +66,7 @@ static void ADC_SetVREF(bit IsUsingVDD)
 	_nop_();
 	ADC_EnableCmd(); //基准切换完毕，重新启动
 	}
+	
 //转换完毕后写输出引擎
 int	CalcNTCTemp(bool *IsNTCOK,unsigned long NTCRes); //函数声明		
 
@@ -85,19 +86,22 @@ static void ADC_WriteOutputBuf(int ADCResult,char Ch)
 		  break;
 		//计算参考电压
 		case ADC_INTVREFCh:
-			Buf=ADCBGVREF*(float)4096/(float)ADCResult;
-			Data.MCUVDD=Buf; //计算出MCUVDD(VREF)
+			Data.MCUVDD=ADCBGVREF*(float)4096/(float)ADCResult; //计算出MCUVDD(VREF)
 		  break; 
 		//计算电池电压
 		case VBATInputAIN:
-			Buf=(float)VBattLowerResK/(float)(VBattLowerResK+VBattUpperResK);//计算出分压电阻的系数
+			#define VBatTotalResistor (VBattLowerResK+VBattUpperResK)
+			Buf=(float)VBattLowerResK/(float)VBatTotalResistor;//计算出分压电阻的系数
 			Data.RawBattVolt=Vadc/Buf; //根据分压系数反推出电池电压
 		  Data.BatteryVoltage=Data.RawBattVolt/(float)3; //将3节电池的总电压转换为单节电池的电压
+		  #undef VBatTotalResistor
 		  break;
 	  //计算输出电压
 		case VOUTFBAIN:		
-			Buf=(float)VoutLowerResK/(float)(VoutLowerResK+VoutUpperResK);//计算出分压电阻的系数
+			#define VoutTotalResistor (VoutLowerResK+VoutUpperResK)
+			Buf=(float)VoutLowerResK/(float)VoutTotalResistor;//计算出分压电阻的系数
 			Data.OutputVoltage=Vadc/Buf; //根据分压系数反推出DCDC输出电压
+		  #undef VoutTotalResistor
 		  break;
     //计算温度
 		case NTCInputAIN:
@@ -148,6 +152,7 @@ static void ADCEngineHandler(void)
 			//提交线程任务后等待本次任务完成
       case ADC_WaitMissionDone:
           if(!ADC_ReadBackResult(&result,&Ch))break; //尝试读取结果，转换未完成则继续
+			    Data.RandADResult=result;     //将随机取到的result值写进去
 			    ADC_WriteOutputBuf(result,Ch);
 			    for(i=0;i<ADCConvertQueueDepth;i++)if(ADCConvertQueue[i]==Ch)ADCConvertQueue[i]=-2; //将当前已经完成转换的任务通道设置为-2标记转换完毕
 			    ADCState=ADC_SubmitChFromQueue; //重新回到提交任务的阶段
@@ -175,22 +180,28 @@ void SystemTelemHandler(void)
 	ADCEngineHandler();
 	}	
 	
+//复位ADC异步引擎
+static void ResetADCAsyncEngine(void)	
+	{
+	char i;	
+	for(i=0;i<ADCConvertQueueDepth;i++)ADCConvertQueue[i]=-2;	
+	ADCState=ADC_SubmitQueue;
+	ADCTemp.avgbuf=0;
+	ADCTemp.Count=0;
+	ADCTemp.Ch=0;
+	ADCTemp.IsMissionProcessing=false;
+	IsNotAllowAsync=1; //初始化时禁止异步功能	
+	}
+
 //关闭ADC
 void ADC_DeInit(void)
 	{
-	GPIOCfgDef ADCDeInitCfg;
-  char i;		
+	GPIOCfgDef ADCDeInitCfg;	
 	//配置寄存器关闭ADC
 	ADCON1=0x00; //关闭ADC
 	ADCLDO=0x00; //关闭片内基准
 	//清空队列并复位异步引擎
-  IsNotAllowAsync=1;		
-	ADCState=ADC_SubmitQueue;
-	for(i=0;i<ADCConvertQueueDepth;i++)ADCConvertQueue[i]=-2;	
-	ADCTemp.avgbuf=0;
-	ADCTemp.Count=0;
-	ADCTemp.Ch=0;
-	ADCTemp.IsMissionProcessing=false;	
+  ResetADCAsyncEngine();
 	//将需要禁用的ADC输入GPIO设置为普通GPIO模式
 	GPIO_SetMUXMode(VOUTFBIOG,VOUTFBIOx,GPIO_AF_GPIO);
 	GPIO_SetMUXMode(VBATInputIOG,VBATInputIOx,GPIO_AF_GPIO);
@@ -220,9 +231,7 @@ void ADC_Init(void)
   GPIO_ConfigGPIOMode(VOUTFBIOG,GPIOMask(VOUTFBIOG),&ADCInitCfg); 
 	GPIO_ConfigGPIOMode(VBATInputIOG,GPIOMask(VBATInputIOx),&ADCInitCfg); 
 	GPIO_ConfigGPIOMode(NTCInputIOG,GPIOMask(NTCInputIOx),&ADCInitCfg); 	//将对应的IO设置为指定的模式
-	//初始化运放输出反馈
- 	ADCInitCfg.Mode=GPIO_IPD;	
-	GPIO_ConfigGPIOMode(OPFBIOG,GPIOMask(OPFBIOx),&ADCInitCfg); //运放输出给一个32K的下拉阻抗避免虚电
+	GPIO_ConfigGPIOMode(OPFBIOG,GPIOMask(OPFBIOx),&ADCInitCfg); //运放反馈也设为浮空输入
 	
 	GPIO_SetMUXMode(OPFBIOG,OPFBIOx,GPIO_AF_Analog);
   GPIO_SetMUXMode(NTCInputIOG,NTCInputIOx,GPIO_AF_Analog);
@@ -235,6 +244,7 @@ void ADC_Init(void)
 	GPIO_SetMUXMode(NTCENIOG,NTCENIOx,GPIO_AF_GPIO);
   GPIO_ConfigGPIOMode(NTCENIOG,GPIOMask(NTCENIOx),&ADCInitCfg);		
   GPIO_WriteBit(NTCENIOG,NTCENIOx,1); //令供电输出=1打开NTC电源
+	
 	//配置ADC
 	ADCON0=0x40; //AN31=内部1.2V基准，结果右对齐
 	ADCON1=0x60; //Fadc=Fsys/128=375KHz
@@ -244,13 +254,9 @@ void ADC_Init(void)
 	ADCMPH=0x0F;
 	ADCMPL=0xFF; //ADC比较器默认值设置为0x0FFF
   ADCLDO=0xA0; //使能芯片内置ADC基准，输出2.0V
+	
 	//初始化异步ADC引擎
-	ADCState=ADC_SubmitQueue;
-	ADCTemp.avgbuf=0;
-	ADCTemp.Count=0;
-	ADCTemp.Ch=0;
-	ADCTemp.IsMissionProcessing=false;
-	IsNotAllowAsync=true; //初始化时禁止异步功能	
+	ResetADCAsyncEngine();
 	//ADC配置完毕，使能ADC模块
 	ADC_EnableCmd(); 
 	}	

@@ -14,7 +14,7 @@
 #ifdef Custom_LED_ICCMAX
 
 	//判断电流是否合法
-	#if (Custom_LED_ICCMAX < 20000 | Custom_LED_ICCMAX > 36000)
+	#if (Custom_LED_ICCMAX < 20000UL | Custom_LED_ICCMAX > 36000UL)
 	#error "Error 00C: Turbo Current Value is Out of range"
 	#else
   //数值合法，引用
@@ -25,32 +25,32 @@
 //FV7212D灯珠
 #elif defined(USING_LED_FV7212D)
 
-	#warning "Currently Selected LED is DFEx_SuperLED+ FV7212D,Turbo ICC=30A."
-	#define TurboICCMAX 30000
+	#message "Currently Selected LED is DFEx_SuperLED+ FV7212D,Turbo ICC=30.3A."
+	#define TurboICCMAX 30300UL
 
 //FL7022D灯珠
 #elif defined(USING_LED_FL7022D)|defined(USING_LED_N7175HE)
 
-	#warning "Currently Selected LED is DFEx_SuperLED+ FL7022D(NightWatch N7-175HE),Turbo ICC=33.0A."
-	#define TurboICCMAX 33000
+	#message "Currently Selected LED is DFEx_SuperLED+ FL7022D(NightWatch N7-175HE),Turbo ICC=33.0A."
+	#define TurboICCMAX 33000UL
 
 //FL7018I灯珠
 #elif defined(USING_LED_FL7018I)
 	
-	#warning "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35A."
-	#define TurboICCMAX 35000
+	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35.4A."
+	#define TurboICCMAX 35400UL
 
-//Luminus SFT-90
-#elif defined(USING_LED_SFT90)
+//Luminus SFT-90X
+#elif defined(USING_LED_SFT90X)
 	
-	#warning "Currently Selected LED is Luminus SFT_90,Turbo ICC=20A."
-	#define TurboICCMAX 20000
+	#message "Currently Selected LED is Luminus SFT-90X-WS65M,Turbo ICC=20A."
+	#define TurboICCMAX 20000UL
 
 
 #elif defined(USING_LED_NBT160)
 
-	#warning "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=29A."
-	#define TurboICCMAX 29000
+	#message "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=29A."
+	#define TurboICCMAX 29000UL
 
 //安全保护机制，请勿修改！！！！
 #else
@@ -69,21 +69,21 @@
    //全功率爆闪，极亮电流等于爆闪电流
 	 #define StrobeICCMAX TurboICCMAX
 	 
-			#if (TurboICCMAX < 22000)
+			#if (TurboICCMAX < 22000UL)
 			#warning "Tips:Strobe Current has been limited due to Turbo ICCMAX is less than 22A."
 			#endif
 	 
 	#else
    //启用低功率爆闪
-	 #if (TurboICCMAX < 22000)
+	 #if (TurboICCMAX < 22000UL)
 				
 			#define StrobeICCMAX TurboICCMAX
 			#warning "Tips:Strobe Current has been limited due to Turbo ICCMAX is less than 22A."
 			
 	 #else
 			
-			#warning "Low Power Strobe mode Enabled.Strobe ICC will limit to 22Amps."
-			#define StrobeICCMAX 22000
+			#message "Low Power Strobe mode Enabled.Strobe ICC will limit to 22Amps."
+			#define StrobeICCMAX 22000UL
 			
 	 #endif	
 
@@ -93,21 +93,21 @@
    //全功率信标（脉冲）模式，极亮电流等于信标（脉冲）模式电流
 	 #define BeaconICCMAX TurboICCMAX
 	 
-			#if (TurboICCMAX < 22000)
+			#if (TurboICCMAX < 22000UL)
 			#warning "Tips:Beacon/Pulsing mode Current has been limited due to Turbo ICCMAX is less than 22A."
 			#endif
 	 
 	#else
    //启用低功率信标（脉冲）模式
-	 #if (TurboICCMAX < 22000)
+	 #if (TurboICCMAX < 22000UL)
 				
 			#define BeaconICCMAX TurboICCMAX
 			#warning "Tips:Beacon/Pulsing mode Current has been limited due to Turbo ICCMAX is less than 22A."
 			
 	 #else
 			
-			#warning "Low Power Beacon/Pulsing mode Enabled.Beacon/Pulsing mode ICC will limit to 22Amps."
-			#define BeaconICCMAX 22000
+			#message "Low Power Beacon/Pulsing mode Enabled.Beacon/Pulsing mode ICC will limit to 22Amps."
+			#define BeaconICCMAX 22000UL
 			
 	 #endif	
 

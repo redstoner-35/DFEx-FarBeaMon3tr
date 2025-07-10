@@ -78,12 +78,14 @@ void AutoBalFSMHandler(void)
 				{
 				AutoBalState=AutoBalance_RunningBalance;
 				BreakCPortConnection();  //强制断开输出
+				break;
 				}
 			//用户按下ESC，或者电池进入放电状态，强制退出
 			if(KeyState.KeyEvent==KeyEvent_ESC||BATT==Batt_discharging)
 				{
 				IsUpdateBalUI=true;
 				AutoBalState=AutoBalance_End_Abnormal;
+				break;
 				}
 		  //状态变化时刷新UI
 			if(IsDispChargingINFO==IsTimeMet)break;
@@ -116,6 +118,7 @@ void AutoBalFSMHandler(void)
 				AutoBalState=AutoBalance_ReChargingWait;
 				AutoBalTIM=40;
 				SetSystemDischargeState();  //重新开启输入输出
+				break;
 				}
 			break;
 		//重新开始充电流程
@@ -127,6 +130,7 @@ void AutoBalFSMHandler(void)
 				{
 				AutoBalState=AutoBalance_End;
 				AutoBalTIM=24;
+				break;
 				}
 		  break;
 		//充电流程进行中
@@ -139,6 +143,7 @@ void AutoBalFSMHandler(void)
 				{
 				AutoBalState=AutoBalance_End;
 				AutoBalTIM=24;
+				break;
 				}
 			//用户按下ESC，强制退出
 			if(KeyState.KeyEvent==KeyEvent_ESC)
@@ -146,6 +151,7 @@ void AutoBalFSMHandler(void)
 				IsUpdateBalUI=true;
 				AutoBalState=AutoBalance_End_Abnormal;
 				SetSystemDischargeState();  //重新开启输入输出
+				break;
 				}
 		  //状态变化时刷新UI
 			if(IsDispChargingINFO==IsTimeMet)break;
@@ -154,7 +160,7 @@ void AutoBalFSMHandler(void)
       break;				
 		//自动均衡循环正常结束
 		case AutoBalance_End:
-			if(AutoBalTIM)break;
+			if(AutoBalTIM||BATT!=Batt_StandBy)break;
 			BalanceEndGotoMainMenuProcess(true);
 			break;
 		//自动均衡循环异常

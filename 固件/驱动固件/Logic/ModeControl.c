@@ -156,13 +156,12 @@ bit TemporaryDisableVoltageQuery; //标记位，进入1LM的时候需要暂时禁止电压查询
 	
 //全局软件计时变量
 xdata unsigned char HoldChangeGearTIM; //挡位模式下长按换挡
-xdata unsigned char DisplayLockedTIM=0; //锁定和战术模式进入退出显示
+xdata unsigned char DisplayLockedTIM; //锁定和战术模式进入退出显示
 
 //内部变量和标志位
 static xdata char RampDIVCNT; //无极调光降低调光速度的分频计时器		
-static bit IsRampKeyPressed=0;  //标志位，用户是否按下按键对无极调光进行调节
+static bit IsRampKeyPressed;  //标志位，用户是否按下按键对无极调光进行调节
 static bit IsNotifyMaxRampLimitReached; //标记无极调光达到最大电流	
-
 
 	
 //获取极亮电流
@@ -421,6 +420,8 @@ void ModeSwitchFSM(void)
 		//1流明挡位			
 	  case Mode_1Lumen:
 			 IsHalfBrightness=1; //月光模式按键灯亮度减半
+		   //长按尝试进入月光挡
+		   if(getSideKeyLongPressEvent())EnterMoonProcess();
 			 //执行关机动作检测	
 		   DetectIfNeedsOFF(ClickCount); 	 	
 		   if(Data.RawBattVolt<7.2)ReturnToOFFState();	//电池电压低于7.2后关机避免DCDC工作异常
@@ -430,6 +431,8 @@ void ModeSwitchFSM(void)
 			 IsHalfBrightness=1; //月光模式按键灯亮度减半
 			 BatteryLowAlertProcess(true,Mode_Moon);
 		   DetectIfNeedsOFF(ClickCount); //执行关机动作检测	
+		   //单击+长按回到1LM
+			 SideKey1HRevGearHandler(Mode_1Lumen); 
 			 //电池电压充足，长按进入低亮挡位
 		   if(getSideKeyLongPressEvent())  
 					{

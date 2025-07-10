@@ -33,7 +33,28 @@ bool PCA9536_SetIODirection(SMIOPinDef IOPINNum,SMIODirDef Direction)
 	IIC_Stop();
   return true;
 	}
-	
+//读取PCA9536芯片对应的IO所输出的电平	
+bool PCA9536_GetOutputState(SMIOPinDef IOPINNum,bool *PinState)
+	{
+	char buf;
+	//读取输出寄存器
+	IIC_Start();
+	IIC_Send_Byte(SMIOADDR);
+	if(IIC_Wait_Ack())return false;
+	IIC_Send_Byte(0x01); //指向Output Reg
+	if(IIC_Wait_Ack())return false;
+	IIC_Start();
+	IIC_Send_Byte(SMIOADDR+1);
+	if(IIC_Wait_Ack())return false;
+	buf=IIC_Read_Byte(0);
+	IIC_Stop();
+	//对IO输入电平进行判断
+	buf&=(char)IOPINNum;
+	if(PinState!=NULL)*PinState=buf?true:false;
+	//获取成功，返回true
+	return true;
+	}
+
 //设置PCA9536芯片对应的IO所输出的电平
 bool PCA9536_SetIOState(SMIOPinDef IOPINNum,bool PinState)
 	{
@@ -49,7 +70,7 @@ bool PCA9536_SetIOState(SMIOPinDef IOPINNum,bool PinState)
 	if(IIC_Wait_Ack())return false;
 	buf=IIC_Read_Byte(0);
 	IIC_Stop();
-	//设置对应IO的输出极性
+	//设置对应IO的输出电平
 	if(PinState)buf|=(char)IOPINNum;
 	else buf&=~(char)IOPINNum; //设置对应的bit
 	//回写寄存器

@@ -7,6 +7,7 @@
 typedef struct
 	{
   int Systemp; //系统温度
+	int	RandADResult;   //用于作为RNG的随机数发生器
 	float OutputVoltage; //DCDC输出电压(V)
 	float BatteryVoltage; //等效单节电池电压(V)
 	float RawBattVolt; //原始的电池电压(V)
@@ -31,8 +32,8 @@ typedef struct
 #define ADC_CheckIfChInvalid(Ch) (Ch<0||(Ch>22&&Ch<ADC_INTVREFCh)) //检查通道参数是否合法	
 	
 //ADC引擎操作宏定义
-#define EnableADCAsync() IsNotAllowAsync=false
-#define DisableADCAsync() IsNotAllowAsync=true
+#define EnableADCAsync() IsNotAllowAsync=0
+#define DisableADCAsync() IsNotAllowAsync=1
 
 //ADC外部采集的参数配置
 #define VoutUpperResK 680
@@ -43,7 +44,7 @@ typedef struct
 
 //外部ADC数据引用
 extern ADCResultStrDef Data;
-extern xdata bool IsNotAllowAsync; //是否启用异步转换
+extern bit IsNotAllowAsync; //是否启用异步转换
 
 //外部函数
 void ADC_Init(void);

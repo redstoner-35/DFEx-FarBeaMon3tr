@@ -51,7 +51,7 @@ static float Duty_Calc(int CurrentInput)
 	buf*=(float)0.0015; //uV转mV并根据1.5mA per LSB换算得到实际的电流值
 	buf*=CurrentSenseOpAmpGain; //将检流电阻处的目标电压(mV)乘以检流放大器的增益得到运放端的整定值
 	buf/=Data.MCUVDD*(float)1000; //计算出目标DAC输出电压和PWMDAC缓冲器供电电压(MCUVDD)之间的比值
-	buf*=102; //转换为百分比(乘以102补偿掉系统的换算误差)
+	buf*=101; //转换为百分比(乘以102补偿掉系统的换算误差)
 	//结果输出	
 	return buf;
 	}
@@ -96,17 +96,24 @@ void OCFSM_TIMHandler(void)
 			}
 		}
 	//状态机计时器
-	if(PreChargeFSMTimer>0)PreChargeFSMTimer--;
+	if(PreChargeFSMTimer)PreChargeFSMTimer--;
+	}	
+	
+//输出通道停止主DCDC	
+static void OutputChannel_StopDCDC(void)
+	{
+	BOOSTRUN=0;
+	LEDMOS=0;
+	AUXEN=0;
 	}	
 	
 //输出通道复位
 void OutputChannel_DeInit(void)
 	{
-	BOOSTRUN=0;
-	AUXEN=0;
-	LEDMOS=0;
+	//关闭主DCDC和心跳LED
+	OutputChannel_StopDCDC();
 	PWMDACEN=0;
-	SYSHBLED=0; //所有bit都为0
+	SYSHBLED=0; 
 	//系统上电时电流配置为0
 	Current=0;
 	CurrentBuf=0;
@@ -117,6 +124,18 @@ void OutputChannel_DeInit(void)
 	OutputFSMState=OutCH_Standby;
 	}	
 
+//复位PWMDAC并关闭输出
+void OutputChannel_ClearPWMDAC(void)
+	{
+	PWMDACEN=0;
+	if(PreChargeDACDuty||PWMDuty>0)
+		{
+		PreChargeDACDuty=0;
+		PWMDuty=0;
+		IsNeedToUploadPWM=1;
+		}
+	}
+	
 //外部获取输出是否正常启用的函数
 bit GetIfOutputEnabled(void)	
 	{
@@ -188,6 +207,14 @@ void OutputChannel_TestRun(void)
 	if(!retry)ReportError(Fault_DCDCFailedToStart);
 	}
 	
+//获取判断电压的保护值
+static float QueryOutputHaltVolt(void)
+	{
+	if(CurrentMode->ModeIdx==Mode_Strobe)return 17;
+	//非爆闪模式返回16V
+	return 16;
+	}	
+	
 //输出通道计算
 void OutputChannel_Calc(void)
 	{
@@ -225,20 +252,11 @@ void OutputChannel_Calc(void)
 		   break; 
 		//输出通道待机状态
     case OutCH_Standby:
-       //复位DCDC控制
-		   BOOSTRUN=0;
-			 AUXEN=0;
-			 LEDMOS=0;
-			 PWMDACEN=0;
-	     //复位标记位
+	     //复位DCDC控制和电流上升标记位
+	     OutputChannel_StopDCDC();
 	     IsCurrentRampUp=0;
 			 //复位PWMDAC
-		   if(PreChargeDACDuty||PWMDuty>0)
-					{
-					PreChargeDACDuty=0;
-					PWMDuty=0;
-					IsNeedToUploadPWM=1;
-					}
+       OutputChannel_ClearPWMDAC();
 			 //如果电流发生变更则进入启动状态
 			 if(TargetCurrent>0)OutputFSMState=OutCH_PWMDACPreCharge;
 			 break;
@@ -247,7 +265,7 @@ void OutputChannel_Calc(void)
        //启动电流整定DAC
 		   PWMDACEN=1;
 		   //配置PWMDAC占空比
-		   if(CurrentMode->ModeIdx==Mode_1Lumen)CurrentBuf=CalcIREFValue(25); //1LM挡位下为了避免运放同相输入接地导致CC环拉死控制器，所以随便给一个初值
+		   if(CurrentMode->ModeIdx==Mode_1Lumen)CurrentBuf=CalcIREFValue(30); //1LM挡位下为了避免运放同相输入接地导致CC环拉死控制器，所以随便给一个初值
 			 else CurrentBuf=TargetCurrent>CalcIREFValue(1500)?CalcIREFValue(1500):TargetCurrent;
 			 PWMDuty=Duty_Calc(CurrentBuf);  //配置流程是如果当前电流大于1.5A，则钳位到1.5A，然后用这个初值配置PWMDAC
        //启动CV限压环DAC
@@ -270,34 +288,46 @@ void OutputChannel_Calc(void)
 		case OutCH_EnableBoost:
 			//令3787EN=1，主Boost开始输出然后检测电压状态
 			BOOSTRUN=1;
-			if(Data.OutputVoltage>14.0)OutputFSMState=CurrentMode->ModeIdx==Mode_1Lumen?OutCH_1LumenOpenRun:OutCH_ReleasePreCharge; //电压起来了，继续启动流程
-		  //等待超时后报错
-		  if(PreChargeFSMTimer>0)break;
-		  ReportError(Fault_DCDCFailedToStart);
-		  OutputFSMState=OutCH_PreChargeFailed;
+			//等待超时，报错
+			if(!PreChargeFSMTimer)
+				{
+				ReportError(Fault_DCDCFailedToStart);
+				OutputFSMState=OutCH_PreChargeFailed;
+				}		
+			//等待输出电压建立
+			if(Data.OutputVoltage<14.0)break;
+			if(CurrentMode->ModeIdx==Mode_1Lumen)OutputFSMState=OutCH_1LumenOpenRun;
+			else OutputFSMState=OutCH_ReleasePreCharge;   //电压建立后如果是正常运行挡位，则跳转到正常运行阶段，否则跳转到1LM挡位
 			break;
 		//启动步骤4，逐步下调预充PWMDAC抬升输出电压
 		case OutCH_ReleasePreCharge:
 			//接通LED负极FET，LED开始发光
 			LEDMOS=1;
 			//开始逐步下调预充占空比把输出电压调到额定值
-		  if(IsNeedToUploadPWM)break; //上次调整还未完毕
-		  if(PreChargeDACDuty)
+		  if(!IsNeedToUploadPWM)
 				{
+				//预充PWMDAC输出=0，说明预充完成，此时先倒计时，计时结束后按照输出电流是否匹配跳转到目标状态
+				if(!PreChargeDACDuty)	
+					{
+					if(PreChargeFSMTimer&&!(PreChargeFSMTimer&0x80))PreChargeFSMTimer--;//倒计时
+					//倒计时结束，直接跳转到输出已启用状态（如果电流还需要往上跑则会自动进入提交在占空比的步骤）
+					else OutputFSMState=OutCH_OutputEnabled;	 
+					}
 				//继续进行调整，下调占空比
-				TargetCurrent=1+(TargetCurrent/25);
-				if(TargetCurrent>200)TargetCurrent=200; //计算出每次PWMDAC递减的值
-				if(PreChargeDACDuty<TargetCurrent)PreChargeDACDuty=0;
-				else PreChargeDACDuty-=TargetCurrent;	                 //PWMDAC在接近末尾的时候改用逐次递减
-				//预充状态机计时为20，需要20个主循环确保最新值已被应用才继续
-				PreChargeFSMTimer=20;
-				//标记占空比已更新，需要上传最新值	
-				IsNeedToUploadPWM=1;
-				}
-			//预充PWMDAC输出=0，说明预充完成。系统开始进行预充状态机倒计时
-			else if(PreChargeFSMTimer>0)PreChargeFSMTimer--;	
-			//倒计时结束，系统已经应用了输出电流，此时按照输出电流是否匹配跳转到目标状态
-			else OutputFSMState=(CurrentBuf==TargetCurrent)?OutCH_OutputEnabled:OutCH_SubmitDuty;
+				else
+					{
+					//反复reset输出状态机计时器为待会结束的倒计时做准备
+					PreChargeFSMTimer=25;	
+					//根据输出电流值计算下调斜率
+					TargetCurrent=1+(TargetCurrent/20);
+					if(TargetCurrent>200)TargetCurrent=200; 
+					//根据指定的下调斜率值应用调整
+					if(PreChargeDACDuty<TargetCurrent)PreChargeDACDuty=0;
+					else PreChargeDACDuty-=TargetCurrent;	                 //PWMDAC在接近末尾的时候直接clear掉，否则进行逐次递减
+					//标记占空比已更新，需要上传最新值	
+					IsNeedToUploadPWM=1;
+					}
+				}	
 		  break;
 		//启动步骤5：应用整定PWMDAC占空比抬升输出电流到目标值
 		case OutCH_SubmitDuty:
@@ -308,7 +338,7 @@ void OutputChannel_Calc(void)
 				{
 				switch(CurrentMode->ModeIdx)
 					{
-					case Mode_Turbo:CurrentBuf+=IsInputLimited?0:10;break;  //极亮MPPT系统，配合输入告警监测使用
+					case Mode_Turbo:CurrentBuf+=IsInputLimited?0:TurboMPPTILEDStep;break;  //极亮MPPT系统，配合输入告警监测使用
 					case Mode_Beacon:CurrentBuf+=5000;break;
 					case Mode_Strobe:CurrentBuf+=1500;break;
 					case Mode_SOS:CurrentBuf+=500;break;
@@ -332,45 +362,60 @@ void OutputChannel_Calc(void)
 				}
 	    break;
 		//正常运行，1流明开环运行挡位
-		case OutCH_1LumenOpenRun:
-			//接通LED负极FET，LED开始发光
-			LEDMOS=1;
-		  //设置限压环DAC到其终值
-	    IsNeedToUploadPWM=1;
-		  PreChargeDACDuty=OneLMDACVal;
+		case OutCH_1LumenOpenRun:			
 			//系统尝试进入普通月光，返回到下调占空比模式
-		  if(TargetCurrent>2)OutputFSMState=OutCH_ReleasePreCharge;
+		  if(TargetCurrent>2)OutputFSMState=OutCH_ReleasePreCharge;				
+			//下调预充PWMDAC占空比让LED从关闭逐步过渡到正常发光
+			if(PreChargeDACDuty>OneLMDACVal&&!IsNeedToUploadPWM)
+				{
+				PWMDuty=Duty_Calc(CalcIREFValue(30)); //在超低月光挡下需要把占空比设置为30mA避免恒流环运放拉死
+				PreChargeDACDuty--; 
+				IsNeedToUploadPWM=1;
+				}
+			//检测当前LED输出电压并进行处理
+			if(Data.OutputVoltage<14.6)LEDMOS=1;		  //暑促和电压正常了，接通LED负极FET，LED开始发光
+		  else 
+				{
+				//输出电容还有残余电压，通过短暂打开LED MOS并保持关闭形成高频PWM泄放电压
+				LEDMOS=1;
+        PreChargeFSMTimer=20;	
+				while(--PreChargeFSMTimer);
+				LEDMOS=0;
+				}					
 		  break;
 		//输出通道正常运行阶段
 		case OutCH_OutputEnabled:
-			if(TargetCurrent==2)OutputFSMState=OutCH_1LumenOpenRun; //进入1流明开环运行模式
+			if(TargetCurrent==2)
+				{
+				#define OneLMEnterPreDACVal (OneLMDACVal+20)
+				//进入1流明开环运行模式
+				OutputFSMState=OutCH_1LumenOpenRun; 
+				PreChargeDACDuty=OneLMEnterPreDACVal;
+				#undef OneLMEnterPreDACVal
+				}
 			if(TargetCurrent==-1)OutputFSMState=OutCH_EnterIdle;	//系统电流配置为-1，说明需要暂停LED电流，跳转到暂停流程
 			if(TargetCurrent!=CurrentBuf)OutputFSMState=OutCH_SubmitDuty; //占空比发生变更，开始进行处理
 			break;
 		//输出通道软关机控制
 		case OutCH_GracefulShut:
-			//打开LEDMOS并关闭DCDC
-			LEDMOS=1;
-		  BOOSTRUN=0;
+			//先关闭DCDC，然后接通LED的MOS利用LED进行放电
+			BOOSTRUN=0;
+		  _nop_();
+			LEDMOS=1;     //先关闭DCDC等待一个周期再重新打开LED MOSFET
 			//复位PWMDAC
-		  PWMDACEN=0;
-		  PreChargeDACDuty=2399;
-			PWMDuty=0;
-		  IsNeedToUploadPWM=1;
+			OutputChannel_ClearPWMDAC();
 		  //跳转到等待输出电压衰减的过程
-		  PreChargeFSMTimer=24; //等待输出电压衰减的过程最多等待3秒
+		  PreChargeFSMTimer=32; 										//等待输出电压衰减的过程最多等待4秒
 		  OutputFSMState=OutCH_WaitVOUTDecay;
 		  break;
 		//DCDC关闭，等待输出电压衰减
 		case OutCH_WaitVOUTDecay:
 		  //等待输出电压衰减
-		  if(Data.OutputVoltage>15.6&&PreChargeFSMTimer)break;
-			//关闭预充PWMDAC
-		  PreChargeDACDuty=0;
-		  IsNeedToUploadPWM=1;
-			//输出电压衰减结束，关闭LEDMOS和辅助电源并回到待机状态
-		  LEDMOS=0;
-			AUXEN=0;
+		  if(Data.OutputVoltage>=15.0&&PreChargeFSMTimer)break;
+			//输出电压衰减结束，执行DCDC复位函数关闭LEDMOS和辅助电源以及PWMDAC
+			OutputChannel_ClearPWMDAC();
+			OutputChannel_StopDCDC();
+	    //返回待机状态
 		  PreChargeFSMTimer=0; //复位计时器
 	    OutputFSMState=OutCH_Standby;
 			break;
@@ -380,7 +425,7 @@ void OutputChannel_Calc(void)
 		  PreChargeDACDuty=CVPreStartDACVal;
 		  IsNeedToUploadPWM=1;
 			//等待输出电压下降
-		  if(CurrentMode->ModeIdx!=Mode_Beacon&&Data.OutputVoltage>18)break;
+		  if(Data.OutputVoltage>QueryOutputHaltVolt())break;
 		  LEDMOS=0; //断开LEDMOS切断电流
 		  OutputFSMState=OutCH_OutputIdle; //进入idle状态
 		  break;
@@ -390,7 +435,7 @@ void OutputChannel_Calc(void)
 				{
 				LEDMOS=1; //打开LEDMOS，接通电流
 				PreChargeDACDuty=0;
-				IsNeedToUploadPWM=1; //令PWMDAC开始SysDown，LED发光
+				IsNeedToUploadPWM=1; //令预充PWMDAC开始向下调整，LED发光
 			  OutputFSMState=OutCH_SubmitDuty; //应用最新的占空比
 				}
 			break;

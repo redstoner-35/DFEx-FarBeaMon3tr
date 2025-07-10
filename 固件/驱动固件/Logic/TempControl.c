@@ -9,6 +9,7 @@
 #include "LowVoltProt.h"
 #include "SelfTest.h"
 #include "FastOp.h"
+#include "TurboICCMAX.h"
 
 //内部变量
 static xdata int TempIntegral;
@@ -27,7 +28,8 @@ bit IsDisableTurbo;  //禁止再度进入到极亮档
 bit IsForceLeaveTurbo; //是否强制离开极亮档
 
 //内部宏定义
-#define InputMPPTAlertThershold (QueryCurrentGearILED()-CalcIREFValue(InputMPPTAlertOffset)) //输入MPPT执行极亮功率不足告警的阈值
+#define InputMPPTAlmNegOffset ((TurboICCMAX*TurboMPPTAlertRatio)/1000UL)  //输入MPPT的电流告警负偏移量（使用整数计算方式实现极亮电流的负2%）
+#define InputMPPTAlertThershold CalcIREFValue(TurboICCMAX-InputMPPTAlmNegOffset) //输入MPPT执行极亮功率不足告警的阈值电流
 #define MinumumILED CalcIREFValue(ILEDStepDown)
 #define LeaveTurboTemperature ForceOffTemp-10   //退出极亮温度为关机保护温度-10
 

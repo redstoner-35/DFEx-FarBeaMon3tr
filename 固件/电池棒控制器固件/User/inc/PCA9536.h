@@ -26,6 +26,7 @@ typedef enum
 	}SMIODirPolarDef;		
 	
 //函数
+bool PCA9536_GetOutputState(SMIOPinDef IOPINNum,bool *PinState);	//读取PCA9536芯片对应的IO所输出的电平	
 bool PCA9536_SetIODirection(SMIOPinDef IOPINNum,SMIODirDef Direction);	//设置PCA9536芯片对应的IO方向
 bool PCA9536_SetIOState(SMIOPinDef IOPINNum,bool PinState); //设置PCA9536芯片对应的IO所输出的电平
 bool PCA9536_ReadInputState(SMIOPinDef IOPINNum,bool *PinState);  //读取PCA9536芯片对应的IO电平（仅输入模式下有效）

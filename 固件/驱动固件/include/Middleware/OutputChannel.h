@@ -28,14 +28,15 @@ typedef enum
 //输出通道参数设置
 #define MainChannelShuntmOhm 1.00 //主通道的检流电阻阻值(mR)
 #define CurrentSenseOpAmpGain 100 //电流检测放大器的增益
-#define InputMPPTAlertOffset 750 //输入MPPT限制功率报警的阈值设置（当实际极亮电流低于额定极亮电流减去这个数值时，系统开始报警。单位是mA）
+#define TurboMPPTILEDStep 8 //极亮输入MPPT进行电流尝试的步进值，单位1.5mA per Step
+#define TurboMPPTAlertRatio 20UL //配置极亮的输入MPPT开始启动电池放电不足警告的阈值，单位是0.1%(为了保证计算正常，UL后缀一定不能删！)
 
 //输出通道电流参考和PWMDAC整定计算宏（绝对不要修改！会爆炸！）	
 #define CalcIREFValue(x) ((x/2)+(x/6))
 #define CalcPWMDACDuty(x) (((1129000UL-(4815UL*x))*24UL)/5000UL)  //使用整数方式计算PWMDAC预充电压
 
 //输出PWMDAC预充电压配置
-#define PWMDACPreCharge 144 	//PWMDAC在正常情况下的预充电压(LSB=0.1V)
+#define PWMDACPreCharge 142 	//PWMDAC在正常情况下的预充电压(LSB=0.1V，默认系统设置为14.1V)
 #define OneLumenOut 145 //PWMDAC在1流明挡位下的预充电压(LSB=0.1V，FV7212D=14500mV，其他的灯珠需要自己试)
 	
 /*自动计算系统PWMDAC的预充配置数值，请勿修改！！！！*/	

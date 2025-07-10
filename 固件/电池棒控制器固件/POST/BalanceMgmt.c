@@ -86,6 +86,7 @@ void Balance_IOMgmt(void)
 	{
 	bool IsBalanceEnable; 
 	extern int SleepTimer;
+	extern AutoBalanFSMDef AutoBalState;
 	BatteryStateDef SysState=Batt_StandBy;
 	//运行增强自动均衡以及临时禁用均衡允许芯片充满的判断
 	Balance_ChargeDertect();
@@ -106,6 +107,8 @@ void Balance_IOMgmt(void)
 		BalanceDisableTIM--;
 		IsBalanceEnable=false;
 		}
+	//当前系统处于自动均衡的补电阶段，需要强制打开均衡	
+	else if(AutoBalState==AutoBalance_ReCharging)IsBalanceEnable=true;
 	//根据配置状态进行启用
 	else if(SysState!=Batt_StandBy||SleepTimer>8)switch(CfgData.BalanceMode)
 		{

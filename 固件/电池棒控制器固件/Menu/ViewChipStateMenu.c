@@ -13,7 +13,7 @@ static char ChipInfoSelect=0;
 static void ShowHPGaugeState(void)
 	{
 	extern bool IsEnableHPGauge;
-	bool Result;
+	bool Result,PinState;
 	int PPS1ICC,PPS2ICC;
 	LCD_ShowChinese(4,21,"高精度功率计",WHITE,LGRAY,0);
 	if(!CfgData.EnableHPGauge)LCD_ShowChinese(131,21,"禁用",WHITE,LGRAY,0);
@@ -21,9 +21,11 @@ static void ShowHPGaugeState(void)
 	else LCD_ShowChinese(131,21,"正常",GREEN,LGRAY,0);	
 	//显示均衡控制器状态
 	Result=PCA9536_SetIOState(PCA9536_IOPIN_3,false);
+	Result&=PCA9536_GetOutputState(PCA9536_IOPIN_0,&PinState);  //获取输入状态
 	LCD_ShowChinese(4,35,"主动均衡模块",WHITE,LGRAY,0);
 	if(!Result)LCD_ShowChinese(131,35,"故障",RED,LGRAY,0);
-	else LCD_ShowChinese(131,35,"正常",GREEN,LGRAY,0);		
+	else if(!PinState)LCD_ShowChinese(131,35,"正常",WHITE,LGRAY,0);		
+	else LCD_ShowChinese(131,35,"启用",GREEN,LGRAY,0);
 	//显示PPS1和PPS2电流
 	Result=IP2366_GetPPSCurrent(&PPS1ICC,&PPS2ICC);
 	LCD_ShowHybridString(4,49,"PPS1广播电流",WHITE,LGRAY,0);
@@ -41,7 +43,7 @@ static void ShowHPGaugeState(void)
 		LCD_ShowString(137,64,"mA",WHITE,LGRAY,12,0);		
 		}		
 	}
-
+	
 //显示芯片充电配置
 static void ShowChipChargeState(void)
 	{
