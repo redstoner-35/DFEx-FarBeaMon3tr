@@ -20,6 +20,7 @@ typedef struct
 #define ADCVREF 2.00 //ADC片内基准LDO的电压
 #define ADC_INTVREFCh 31 //ADC连通到片内带隙基准的特殊通道定义	
 #define ADCBGVREF 1.20 //ADC特殊通道带隙基准的电压	
+#define ADCWaitChannelSelTime 160 //ADC等待通道选通的延时	
 	
 //ADC寄存器操作宏定义	
 #define ADC_StartConv() ADCON0|=0x02 //ADC启动转换

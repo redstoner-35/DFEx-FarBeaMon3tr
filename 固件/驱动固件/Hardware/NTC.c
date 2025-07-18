@@ -13,8 +13,8 @@
 //温度反馈的偏移值（如果你发现温度不准，可以在这里对温度监测系统进行TRIM）
 #define TemperatureReportOffset 0
 
-code unsigned long NTCTableTop[55]={
-1260250, 1179691, 1104854, 1035294,   //-20 到 -17 摄氏度
+code unsigned long NTCTableTop[54]={
+1179691,1104854, 1035294,   			//-19 到 -17 摄氏度
 970604, 910411, 854373, 802176,   //-16 到 -13 摄氏度
 753532, 708176, 665863, 626371,   //-12 到 -9 摄氏度
 589493, 555039, 522834, 492718,   //-8 到 -5 摄氏度
@@ -50,13 +50,13 @@ code unsigned int NTCTableBottom[61]={
 //传入参数：NTC阻值(Ω),温度是否有效的bool指针输出
 //返回参数：温度值(℃)
 int CalcNTCTemp(bool *IsNTCOK,unsigned long NTCRes){
-char i;
+unsigned char i;
 volatile unsigned long NTCTableValue;
 //电阻值大于查找表阻值上限，温度异常
-if(NTCRes>(unsigned long)1260250)
+if(NTCRes>(unsigned long)1179691)
   {
   *IsNTCOK=false;
-  return -20+TemperatureReportOffset;
+  return -19+TemperatureReportOffset;
   }
 //电阻值小于查找表阻值的阻值下限，温度异常
 if(NTCRes<(unsigned long)7797)
@@ -66,7 +66,7 @@ if(NTCRes<(unsigned long)7797)
   }
 //温度正常，开始查表
 *IsNTCOK=true;
-if(NTCRes>(unsigned long)62965)for(i=0;i<55;i++)if(NTCTableTop[i]<=NTCRes)return (-20+TemperatureReportOffset)+i;
+if(NTCRes>(unsigned long)62965)for(i=0;i<54;i++)if(NTCTableTop[i]<=NTCRes)return (-19+TemperatureReportOffset)+i;
 for(i=0;i<61;i++)
   {
   NTCTableValue=(unsigned long)NTCTableBottom[i];

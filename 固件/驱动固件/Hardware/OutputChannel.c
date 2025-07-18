@@ -82,16 +82,14 @@ void OutputChannel_Init(void)
 void OCFSM_TIMHandler(void)
 	{
 	//心跳LED控制	
-	if(CurrentMode->ModeIdx==Mode_Fault) //发生故障时HB快闪
-		SYSHBLED=SYSHBLED?0:1; //翻转LED
-	else if(CurrentMode->ModeIdx==Mode_1Lumen)SYSHBLED=0; //极低亮禁用心跳LED省电
+	if(CurrentMode->ModeIdx==Mode_1Lumen)SYSHBLED=0; //极低亮禁用心跳LED省电
 	else if(GetIfOutputEnabled())SYSHBLED=1;//输出已启用，LED配置为1		
-	else //待机状态下慢闪
+	else //待机状态下慢闪,发生故障时禁用定时器持续快闪
 		{
-	  if(HBTimer<4)HBTimer++;
+	  if(CurrentMode->ModeIdx!=Mode_Fault&&HBTimer<4)HBTimer++;
 	  else
 			{
-			SYSHBLED=SYSHBLED?0:1; //翻转LED
+			SYSHBLED=~SYSHBLED; //翻转LED
 			HBTimer=0;
 			}
 		}
@@ -219,7 +217,8 @@ static float QueryOutputHaltVolt(void)
 void OutputChannel_Calc(void)
 	{
 	int TargetCurrent;
-	char i;
+	unsigned char i;
+	extern xdata int TurboILIM;
 	//读取目标电流并应用温控加权数据
 	if(Current>0)
 		{
@@ -265,7 +264,7 @@ void OutputChannel_Calc(void)
        //启动电流整定DAC
 		   PWMDACEN=1;
 		   //配置PWMDAC占空比
-		   if(CurrentMode->ModeIdx==Mode_1Lumen)CurrentBuf=CalcIREFValue(30); //1LM挡位下为了避免运放同相输入接地导致CC环拉死控制器，所以随便给一个初值
+		   if(CurrentMode->ModeIdx==Mode_1Lumen)CurrentBuf=CalcIREFValue(45); //1LM挡位下为了避免运放同相输入接地导致CC环拉死控制器，所以随便给一个初值
 			 else CurrentBuf=TargetCurrent>CalcIREFValue(1500)?CalcIREFValue(1500):TargetCurrent;
 			 PWMDuty=Duty_Calc(CurrentBuf);  //配置流程是如果当前电流大于1.5A，则钳位到1.5A，然后用这个初值配置PWMDAC
        //启动CV限压环DAC
@@ -338,7 +337,13 @@ void OutputChannel_Calc(void)
 				{
 				switch(CurrentMode->ModeIdx)
 					{
-					case Mode_Turbo:CurrentBuf+=IsInputLimited?0:TurboMPPTILEDStep;break;  //极亮MPPT系统，配合输入告警监测使用
+					case Mode_Turbo:
+						//极亮MPPT系统，配合输入告警监测使用(在输入限流置起时停止电流爬升)
+					  if(IsInputLimited)break; 
+						//正常增加电流
+					  if(CurrentBuf<CalcIREFValue(18000))CurrentBuf+=TurboLowCurrentMPPTStep;
+					  else CurrentBuf+=TurboMPPTILEDStep;
+					  break;  
 					case Mode_Beacon:CurrentBuf+=5000;break;
 					case Mode_Strobe:CurrentBuf+=1500;break;
 					case Mode_SOS:CurrentBuf+=500;break;
@@ -368,31 +373,23 @@ void OutputChannel_Calc(void)
 			//下调预充PWMDAC占空比让LED从关闭逐步过渡到正常发光
 			if(PreChargeDACDuty>OneLMDACVal&&!IsNeedToUploadPWM)
 				{
-				PWMDuty=Duty_Calc(CalcIREFValue(30)); //在超低月光挡下需要把占空比设置为30mA避免恒流环运放拉死
 				PreChargeDACDuty--; 
 				IsNeedToUploadPWM=1;
 				}
-			//检测当前LED输出电压并进行处理
-			if(Data.OutputVoltage<14.6)LEDMOS=1;		  //暑促和电压正常了，接通LED负极FET，LED开始发光
-		  else 
-				{
-				//输出电容还有残余电压，通过短暂打开LED MOS并保持关闭形成高频PWM泄放电压
-				LEDMOS=1;
-        PreChargeFSMTimer=20;	
-				while(--PreChargeFSMTimer);
-				LEDMOS=0;
-				}					
+			//接通LED负极FET，LED开始发光
+			LEDMOS=1;		  				
 		  break;
 		//输出通道正常运行阶段
 		case OutCH_OutputEnabled:
 			if(TargetCurrent==2)
-				{
-				#define OneLMEnterPreDACVal (OneLMDACVal+20)
-				//进入1流明开环运行模式
-				OutputFSMState=OutCH_1LumenOpenRun; 
-				PreChargeDACDuty=OneLMEnterPreDACVal;
-				#undef OneLMEnterPreDACVal
-				}
+ 				{
+ 				#define OneLMEnterPreDACVal (OneLMDACVal+20)
+ 				//进入1流明开环运行模式
+ 				OutputFSMState=OutCH_1LumenOpenRun; 
+ 				PreChargeDACDuty=OneLMEnterPreDACVal;
+				PWMDuty=Duty_Calc(CalcIREFValue(45));
+ 				#undef OneLMEnterPreDACVal
+ 				}
 			if(TargetCurrent==-1)OutputFSMState=OutCH_EnterIdle;	//系统电流配置为-1，说明需要暂停LED电流，跳转到暂停流程
 			if(TargetCurrent!=CurrentBuf)OutputFSMState=OutCH_SubmitDuty; //占空比发生变更，开始进行处理
 			break;
@@ -401,7 +398,7 @@ void OutputChannel_Calc(void)
 			//先关闭DCDC，然后接通LED的MOS利用LED进行放电
 			BOOSTRUN=0;
 		  _nop_();
-			LEDMOS=1;     //先关闭DCDC等待一个周期再重新打开LED MOSFET
+			LEDMOS=1; 
 			//复位PWMDAC
 			OutputChannel_ClearPWMDAC();
 		  //跳转到等待输出电压衰减的过程

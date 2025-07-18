@@ -24,7 +24,7 @@ xdata FaultCodeDef ErrCode; //错误代码
 //查询错误是否致命
 bit IsErrorFatal(void)	
 	{
-	char i;
+	unsigned char i;
 	for(i=0;i<sizeof(NonCriticalFault);i++)
 		if(NonCriticalFault[i]==ErrCode)return 0;
 	//寻找了目前已有的错误码发现是致命问题
@@ -94,7 +94,7 @@ void OutputFaultDetect(void)
 		IsInputLimited=1;
 		BeforeRawBattVolt=-10; //复位采样缓存确保条件只成立一次
 		}
-	else if(Data.FBInjectVolt<0.2&&Data.RawBattVolt<12.0&&Data.OutputVoltage>16)IsInputLimited=1; //电池总电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发
+	else if(Data.FBInjectVolt<0.1&&Data.RawBattVolt<11.5&&Data.OutputVoltage>18)IsInputLimited=1; //电池总电压低于12V，FB注入运放输出拉到负轨且输出大于16V，说明输入限流触发
 	else IsInputLimited=0;
 	//输出故障监测
 	if(!GetIfOutputEnabled())ShortBlankTIM=0; //DCDC关闭

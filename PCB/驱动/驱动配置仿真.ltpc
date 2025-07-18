@@ -40,7 +40,7 @@
       <VinToCalc>11.1</VinToCalc>
       <IoToCalc>32</IoToCalc>
       <MaxVin>12.6</MaxVin>
-      <NomVin>11.1</NomVin>
+      <NomVin>10.5</NomVin>
       <MinVin>9</MinVin>
       <SwitchingFreq>324000</SwitchingFreq>
       <OutputVol>21.56</OutputVol>
@@ -68,7 +68,7 @@
       <NCin>2</NCin>
       <CinPartNumber>6810160812R00</CinPartNumber>
       <CinAtNoVoltage>0.00068</CinAtNoVoltage>
-      <CinCeramic>1.135125E-05</CinCeramic>
+      <CinCeramic>1.201875E-05</CinCeramic>
       <CinCeramicESR>0.002</CinCeramicESR>
       <CinCeramicESL>5.9E-10</CinCeramicESL>
       <NCinCeramic>9</NCinCeramic>
@@ -81,7 +81,7 @@
       <CinCeramicAtHalfRated>1.48E-05</CinCeramicAtHalfRated>
       <CinCeramicAtFullRated>5.9E-06</CinCeramicAtFullRated>
       <CinCeramicAtNoVoltage>4.7E-05</CinCeramicAtNoVoltage>
-      <CinCeramicDerated>1.135125E-05</CinCeramicDerated>
+      <CinCeramicDerated>1.201875E-05</CinCeramicDerated>
       <CinCeramicVoltageRating>16</CinCeramicVoltageRating>
       <CinCeramicIrmsMax>3.15</CinCeramicIrmsMax>
       <VinRipplePkPkMaxTargetPercent>1</VinRipplePkPkMaxTargetPercent>
@@ -127,7 +127,7 @@
       <HotSwapCurrentLimitThresholdFoldbackFactor>1</HotSwapCurrentLimitThresholdFoldbackFactor>
       <MarginIoLimit>120</MarginIoLimit>
       <RsensePartNumber>BVT-M-R001-1.0</RsensePartNumber>
-      <Rsense>0.001</Rsense>
+      <Rsense>0.0009</Rsense>
       <SenseC>4.7E-08</SenseC>
       <SenseRp>7150</SenseRp>
       <SenseRs>4020</SenseRs>
@@ -217,12 +217,12 @@
       <PartPriceSyncStage1>1.6698</PartPriceSyncStage1>
       <NumFetsControlStage2>1</NumFetsControlStage2>
       <NumFetsSyncStage2>1</NumFetsSyncStage2>
-      <Efficiency>0.9805</Efficiency>
-      <VoutRipplePercent>0.0105299165</VoutRipplePercent>
-      <LossCurveA2>0.005381359</LossCurveA2>
-      <LossCurveA1>0.2213275938</LossCurveA1>
-      <LossCurveA0>0.5868618108</LossCurveA0>
-      <LossCurveR2>0.9996307758</LossCurveR2>
+      <Efficiency>0.9808</Efficiency>
+      <VoutRipplePercent>0.0110691095</VoutRipplePercent>
+      <LossCurveA2>0.0051927243</LossCurveA2>
+      <LossCurveA1>0.2213279196</LossCurveA1>
+      <LossCurveA0>0.5854407078</LossCurveA0>
+      <LossCurveR2>0.9996183804</LossCurveR2>
       <InputLCFilterEnabled>False</InputLCFilterEnabled>
       <NumCf_in>1</NumCf_in>
       <NumCd_in>1</NumCd_in>

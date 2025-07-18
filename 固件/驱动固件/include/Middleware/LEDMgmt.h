@@ -18,10 +18,12 @@ typedef enum
 	LED_Green=3, //绿色常亮
 	//持续闪烁
 	LED_RedBlink=4, //红色闪烁
+	LED_AmberBlink=5, //黄色快闪三次
 	//一次性快速闪烁
-	LED_RedBlinkFifth=5, //红色快闪五次
-	LED_GreenBlinkThird=6, //绿色快闪三次
-	LED_RedBlinkThird=7 //红色快闪三次
+	LED_RedBlinkFifth=6, //红色快闪五次
+	LED_GreenBlinkThird=7, //绿色快闪三次
+	LED_RedBlinkThird=8, //红色快闪三次
+	
 	}LEDStateDef;
 
 //LED亮度配置
@@ -29,7 +31,7 @@ typedef enum
 #define LEDBrightnessHalf 250 //设置侧按LED的半亮度模式的亮度，范围1-2399对应1-100%	
 
 //宏定义
-#define IsOneTimeStrobe() LEDMode>LED_RedBlink //判断是否为一次性闪烁的宏（利用了enum值的特性）
+#define IsOneTimeStrobe() LEDMode>LED_AmberBlink //判断是否为一次性闪烁的宏（利用了enum值的特性）
 	
 //外部设置index	
 extern volatile LEDStateDef LEDMode;

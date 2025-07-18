@@ -35,6 +35,8 @@ typedef enum
 	BattVdis_Show0_1V, //显示小数点后一位(0.1V)
 	BattVdis_WaitShowChargeLvl, //等待一段时间后显示当前电量
 	BattVdis_ShowChargeLvl, //显示电池电量的等待
+	BattVdis_WaitShowTempState,
+	BattVdis_ShowTempState	
 	}BattVshowFSMDef; //电池电量显示处理
 
 
@@ -46,6 +48,7 @@ extern xdata float Battery; //滤波之后的电池电压
 extern xdata BattVshowFSMDef VshowFSMState; //状态机状态	
 	
 //函数
+void TriggerTShowDisplay(void); //启动温度显示
 void BattDisplayTIM(void); //电池电量显示函数处理
 void TriggerVshowDisplay(void); //启动电池电压显示
 void DisplayVBattAtStart(bit IsPOR); //在启动时显示电池电压

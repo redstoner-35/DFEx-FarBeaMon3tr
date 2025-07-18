@@ -10,47 +10,52 @@
 #include "ADCCfg.h"
 #include "LEDMgmt.h"
 #include "LocateLED.h"
+#include "SetupMenu.h"
+#include "Strobe.h"
 
 //睡眠定时器
 volatile unsigned int SleepTimer;
 
-//禁用/启用所有系统外设
-void SystemPeripheralCTRL(bit IsEnable)
+//禁止所有系统外设
+static void DisableSysPeripheral(void)
 	{
-	if(IsEnable)
-		{
-		ADC_Init(); //初始化ADC
-		PWM_Init(); //初始化PWM发生器
-		LED_Init(); //初始化侧按LED
-		OutputChannel_Init(); //初始化输出通道
-		SystemTelemHandler(); //启动一次ADC，进行初始测量
-		DisplayVBattAtStart(0); //执行一遍电池初始化函数	
-		return;
-		}
-	//关闭所有外设
-	SetSystemHBTimer(0); //禁用心跳定时器
+	DisableSysHBTIM(); 
 	PWM_DeInit();
 	ADC_DeInit(); //关闭PWM和ADC
 	LocateLED_Enable(); //打开定位LED
 	OutputChannel_DeInit(); //对输出通道进行复位
 	}
-	
+
+//启动所有系统外设
+static void EnableSysPeripheral(void)
+	{
+	ADC_Init(); //初始化ADC
+	PWM_Init(); //初始化PWM发生器
+	LED_Init(); //初始化侧按LED
+	OutputChannel_Init(); //初始化输出通道
+	SystemTelemHandler(); //启动一次ADC，进行初始测量
+	DisplayVBattAtStart(0); //执行一遍电池初始化函数	
+	EnableADCAsync(); 			//所有外设初始化完毕，启动ADC异步处理模式
+	}
+
 //加载定时器时间
 void LoadSleepTimer(void)	
 	{
 	//加载睡眠时间
-	SleepTimer=SysMode>Operation_Locked?4800:8*SleepTimeOut; //睡眠时间延长		
+	if(SysMode>Operation_Locked)SleepTimer=4800;	//开启战术模式，睡眠时间延长
+	else if(CurrentMode->ModeIdx==Mode_Fault)SleepTimer=240; //故障报错模式，系统睡眠时间变为240S
+	else SleepTimer=8*SleepTimeOut; 		
 	}
 
 //检测系统是否允许进入睡眠的条件
 static char QueryIsSystemNotAllowToSleep(void)
 	{
-	//系统处于定位指示灯选择状态，不允许睡眠
-	if(LocLEDState!=LocateLED_NotEdit)return 1;
+	//系统处于定位指示灯选择或者设置菜单状态，不允许睡眠
+	if(LocLEDState||SetupFSMState)return 1;
 	//系统在显示电池电压不允许睡眠
 	if(VshowFSMState!=BattVdis_Waiting)return 1;
 	//系统开机了
-	if(CurrentMode->ModeIdx!=Mode_OFF)return 1;
+	if(IsLargerThanOneU8(CurrentMode->ModeIdx))return 1;
 	//允许睡眠
 	return 0;
 	}	
@@ -67,12 +72,12 @@ void SleepMgmt(void)
 	else
 		{		
 		if(SysMode>Operation_Locked)SysMode=Operation_Normal; //强制退出战术模式
-		SystemPeripheralCTRL(0);//关闭所有外设
+		DisableSysPeripheral();//关闭所有外设
 		STOP();  //令STOP=1，使单片机进入睡眠
 		//系统已唤醒，立即开始检测
-		delay_init();	 //延时函数初始化
-		SetSystemHBTimer(1); 
+		StartSystemTimeBase(); //启动系统定时器提供系统定时和延时函数
 		MarkAsKeyPressed(); //立即标记按键按下
+		SideKey_SetIntOFF(); //关闭侧按中断
 		do	
 			{
 			delay_ms(1);
@@ -84,9 +89,9 @@ void SleepMgmt(void)
 			if(sleepsel)SideKey_TIM_Callback();
 			}
 		while(!IsKeyEventOccurred()); //等待按键唤醒
-		//系统已被唤醒，立即进入工作模式			
-		SystemPeripheralCTRL(1);
-		//所有外设初始化完毕，启动ADC异步处理模式
-		EnableADCAsync(); 
+		//系统已完成按键事件检测，初始化其余外设		
+		EnableSysPeripheral();
+		//每次上电复位爆闪控制器	
+		ResetStrobeModule(); 			
 		}
 	}

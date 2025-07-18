@@ -6,12 +6,27 @@
 #include "SysConfig.h"
 #include "ModeControl.h"
 #include "PinDefs.h"
+#include "SideKey.h"
 #include "cms8s6990.h"
 
 //全局变量
 xdata LocLEDEditDef LocLEDState=LocateLED_NotEdit;
-static xdata unsigned char LocLEDTIM;
+extern xdata unsigned char CommonSysFSMTIM;
 static xdata u8 LocSetTimeOutTIM;
+
+
+//将电流拖尾设置转换为定位灯对应index的LUT
+static code LocatorLEDDef Fading2LocLEDLUT[4]=
+	{
+	//项0，对应Fading_OFF	
+	Locator_OFF,
+	//项1，对应Fading_Enable_Fast
+	Locator_Green,
+	//项2，对应Fading_Enable_Mid,
+  Locator_Amber,
+	//项3，对应Fading_Enable_Slow
+	Locator_Red		
+	};
 
 //定位LED设置最大超时时间
 #define LocateLEDTimeOut 30
@@ -19,22 +34,35 @@ static xdata u8 LocSetTimeOutTIM;
 //定位LED显示计时器
 void LocateLED_TIMHandler(void)
 	{
-	if(LocLEDTIM)LocLEDTIM--;
 	if(LocSetTimeOutTIM)LocSetTimeOutTIM--;
 	}
 
-//显示当前系统配置的定位LED类型
+//显示当前系统配置的定位LED以及电流拖尾速度类型
 LEDStateDef LocateLED_ShowType(void)
 	{
-	IsHalfBrightness=SysCfg.LocatorCfg?1:0;
-	//设置状态	
-	switch(SysCfg.LocatorCfg)
+	LocatorLEDDef Data;
+	//读取设置index
+  if(LocLEDState==LocateLED_SelFading)
+		{		
+		//读取配置（通过LUT转换一下）
+		Data=Fading2LocLEDLUT[SysCfg.FadingCfg&0x03];		
+		//在开启拖尾的时候，通过指定间隔的熄灭提示用户当前选择的拖尾速度（速度越慢，闪烁间隔越长）
+		if(Data)
+			{
+			if(!CommonSysFSMTIM)CommonSysFSMTIM=SysCfg.FadingCfg*3;
+			else if(CommonSysFSMTIM==1)return LED_OFF;
+			}
+		}
+  else Data=SysCfg.LocatorCfg;
+	//设置状态
+	IsHalfBrightness=(Data==Locator_OFF)?1:0;	 //关闭功能的话按键灯设置为低亮
+	switch(Data)
 		{
 	  case Locator_OFF:	//红色每隔一段时间快闪表示关闭
-			if(!LocLEDTIM)
+			if(!CommonSysFSMTIM)
 				{
         MakeFastStrobe(LED_Red);
-				LocLEDTIM=6;
+				CommonSysFSMTIM=5;
 				}
 			break;
 		case Locator_Green:return LED_Green; //绿灯
@@ -60,23 +88,40 @@ void LocateLED_Enable(void)
 	if(SysCfg.LocatorCfg&0x02)GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg);	
 	GPIO_SetMUXMode(RedLEDIOG,RedLEDIOx,GPIO_AF_GPIO);	
 	}
+	
+//内部函数，负责执行对应index的循环自增操作
+static void LoopAddSysIndex(void)
+	{
+	char buf;
+	//取出数据
+	if(LocLEDState==LocateLED_SelFading)buf=SysCfg.FadingCfg;
+	else buf=SysCfg.LocatorCfg;
+	//循环自增(0-3)
+	if(buf<3)buf++;
+	else buf=0;
+	//写回去
+	if(LocLEDState==LocateLED_SelFading)SysCfg.FadingCfg=(ShutdownFadingDef)buf;
+	else SysCfg.LocatorCfg=(LocLEDEditDef)buf;	
+	}	
+	
+//初始化定位LED编辑的系统
+void InitLocateLEDEditSys(void)	
+	{
+	CommonSysFSMTIM=0;
+	LocSetTimeOutTIM=8*LocateLEDTimeOut;
+	}
 
-//定位LED状态编辑
-char LocateLED_Edit(char ClickCount)
+//定位LED和系统电流拖尾状态编辑
+char LocateLED_Edit(void)
 	{
 	switch(LocLEDState)
 		{
-		//默认状态
-		case LocateLED_NotEdit:
-			//关机状态7击按键进入编辑
-			if(ClickCount!=7)return 0;			
-			LocLEDTIM=0;
-			LocSetTimeOutTIM=8*LocateLEDTimeOut;
-			LocLEDState=LocateLED_Sel;
-		  break;
+		//默认状态，返回0正常执行下面的逻辑
+		case LocateLED_NotEdit:return 0;			
 		//编辑过程
+		case LocateLED_SelFading:
 		case LocateLED_Sel:
-			if(ClickCount)SysCfg.LocatorCfg=SysCfg.LocatorCfg<3?SysCfg.LocatorCfg+1:0; //反复切换index
+			if(getSideKeyShortPressCount())LoopAddSysIndex(); //反复切换index
 		  if(!LocSetTimeOutTIM)
 				{
 				//设置菜单超时，不保存并退出

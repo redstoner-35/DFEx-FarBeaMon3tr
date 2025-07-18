@@ -2,6 +2,8 @@
 #define _ModeControl_
 
 #include "stdbool.h"
+#include "FastOp.h"
+
 //定位LED设置
 typedef enum
 	{
@@ -11,24 +13,43 @@ typedef enum
 	Locator_Amber=3, //黄灯
 	}LocatorLEDDef;	
 
+typedef enum
+	{
+	LVPROT_Disable=0,  //该挡位关闭低电量保护
+	LVPROT_Enable_Jump=1, //该挡位低电量保护开启，当电量低于阈值后执行跳档
+	LVPROT_Enable_OFF=2		//该挡位低电量保护开启，当电量低于阈值后立即执行关机
+	}LVProtectTypeDef;	
+	
+//衰减速度设置
+typedef enum
+	{
+	Fading_OFF=0, //关机时禁止拖尾
+	Fading_Enable_Slow=3,
+	Fading_Enable_Mid=2,
+	Fading_Enable_Fast=1  //三档拖尾速度
+	}ShutdownFadingDef;	
+	
 typedef struct
 	{
 	int RampCurrent;
 	int RampBattThres;
 	int RampCurrentLimit;
-	char RampLimitReachDisplayTIM;
-	char CfgSavedTIM;
+	unsigned char RampLimitReachDisplayTIM;
+	unsigned char CfgSavedTIM;
 	LocatorLEDDef LocatorCfg;
+	ShutdownFadingDef FadingCfg;
 	}SysConfigDef;	
 	
 typedef enum
 	{
 	Mode_OFF=0, //关机
 	Mode_Fault=1, //出现错误
-		
-	Mode_Ramp=2, //无极调光
-	Mode_1Lumen=3, //1流明极低挡位
-  Mode_Moon=4, //月光
+	//极低LM挡位	
+	Mode_1Lumen=2, //1流明极低挡位
+  Mode_Moon=3, //月光	
+
+	//正常挡位
+	Mode_Ramp=4, //无极调光
 	Mode_ExtremelyLow=5, //极低亮
 	Mode_Low=6, //低亮
 	Mode_Mid=7, //中亮
@@ -38,8 +59,8 @@ typedef enum
 	Mode_Turbo=10, //极亮
 	//特殊模式
   Mode_Beacon=11, //信标挡位 		
-  Mode_Strobe, //爆闪		
-	Mode_SOS, //SOS挡位
+  Mode_Strobe=12, //爆闪		
+	Mode_SOS=13, //SOS挡位
 	}ModeIdxDef;
 	
 
@@ -51,14 +72,27 @@ typedef struct
 	int LowVoltThres; //低电压检测电压(mV)
 	bool IsModeHasMemory; //是否带记忆
 	bool IsNeedStepDown; //是否需要降档
+	//是否允许进入极亮和爆闪
+	bool IsEnterTurboStrobe; 
+	//低电量保护设置
+  ModeIdxDef ModeWhenLVAutoFall;		//低电量触发保护之后，如果不执行关机则自动跳转的挡位
+	LVProtectTypeDef LVConfig;        //低电量保护机制的类型
+	//挡位切换设置
+  ModeIdxDef ModeTargetWhenH;
+	ModeIdxDef ModeTargetWhen1H;	 //模式挡位切换设置，长按和单击+长按切换到的目标挡位
 	}ModeStrDef; 
 
 //外部引用
 extern xdata unsigned char DisplayLockedTIM; //锁定提示计时器
 extern ModeStrDef *CurrentMode; //当前模式结构体
+extern xdata ModeIdxDef LastSpecialMode; //特殊功能挡位
 extern xdata ModeIdxDef LastMode; //上一个挡位	
 extern SysConfigDef SysCfg; //无极调光配置	
 extern bit IsRampEnabled; //是否启用无极调光	
+extern bit IsStrobePoweredFromOFF; //是否从关机状态直接一键爆闪	
+extern bit IsMainMemEnabled; //是否开启主挡位记忆
+extern bit IsSpecMemEnabled; //是否开启特殊挡位记忆	
+extern bit IsPowerModeEnabled; //功率模式是否开启	
 	
 //特殊宏定义
 #define QueryCurrentGearILED() CurrentMode->Current //获取当前挡位的电流函数
@@ -71,7 +105,8 @@ extern bit IsRampEnabled; //是否启用无极调光
 	
 //函数
 void ModeFSMTIMHandler(void);//挡位状态机所需的软件定时器处理
-void ModeSwitchFSM();//挡位状态机	
+void ModeSwitchFSM();//挡位状态机
+int QuerySystemFullScaleCurrent(void);	//获取系统挡位在没有任何外部影响情况下的全部电流
 void SwitchToGear(ModeIdxDef TargetMode);//换到指定挡位
 void ReturnToOFFState(void);//关机	
 void HoldSwitchGearCmdHandler(void); //换挡间隔生成	

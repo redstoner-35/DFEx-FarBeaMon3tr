@@ -11,16 +11,21 @@ static bit IsNeedToEnableOutput; //是否需要启用输出
 static bit IsNeedToEnableMOS; //是否需要使能MOS管
 bit IsNeedToUploadPWM; //是否需要更新PWM
 
+//内部Sbit
+sbit PWMDACPin=PWMDACIOP^PWMDACIOx;
+sbit PreChargeDACPin=PreChargeDACIOP^PreChargeDACIOx;
+
 //关闭PWM定时器
 void PWM_DeInit(void)
 	{
 	//配置为普通GPIO
-  GPIO_SetMUXMode(PWMDACIOG,PWMDACIOx,GPIO_AF_GPIO);	
+	GPIO_SetMUXMode(PWMDACIOG,PWMDACIOx,GPIO_AF_GPIO);
+  GPIO_SetMUXMode(PreChargeDACIOG,PreChargeDACIOx,GPIO_AF_GPIO);
 	//关闭PWM模块
 	PWMOE=0x00;
-	PWMCNTE=0x00;
+	PWMCNTE=0x00;		//关闭PWM计数器
 	PWM45PSC=0x00;
-	PWM01PSC=0x00;  //关闭PWM计数器
+	PWM01PSC=0x00;  //关闭PWM分频器时钟
 	}
 
 //上传PWM值
@@ -39,13 +44,10 @@ void PWM_Init(void)
   PWMInitCfg.Slew=GPIO_Fast_Slew;		
 	PWMInitCfg.DRVCurrent=GPIO_High_Current; //推PWMDAC，不需要很高的上升斜率
 	//配置GPIO
-	GPIO_WriteBit(PreChargeDACIOG,PreChargeDACIOx,0);
-  GPIO_WriteBit(PWMDACIOG,PWMDACIOx,0);
+	PreChargeDACPin=0;
+  PWMDACPin=0; 				//令PWMDAC的输出在非PWM模式下始终输出0
 	GPIO_ConfigGPIOMode(PreChargeDACIOG,GPIOMask(PreChargeDACIOx),&PWMInitCfg); 
 	GPIO_ConfigGPIOMode(PWMDACIOG,GPIOMask(PWMDACIOx),&PWMInitCfg); 
-	//启用复用功能
-	GPIO_SetMUXMode(PWMDACIOG,PWMDACIOx,GPIO_AF_PWMCH0);
-  GPIO_SetMUXMode(PreChargeDACIOG,PreChargeDACIOx,GPIO_AF_PWMCH4);
 	//配置PWM发生器
 	PWMCON=0x00; //PWM通道为六通道独立模式，向下计数，关闭非对称计数功能	
 	PWMOE=0x1D; //打开PWM输出通道0 2 3 4
@@ -76,7 +78,10 @@ void PWM_Init(void)
 	IsNeedToUploadPWM=0;
 	//启用PWM
 	PWM_Enable();
-	UploadPWMValue();
+	UploadPWMValue();	
+	//PWM初始化完毕，将引脚启用为复用功能
+	GPIO_SetMUXMode(PWMDACIOG,PWMDACIOx,GPIO_AF_PWMCH0);
+  GPIO_SetMUXMode(PreChargeDACIOG,PreChargeDACIOx,GPIO_AF_PWMCH4);
 	}
 
 //短时间启用PWM输出的功能

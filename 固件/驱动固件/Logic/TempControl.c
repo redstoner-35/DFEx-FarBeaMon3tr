@@ -9,13 +9,12 @@
 #include "LowVoltProt.h"
 #include "SelfTest.h"
 #include "FastOp.h"
-#include "TurboICCMAX.h"
 
 //内部变量
 static xdata int TempIntegral;
 static xdata int TempProtBuf;
-static unsigned char StepDownTIM;  //降档显示计时
-static unsigned char StepUpLockTIM; //计时器
+static xdata unsigned char StepDownTIM;  //降档显示计时
+static xdata unsigned char StepUpLockTIM; //计时器
 
 //内部状态位
 static bit IsNearThermalFoldBack; //标记位，是否接近于退出极亮温度
@@ -28,8 +27,6 @@ bit IsDisableTurbo;  //禁止再度进入到极亮档
 bit IsForceLeaveTurbo; //是否强制离开极亮档
 
 //内部宏定义
-#define InputMPPTAlmNegOffset ((TurboICCMAX*TurboMPPTAlertRatio)/1000UL)  //输入MPPT的电流告警负偏移量（使用整数计算方式实现极亮电流的负2%）
-#define InputMPPTAlertThershold CalcIREFValue(TurboICCMAX-InputMPPTAlmNegOffset) //输入MPPT执行极亮功率不足告警的阈值电流
 #define MinumumILED CalcIREFValue(ILEDStepDown)
 #define LeaveTurboTemperature ForceOffTemp-10   //退出极亮温度为关机保护温度-10
 
@@ -43,7 +40,7 @@ void RecalcPILoop(int LastCurrent)
 	else
 		{	
 		//获取当前挡位电流
-		ModeCur=QueryCurrentGearILED();
+		ModeCur=QuerySystemFullScaleCurrent();
 		//计算P值缓存
 		buf=TempProtBuf+(TempIntegral/IntegralFactor); //计算电流扣减值
 		if(IsNegative16(buf))buf=0; //电流扣减值不能小于0
@@ -81,8 +78,14 @@ int ThermalILIMCalc(void)
 //获取温控环路的恒温值
 static int QueryConstantTemp(void)	
 	{
-	//极亮的时候使用更高的温控拉长降档时间
-	return CurrentMode->ModeIdx==Mode_Turbo?TurboConstantTemperature:ConstantTemperature;
+	if(CurrentMode->ModeIdx==Mode_Turbo)
+		{
+		//POWER模式下极亮的时候使用更高的温控拉长降档时间
+		if(IsPowerModeEnabled)return TurboConstantTemperature;
+		else return ECOTurboConstantTemperature;
+		}
+	//正常使用其余挡位的温控
+  return ConstantTemperature;
 	}
 
 //温控系统中积分追踪温度变化实现恒亮的处理
@@ -129,9 +132,14 @@ void ThermalPILoopCalc(void)
 	//进行PI环的计算(仅在输出开启的时候进行或者爆闪模式运行过程中强制进行)
 	else if(GetIfOutputEnabled()||CurrentMode->ModeIdx==Mode_Strobe)
 		{			
-
 		//获取恒温温度值和恒亮电流
-		ConstantILED=CurrentMode->ModeIdx==Mode_Turbo?CalcIREFValue(ILEDConstantGlowMinTurbo):CalcIREFValue(ILEDConstantGlowMin);  //获取常亮电流
+		if(CurrentMode->ModeIdx==Mode_Turbo)
+			{
+			if(IsPowerModeEnabled)ConstantILED=CalcIREFValue(ILEDConstantGlowMinTurbo); //POWER模式下使用较高的常亮电流
+			else ConstantILED=CalcIREFValue(ILEDConstantGlowMinECOTurbo);
+			}
+		else ConstantILED=CalcIREFValue(ILEDConstantGlowMin);  //其他挡位，执行正常的常亮电流
+		
 		if(IsNearThermalFoldBack)ConstantILED-=CalcIREFValue(2000); //接近温度上限，立即将常亮电流下调2000mA
 		ProtFact=QueryConstantTemp(); //获取目标常亮温度
 		//温度误差为正（温度大于恒温值）
@@ -148,15 +156,28 @@ void ThermalPILoopCalc(void)
 			StepUpLockTIM=24; //升档之后温度过高则之后停止3秒
 			if(Err>2)
 				{
+				//计算比例项	
+				if(CurrentMode->ModeIdx==Mode_Turbo)
+					{
+					//极亮模式下开启ECO用最高斜率增加降档速度，否则使用低一档的斜率
+					if(!IsPowerModeEnabled)ProtFact=CurrentBuf/1600;
+					else ProtFact=CurrentBuf/2200;
+					}
+				else ProtFact=CurrentBuf/2300;
 				//比例项提交
-				ProtFact=(CurrentBuf/2300)+1;
-			  if(Data.Systemp>(ForceDisableTurboTemp-5))ProtFact*=5; //温度过高，扩张比例系数
-			  //当前LED电流已被限制到常亮电流范围内，阻止快速降档
+				if(IsNegative16(ProtFact))ProtFact=0;
+				ProtFact++; //保证比例项始终有1确保可以正确降档
+
+			  //当前LED电流已被限制到常亮电流范围内，阻止快速降档，否则使用比例项快速降档
 				if(CurrentBuf<ConstantILED)ThermalIntegralCommitToProtHandler();
-				//电流没有达到常亮下限，继续提交电流设置
-				else TempProtBuf+=(ProtFact*Err);	//向buf提交比例项	
+				else 
+					{
+					//电流没有达到常亮下限，继续提交电流设置
+					if(IsLargerThanThreeU16(Err))ProtFact*=(Err+2); 			//温度误差大于3摄氏度，扩张比例系数
+				  TempProtBuf+=(ProtFact*Err);		//向buf提交比例项	
+					}
 				//限制比例项最大只能达到ILEDMIN
-				if(TempProtBuf>(CurrentMode->Current-MinumumILED))TempProtBuf=(CurrentMode->Current-MinumumILED); 
+				if(TempProtBuf>(Current-MinumumILED))TempProtBuf=(Current-MinumumILED); 
 				StepUpLockTIM=60; //触发比例项降档，停7.5秒
 				}
 			//积分项(I)
@@ -166,7 +187,7 @@ void ThermalPILoopCalc(void)
 		else if(Data.Systemp<ProtFact)
 			{
 			//判断电流是否进入积分缓调区域
-			IsSwitchToITGTrack=CurrentBuf>(ConstantILED-CalcIREFValue(650))?true:false; 
+			IsSwitchToITGTrack=CurrentBuf>(ConstantILED-CalcIREFValue(800))?true:false; 
 			//比例项(P)
 			Err=ProtFact-Data.Systemp;	 //误差等于目标温度值减去系统温度
 			if(StepUpLockTIM)StepUpLockTIM--; //当前触发降档还没达到快速升档的时间
@@ -177,7 +198,7 @@ void ThermalPILoopCalc(void)
 				//执行比例升温
 				else
 					{
-					if(Err&0x7E)TempProtBuf-=Err; //进行升档
+					if(IsLargerThanOneU8(Err))TempProtBuf-=Err; //进行升档
 					if(IsNegative16(TempProtBuf))TempProtBuf=0;
 					}			
 				//温度下来了很多，系统已经令电流回升到强制降额前的常亮电流，则复位标记位
@@ -201,22 +222,22 @@ bit ShowThermalStepDown(void)
 	//判断系统是否在降档
 	if(VshowFSMState!=BattVdis_Waiting)Reason=StepDown_OFF; //当前处于电量显示状态不允许打断
 	else if(IsThermalStepDown)Reason=StepDown_Thermal; //温控降档触发
-	else if(CurrentMode->ModeIdx==Mode_Turbo&&TurboILIM<InputMPPTAlertThershold)Reason=StepDowm_BattAlert; //开启极亮模式且实际协商的极亮电流小于预设值太多，提示功率不足
-	else Reason=StepDown_OFF;
+	else Reason=QuerySystemTurboILIMState(); //其余情况，根据状态显示温控降档状态
 	//进行降档处理
   switch(Reason)		
 		{
-		case StepDown_OFF:StepDownTIM=0;break; //提示未触发
-		case StepDowm_BattAlert: //电池警报
-		  //当计时器=10时多闪一次制造出两次闪烁
-			if(StepDownTIM==10)
+		case StepDown_OFF:StepDownTIM=0;break; //提示未触发	
+    case StepDown_ECOModeEnabled:
+		case StepDown_BattAlert: //电池警报
+		  //当计时器=13和10时多闪一次制造出两次闪烁(ECO模式下)
+			if(StepDownTIM==13||(Reason==StepDown_ECOModeEnabled&&StepDownTIM==10))
 				{
 				StepDownTIM++;
 				return 1;
 				}
 		case StepDown_Thermal: //过热
 			StepDownTIM++;
-			if(StepDownTIM==13)
+			if(StepDownTIM==16)
 				{
 				StepDownTIM=0;
 				return 1;

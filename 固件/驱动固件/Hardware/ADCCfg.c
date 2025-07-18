@@ -13,11 +13,12 @@ static xdata ADCConvertTemp ADCTemp;
 static ADCAsyncStateDef ADCState;	
 static xdata char ADCConvertQueue[ADCConvertQueueDepth];	
 bit IsNotAllowAsync;	 //是否允许ADC引擎运行在异步模式
+sbit NTCPullUpEN=NTCENIOP^NTCENIOx; //NTC Enable
 	
 //向ADC提交任务	
 static void ADC_SubmitMisson(char Ch)	
 	{
-	unsigned char i=255;
+	unsigned char i=ADCWaitChannelSelTime;
 	//检查传入的通道参数是否合法
 	if(ADCTemp.IsMissionProcessing)return;
 	if(ADC_CheckIfChInvalid(Ch))return; 
@@ -32,7 +33,7 @@ static void ADC_SubmitMisson(char Ch)
 	ADCON1&=0xF0;
 	ADCON1|=(Ch&0x0F); //设置ADCHS[3:0]					
 	//启动转换
-	while(--i);  //延时等待通道选通后开始采样
+	while(--i);  			//延时等待通道选通后开始采样
 	ADC_StartConv();
 	}	
 
@@ -183,7 +184,7 @@ void SystemTelemHandler(void)
 //复位ADC异步引擎
 static void ResetADCAsyncEngine(void)	
 	{
-	char i;	
+	unsigned char i;	
 	for(i=0;i<ADCConvertQueueDepth;i++)ADCConvertQueue[i]=-2;	
 	ADCState=ADC_SubmitQueue;
 	ADCTemp.avgbuf=0;
@@ -200,6 +201,7 @@ void ADC_DeInit(void)
 	//配置寄存器关闭ADC
 	ADCON1=0x00; //关闭ADC
 	ADCLDO=0x00; //关闭片内基准
+	
 	//清空队列并复位异步引擎
   ResetADCAsyncEngine();
 	//将需要禁用的ADC输入GPIO设置为普通GPIO模式
@@ -215,8 +217,8 @@ void ADC_DeInit(void)
 	//将需要禁用的ADC输入GPIO全部输出0
   GPIO_WriteBit(VBATInputIOG,VBATInputIOx,0);
 	GPIO_WriteBit(VOUTFBIOG,VOUTFBIOx,0);
-	//令NTC偏压供电输出=0关闭NTC和Strap电源
-	GPIO_WriteBit(NTCENIOG,NTCENIOx,0); 
+	//令NTC偏压供电输出=0关闭NTC电源
+	NTCPullUpEN=0;
 	}
 
 //ADC初始化
@@ -243,7 +245,7 @@ void ADC_Init(void)
 		
 	GPIO_SetMUXMode(NTCENIOG,NTCENIOx,GPIO_AF_GPIO);
   GPIO_ConfigGPIOMode(NTCENIOG,GPIOMask(NTCENIOx),&ADCInitCfg);		
-  GPIO_WriteBit(NTCENIOG,NTCENIOx,1); //令供电输出=1打开NTC电源
+  NTCPullUpEN=1; //令供电输出=1打开NTC电源
 	
 	//配置ADC
 	ADCON0=0x40; //AN31=内部1.2V基准，结果右对齐

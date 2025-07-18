@@ -32,11 +32,11 @@
 #define PWMDACENIOG 2
 #define PWMDACENIOx GPIO_PIN_3 	//恒流(CC)整定PWMDAC使能(P2.3)
 
-
+#define PWMDACIOP GPIO_PORT_2
 #define PWMDACIOG 2
 #define PWMDACIOx GPIO_PIN_2		//恒流(CC)整定PWMDAC输出(P2.2)
 
-
+#define PreChargeDACIOP GPIO_PORT_2
 #define PreChargeDACIOG 0
 #define PreChargeDACIOx GPIO_PIN_2		//恒压预充(CV)整定PWMDAC输出(P0.2)
 
@@ -65,6 +65,7 @@
 #define VBATInputAIN 22					//电池电压检测引脚(P3.0,AN22)
 
 
+#define NTCENIOP GPIO_PORT_0
 #define NTCENIOG 0
 #define NTCENIOx GPIO_PIN_3			//NTC检测使能引脚(P0.3)
 

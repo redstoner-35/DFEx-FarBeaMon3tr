@@ -7,6 +7,7 @@
 #include "SpecialMode.h"
 #include "delay.h"
 #include "LEDMgmt.h"
+#include "SysReset.h"
 
 //内部全局
 static xdata unsigned int CurrentIdx;
@@ -16,17 +17,19 @@ static xdata u8 CurrentCRC;
 static u8 PEC8Check(char *DIN,char Len)
 {
  unsigned char crcbuf=0xFF;
- char i;
+ unsigned char i;
  do
 	{
   //载入数据
   crcbuf^=*DIN++;
   //计算
-  for(i=8;i;i--)
+  i=8;
+	do
    {
 	 if(crcbuf&0x80)crcbuf=(crcbuf<<1)^0x07;//最高位为1，左移之后和多项式XOR
 	 else crcbuf<<=1;//最高位为0，只移位不XOR
 	 }
+	while(--i);
 	}
  while(--Len);
  //输出结果
@@ -36,7 +39,7 @@ static u8 PEC8Check(char *DIN,char Len)
 //从EEPROM内寻找最后的一组Sys配置
 static int SearchSysConfig(SysROMImg *ROMData)
 	{
-	char i;
+	unsigned char i;
 	int Len=0;
 	//解锁flash并开始读取
 	SetFlashState(1);
@@ -53,7 +56,62 @@ static int SearchSysConfig(SysROMImg *ROMData)
 	//读取结束，返回上一组有数据的index
 	return Len;
 	}
-
+//准备初始的系统设置
+static void PrepareFactoryDefaultCfg(void)
+	{
+	SysMode=Operation_Normal; //默认处于解锁模式
+	SysCfg.LocatorCfg=Locator_Green; //默认是绿灯亮
+	SysCfg.FadingCfg=Fading_OFF; //关闭电流拖尾
+	RestoreToMinimumSysCurrent();
+	IsMainMemEnabled=1;
+	IsSpecMemEnabled=0; //开启正常挡位记忆，关闭特殊挡位记忆
+	IsRampEnabled=0; //默认为挡位模式
+	IsPowerModeEnabled=0; //默认为ECO模式
+	}	
+	
+//尝试检测用户进行重置操作	
+void ResetSysConfigToDefault(void)
+	{
+	unsigned char delay;
+	//准备初始的系统设置
+  PrepareFactoryDefaultCfg();
+	//保存数据并显示状态
+	SaveSysConfig(0); //写数据写成默认值
+	SetFlashState(0); //锁定Flash
+	//配置指示灯准备显示
+	delay=100;
+	IsHalfBrightness=0;
+	LEDMode=LED_AmberBlink; //LED模式配置为黄色快闪
+	do
+		{
+		delay_ms(10);
+		LEDControlHandler();
+		//松开按键后开始计时
+		if(GetSideKeyRawGPIOState())delay--;
+		}
+	while(delay);
+	//触发系统重启
+	TriggerSoftwareReset();
+	}	
+	
+//显示系统数据存在错误
+static void ShowEPROMCorrupted(void)
+	{
+	unsigned char delay=0xFF;
+	//读取操作完毕，锁定flash	
+	SetFlashState(0);
+	//配置LED模式
+	IsHalfBrightness=0;
+	LEDMode=LED_RedBlink; //LED模式配置为红色快闪
+	while(--delay)
+		{
+		delay_ms(10);
+		LEDControlHandler();
+		}
+	//时间到，令系统reboot
+	TriggerSoftwareReset();
+	}
+	
 //读取无极调光配置
 void ReadSysConfig(void)
 	{
@@ -64,22 +122,29 @@ void ReadSysConfig(void)
 	if(ROMData.Data.CheckSum==PEC8Check(ROMData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)))
 		{
 		//校验成功，加载数据
-		SysMode=ROMData.Data.SysConfig.Data.IsSystemLocked?Operation_Locked:Operation_Normal;
+		IsPowerModeEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&PowerECOMode_MSK?1:0;
+		IsMainMemEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsEnableMainMemory_MSK?1:0;
+		IsSpecMemEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsEnableSpecMemory_MSK?1:0;
+		IsRampEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsRampEnabled_MSK?1:0;
+		SysMode=ROMData.Data.SysConfig.Data.BitfieldMem1&IsLocked_MSK?Operation_Locked:Operation_Normal;
+		
 		SysCfg.LocatorCfg=ROMData.Data.SysConfig.Data.LocatorCfg; 
 		SysCfg.RampCurrent=ROMData.Data.SysConfig.Data.SysCurrent;
-		IsRampEnabled=ROMData.Data.SysConfig.Data.IsRampEnabled?1:0;
+		SysCfg.FadingCfg=ROMData.Data.SysConfig.Data.FadingCfg;      //加载其余系统设置
 		//存储当前的index值
 		CurrentCRC=ROMData.Data.CheckSum;
 		CurrentIdx++; //当前位置有数据，需要让index+1移动到未写入的位置
+		
+		//用户按下按键，重置设置并重启
+		if(!GetSideKeyRawGPIOState())ResetSysConfigToDefault();
 		}
 	//校验失败重建数据
 	else 
 		{
-		SysMode=Operation_Normal; //默认处于解锁模式
-		SysCfg.LocatorCfg=Locator_Green; //默认是绿灯亮
-		RestoreToMinimumSysCurrent();
-		IsRampEnabled=0; //默认为挡位模式
+		PrepareFactoryDefaultCfg(); 
+		SysMode=Operation_Locked;   //出厂写PROM的时候默认是锁定
 		SaveSysConfig(1); //重建数据后立即保存参数
+		ShowEPROMCorrupted(); //显示EEPROM损坏
 		}
 	//读取操作完毕，锁定flash	
 	SetFlashState(0);
@@ -88,7 +153,7 @@ void ReadSysConfig(void)
 //恢复到无极调光模式的最低电流
 void RestoreToMinimumSysCurrent(void)	
 	{
-	char i;
+	unsigned char i;
 	extern code ModeStrDef ModeSettings[ModeTotalDepth];
 	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp)
 			SysCfg.RampCurrent=ModeSettings[i].MinCurrent; //找到挡位数据中无极调光的挡位
@@ -97,15 +162,22 @@ void RestoreToMinimumSysCurrent(void)
 //保存无极调光配置
 void SaveSysConfig(bit IsForceSave)
 	{
-	char i;
+	unsigned char i;
+	unsigned char BFBuf=0;
 	SysROMImg SavedData;
 	//解锁flash（CRC校验模块需要读取Flash所以需要解锁）
 	SetFlashState(1);
   //开始进行数据构建
-	SavedData.Data.SysConfig.Data.IsSystemLocked=SysMode==Operation_Locked?true:false;
+	if(SysMode==Operation_Locked)BFBuf|=IsLocked_MSK;			//是否锁定
+	if(IsRampEnabled)BFBuf|=IsRampEnabled_MSK;						//是否开启无极调光
+	if(IsMainMemEnabled)BFBuf|=IsEnableMainMemory_MSK;	//是否启用主挡位记忆
+	if(IsSpecMemEnabled)BFBuf|=IsEnableSpecMemory_MSK;    //是否启用特殊功能挡位记忆
+	if(IsPowerModeEnabled)BFBuf|=PowerECOMode_MSK;        //是否启用POWER模式
+		
+	SavedData.Data.SysConfig.Data.BitfieldMem1=BFBuf;
+	SavedData.Data.SysConfig.Data.FadingCfg=SysCfg.FadingCfg;
 	SavedData.Data.SysConfig.Data.LocatorCfg=SysCfg.LocatorCfg;
   SavedData.Data.SysConfig.Data.SysCurrent=SysCfg.RampCurrent;
-	SavedData.Data.SysConfig.Data.IsRampEnabled=IsRampEnabled?true:false;
 	SavedData.Data.CheckSum=PEC8Check(SavedData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)); //计算CRC
 	//进行数据比对
 	if(!IsForceSave&&SavedData.Data.CheckSum==CurrentCRC)

@@ -14,7 +14,7 @@
 #ifdef Custom_LED_ICCMAX
 
 	//判断电流是否合法
-	#if (Custom_LED_ICCMAX < 20000UL | Custom_LED_ICCMAX > 36000UL)
+	#if (Custom_LED_ICCMAX < 22000 | Custom_LED_ICCMAX > 36000)
 	#error "Error 00C: Turbo Current Value is Out of range"
 	#else
   //数值合法，引用
@@ -26,31 +26,37 @@
 #elif defined(USING_LED_FV7212D)
 
 	#message "Currently Selected LED is DFEx_SuperLED+ FV7212D,Turbo ICC=30.3A."
-	#define TurboICCMAX 30300UL
+	#define TurboICCMAX 30300
 
 //FL7022D灯珠
 #elif defined(USING_LED_FL7022D)|defined(USING_LED_N7175HE)
 
 	#message "Currently Selected LED is DFEx_SuperLED+ FL7022D(NightWatch N7-175HE),Turbo ICC=33.0A."
-	#define TurboICCMAX 33000UL
+	#define TurboICCMAX 33000
+
+
+#elif defined(USING_LED_FL7018I_PRO9)
+	
+	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I with 0.9mR Shunt,Turbo ICC=36.5A."
+	#define TurboICCMAX 36500  
 
 //FL7018I灯珠
 #elif defined(USING_LED_FL7018I)
 	
 	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35.4A."
-	#define TurboICCMAX 35400UL
+	#define TurboICCMAX 35400
 
 //Luminus SFT-90X
 #elif defined(USING_LED_SFT90X)
 	
 	#message "Currently Selected LED is Luminus SFT-90X-WS65M,Turbo ICC=20A."
-	#define TurboICCMAX 20000UL
+	#define TurboICCMAX 20000
 
 
 #elif defined(USING_LED_NBT160)
 
 	#message "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=29A."
-	#define TurboICCMAX 29000UL
+	#define TurboICCMAX 29000
 
 //安全保护机制，请勿修改！！！！
 #else
@@ -62,8 +68,18 @@
 #endif
 
 
-/********  爆闪和信标（脉冲）模式电流定义区域 ********/  
+/********  爆闪和信标（脉冲）模式以及ECO模式电流定义区域 ********/  
 #ifdef TurboICCMAX
+  
+  //竞技模式下的电流定义
+  #if (TurboICCMAX < 32000UL)
+     #define ECOTurboICCMAX TurboICCMAX-7000
+  #else
+	   //经济模式极亮限制在26A
+	   #define ECOTurboICCMAX 26000
+	#endif
+	
+	
 	//爆闪电流定义
 	#ifdef FullPowerStrobe
    //全功率爆闪，极亮电流等于爆闪电流

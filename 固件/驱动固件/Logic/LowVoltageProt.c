@@ -1,10 +1,12 @@
 #include "BattDisplay.h"
 #include "ModeControl.h"
 #include "LowVoltProt.h"
+#include "TempControl.h"
 #include "OutputChannel.h"
 #include "SideKey.h"
 #include "ADCCfg.h"
 #include "SelfTest.h"
+#include "TurboICCMAX.h"
 
 //内部变量
 static xdata unsigned char BattAlertTimer; //电池低电压告警处理
@@ -15,12 +17,24 @@ static unsigned char MPPTStepdownWaitTimer; //MPPT下调极亮等待的计时器
 xdata int TurboILIM; //极亮电流限制
 xdata float BeforeRawBattVolt; //开启极亮前的电池电压
 
+//内部宏定义
+#define InputMPPTAlmNegOffset ((TurboICCMAX/100)*TurboMPPTAlertRatio)  //输入MPPT的电流告警负偏移量（使用整数计算方式实现极亮电流的负2%）
+#define InputMPPTRawCurrentVal (TurboICCMAX-InputMPPTAlmNegOffset)
+#define InputMPPTAlertThershold CalcIREFValue(InputMPPTRawCurrentVal)  //最终输入MPPT的告警阈值
+#define InuputMPPTECOAlmNegOffset ((ECOTurboICCMAX/100)*TurboMPPTAlertRatio)
+#define InputMPPTRawECOCurrentVal (ECOTurboICCMAX-InuputMPPTECOAlmNegOffset)
+#define InputMPPTAlertThersholdECO CalcIREFValue(InputMPPTRawECOCurrentVal)   //ECO电流
+
+#if (InputMPPTRawCurrentVal >= TurboICCMAX)
+	//检测到异常数值时阻止编译通过
+	#error "Negative Current Offset Of Input MPPT is out of range."
+#endif
+
 //低电量保护函数
 static void StartBattAlertTimer(void)
 	{
 	//启动定时器
-	if(BattAlertTimer)return;
-	BattAlertTimer=1;
+	if(!BattAlertTimer)BattAlertTimer=1;
 	}	
 
 //电池低电量报警处理函数
@@ -34,11 +48,28 @@ void BattAlertTIMHandler(void)
 	if(BattAlertTimer&&BattAlertTimer<(BatteryAlertDelay+1))BattAlertTimer++;
 	}	
 	
+//获取系统在极亮模式开启时的功率限制状态
+StepDownReasonDef QuerySystemTurboILIMState(void)
+	{
+	//极亮没有开启，返回OFF State
+	if(CurrentMode->ModeIdx!=Mode_Turbo)return StepDown_OFF;
+	//触发输入限流保护，指示输入限流激活	
+	if(TurboILIM<(IsPowerModeEnabled?InputMPPTAlertThershold:InputMPPTAlertThersholdECO))return StepDown_BattAlert;
+	//开启ECO模式，指示ECO模式激活
+	if(!IsPowerModeEnabled)return StepDown_ECOModeEnabled;
+  //其余情况没有发生电流被限制的情况，返回OFF
+	return StepDown_OFF;
+	}	
+	
 //计算极亮挡位电流的限制值
 void CalcTurboILIM(void)
 	{
-	IsCurrentRampUp=0; //复位标志位重置MPPT系统
 	TurboILIM=QueryCurrentGearILED(); //默认上限按照目标电流去取
+	if(CurrentMode->ModeIdx!=Mode_Turbo)return; //非极亮挡位不重置MPPT
+	
+	if(!IsPowerModeEnabled)TurboILIM=CalcIREFValue(ECOTurboICCMAX); //ECO模式开启时使用低电流作为极亮MAX
+	
+	IsCurrentRampUp=0; //复位标志位重置MPPT系统
 	BeforeRawBattVolt=Data.RawBattVolt-BatteryMaximumTurboVdroop; //切换到极亮之前取样电池实时电压并减去允许压差作为实时采样值
 	}	
 	

@@ -2,9 +2,10 @@
 #define _LvProt_
 
 #include "stdbool.h"
+#include "TempControl.h"
 
 //参数配置
-#define BatteryMaximumTurboVdroop 1.2  //极亮启动过程中，电池最大允许的和运行前的压差(V)
+#define BatteryMaximumTurboVdroop 1.4  //极亮启动过程中，电池最大允许的和运行前的压差(V)
 #define BatteryAlertDelay 10 //电池警报延迟	
 #define BatteryFaultDelay 2 //电池故障强制跳档/关机的延迟
 #define TurboILIMTryCDTime 4 //每次极亮尝试下调电流的冷却时间（单位是1/8秒）
@@ -20,5 +21,6 @@ void BattAlertTIMHandler(void); //电池低电量报警处理函数
 void TurboLVILIMProcess(void); //极亮专属的电流运行值的功能
 void RampRestoreLVProtToMax(void); //每次开机进入无级模式时尝试恢复限流
 void CalcTurboILIM(void); //计算极亮电流挡位的限流值
+StepDownReasonDef QuerySystemTurboILIMState(void); //获取系统在极亮模式开启时的功率限制状态
 
 #endif

@@ -15,6 +15,8 @@
 #include "Beacon.h"
 #include "LocateLED.h"
 #include "Strobe.h"
+#include "SysReset.h"
+#include "SetupMenu.h"
 
 //函数声明
 void SleepMgmt(void);
@@ -23,9 +25,9 @@ void SleepMgmt(void);
 void main()
 	{
 	bit TaskSel=0;
-	//时钟初始化	
- 	delay_init();	 //延时函数初始化
-	SetSystemHBTimer(1);//启用系统心跳8Hz定时器	
+	//时钟和RSTCU初始化	
+	ClearSoftwareResetFlag();
+  StartSystemTimeBase(); //启动系统定时器提供系统定时和延时函数
 	//初始化外设
 	OutputChannel_Init(); //启动输出通道	
 	ADC_Init(); //初始化ADC

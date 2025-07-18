@@ -19,9 +19,8 @@ extern bit IsDisplayLocked; //显示锁定
 	
 //函数
 void PowerToNormalMode(ModeIdxDef Mode);//开启到普通模式
-void EnterTurboStrobe(char ClickCount);//进入极亮和爆闪的判断
-void LeaveSpecialMode(char ClickCount); //退出爆闪和极亮
-void SpecialModeOperation(char Click);//特殊功能切换的处理
+void TryEnterTurboStrobeProcess(char Count);	//尝试进入极亮和爆闪的实际内部处理
+SpecialOperationDef SpecialModeOperation(char Click);//特殊功能切换的处理
 void EnterMoonProcess(void); //进入月光模式的处理
 	
 #endif

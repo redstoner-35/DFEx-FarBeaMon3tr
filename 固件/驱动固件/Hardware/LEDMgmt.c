@@ -135,13 +135,14 @@ void LEDControlHandler(void)
 			//常规颜色使用内部转换函数直接转换为命令
 			Command=ConvertLEDModeToCmd(LEDMode);
 			break;
+		case LED_AmberBlink: //黄色闪烁
 		case LED_RedBlink: //红色闪烁
 		  //如果计时变量bit2=1说明已经计数到4，此时首先和0x80相与清除掉计数部分，然后和0x80 XOR翻转bit7实现反复取反
 			if(timer&0x04)timer=(timer&0x80)^0x80;
 			//否则继续计数
 			else timer++;
 			//根据bit 7状态设置指示灯，如果bit7=1，则发送红色点亮指令让LED点亮
-			if(timer&0x80)Command=LED_ROnly; 
+			if(timer&0x80)Command=LEDMode==LED_AmberBlink?LED_RPlusG:LED_ROnly; 
 			break;
 		case LED_GreenBlinkThird:
 		case LED_RedBlinkThird: //LED红色闪烁3次

@@ -66,7 +66,13 @@ void SideKeyInit(void)
 	Keyevent.ShortPressEvent=0;
 	Keyevent.HoldStat=HoldEvent_None;
 	}
-	
+
+//获取没有进行去抖的侧按GPIO状态	
+bit GetSideKeyRawGPIOState(void)	
+	{
+	return KeyPress;
+	}
+
 //检测是否有事件发生
 bit IsKeyEventOccurred(void)
 	{
@@ -110,33 +116,32 @@ void SideKey_Int_Callback(void)
 	    }
 		else if(time<(unsigned char)LongPressTime)//短按事件发生      
 			{
-		  if(Keyevent.ShortPressCount<10)Keyevent.ShortPressCount++;//累加有效的短按次数
+		  if(Keyevent.ShortPressCount<8)Keyevent.ShortPressCount++;//累加有效的短按次数
 		  KeyTimer[1]=0x80;//启动短按完毕等待统计的计时器
 		  }			
 		}
-	//按键按下
-	else
-		{
-		IsKeyPressed = 1;//标记按键按下
-		if(KeyTimer[1]&0x80)KeyTimer[1]=0x80;//复位
-		if(!(KeyTimer[0]&0x80))KeyTimer[0]=0x80;//启动计时
-		}
-	//禁止INT0中断
-	GPIO_DisableInt(SideKeyGPIOG,GPIOMask(SideKeyGPIOx)); //禁止中断功能
-	KeyState=0xAA; //复位检测模块
+	//按键按下，调用标记函数
+	else MarkAsKeyPressed();
+	//关闭侧按中断
+	SideKey_SetIntOFF();
 	}
 
 //标记按键按下
 void MarkAsKeyPressed(void)
-	{
-	//禁止INT0中断
-	GPIO_DisableInt(SideKeyGPIOG,GPIOMask(SideKeyGPIOx)); //禁止中断功能
-	KeyState=0xAA; //复位检测模块
+	{	
 	//标记按键已被按下
 	IsKeyPressed = 1;//标记按键按下
 	if(KeyTimer[1]&0x80)KeyTimer[1]=0x80;//复位
 	if(!(KeyTimer[0]&0x80))KeyTimer[0]=0x80;//启动计时
 	}		
+	
+//关闭侧按的GPIO中断
+void SideKey_SetIntOFF(void)
+	{
+	//禁止INT0中断
+	GPIO_DisableInt(SideKeyGPIOG,GPIOMask(SideKeyGPIOx)); //禁止中断功能
+	KeyState=0xAA; //复位检测模块
+	}
 	
 //在单击双击三击+长按触发的时候清除单击事件的记录
 static void ClickAndHoldEventHandler(int PressCount)
@@ -197,19 +202,23 @@ void SideKey_LogicHandler(void)
 		}
 	}
 //获取侧按键点按次数的获取函数
-char getSideKeyShortPressCount(bit IsRemoveResult)
+char getSideKeyShortPressCount(void)
   {
-  short buf;
-	if(Keyevent.HoldStat!=HoldEvent_None)return 0;
-	if(!Keyevent.ShortPressEvent)return 0;
-	buf=Keyevent.ShortPressCount;
-  if(IsRemoveResult)
-	  {
-		Keyevent.ShortPressEvent=0; //获取了短按结果之后复位
-	  Keyevent.ShortPressCount=0;  //获取了短按连击次数后清零结果
-		}
-  return buf;		
+	//有长按和N击+长按事件，或者短按事件未置起，返回0
+	if(Keyevent.HoldStat!=HoldEvent_None||!Keyevent.ShortPressEvent)return 0;
+  return Keyevent.ShortPressCount;		
 	}
+
+//清除短按事件
+void ClearShortPressEvent(void)
+	{
+	//没有按键事件发生，清除
+	if(!Keyevent.ShortPressEvent||!Keyevent.ShortPressCount)return;
+	//有事件发生的时候clear事件
+	Keyevent.ShortPressEvent=0; 
+	Keyevent.ShortPressCount=0;
+	}	
+	
 //获取侧按按键长按2秒事件的函数
 bit getSideKeyLongPressEvent(void)
   {

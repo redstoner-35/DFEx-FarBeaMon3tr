@@ -25,13 +25,16 @@ HoldEventDef HoldStat;
 }KeyEventStrDef;
 
 //函数
+bit GetSideKeyRawGPIOState(void); //复位计时器
+void SideKey_SetIntOFF(void);		//关闭侧按的GPIO中断
 void SideKeyInit(void);
-char getSideKeyShortPressCount(bit IsRemoveResult);//获取侧按按键的单击和连击次数
+char getSideKeyShortPressCount(void);//获取侧按按键的单击和连击次数
 bit getSideKeyLongPressEvent(void);//获得侧按按钮长按的事件
 bit getSideKeyHoldEvent(void);//获得侧按按钮一直按住的事件
 bit IsKeyEventOccurred(void); //检测是否有事件发生
 char getSideKeyNClickAndHoldEvent(void); //获取侧按按下N次+长按的按键数
 void MarkAsKeyPressed(void); //标记按键按下
+void ClearShortPressEvent(void); //清除累计的短按事件
 bit getSideKey1HEvent(void); //获取侧按按键单击
 
 //回调处理
