@@ -57,7 +57,11 @@ int ThermalILIMCalc(void)
 	{
 	int result;
 	//判断温控是否需要进行计算
-	if(!IsTempLIMActive)result=Current; //温控被关闭，电流限制进来多少返回去多少
+	if(!IsTempLIMActive)
+		{
+		result=Current; 				//温控被关闭，电流限制进来多少返回去多少
+		IsThermalStepDown=0;  	//指示温控已被关闭
+		}
 	//开始温控计算
 	else
 		{
@@ -70,9 +74,10 @@ int ThermalILIMCalc(void)
 		  TempIntegral=0;
 		  result=MinumumILED; //电流限制不允许小于最低电流
 			}
+    //判断温控是否已经触发			
+		if(result<(Current-CalcIREFValue(1000)))IsThermalStepDown=1;	//温控已经让输出电流下调1000mA，提示温控触发
 		}
-	//返回结果	
-	IsThermalStepDown=result==Current?0:1; //如果输入等于输出，则降档没发生
+	//返回结果	                               
 	return result; 
 	}
 //获取温控环路的恒温值

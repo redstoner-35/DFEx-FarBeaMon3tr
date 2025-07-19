@@ -142,7 +142,6 @@ void ReadSysConfig(void)
 	else 
 		{
 		PrepareFactoryDefaultCfg(); 
-		SysMode=Operation_Locked;   //出厂写PROM的时候默认是锁定
 		SaveSysConfig(1); //重建数据后立即保存参数
 		ShowEPROMCorrupted(); //显示EEPROM损坏
 		}
