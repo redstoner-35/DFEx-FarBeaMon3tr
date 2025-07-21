@@ -116,6 +116,16 @@ static void ShowbalanceStatic(void)
 	
 	LCD_ShowChinese(3,35,"未均衡容量",WHITE,LGRAY,0);
 	DisplayAh(LogData.UnbalanceBatteryAh*1000,35);
+	
+	LCD_ShowHybridString(3,49,"最高C口电流",WHITE,LGRAY,0);		
+	if(LogData.MaximumTypeCCurrent<10)LCD_ShowFloatNum1(87,49,LogData.MaximumTypeCCurrent,3,WHITE,LGRAY,12);
+	else LCD_ShowFloatNum1(87,49,LogData.MaximumTypeCCurrent,2,WHITE,LGRAY,12);
+	LCD_ShowChar(147,49,'A',WHITE,LGRAY,12,0);			
+	
+	LCD_ShowHybridString(3,64,"最高C口功率",WHITE,LGRAY,0);		
+	if(LogData.MaximumTypeCPower<100)LCD_ShowFloatNum1(87,64,LogData.MaximumTypeCPower,2,WHITE,LGRAY,12);
+	else LCD_ShowFloatNum1(87,64,LogData.MaximumTypeCPower,1,WHITE,LGRAY,12);
+	LCD_ShowChar(147,64,'W',WHITE,LGRAY,12,0);			
 	}
 	
 //容量显示的按键处理

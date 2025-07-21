@@ -240,6 +240,7 @@ typedef struct
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
+bool IP2366_GetIfCPortConnected(void);   //获取IP2366的C口是否已连接
 bool IP2366_GetPPSCurrent(int *PPS1Current,int *PPS2Current);	//获取芯片PPS1和PPS2的输出电流
 bool IP2366_SetFixedPDO(IP2366FixPDOSetDef *Cfg);	//设置固定模式PDO的输出电流（需要注意的是20V的PDO如果不是公版芯片不建议设置）
 bool IP2366_SetPPSCurrent(IP2366PPSPDOSetDef *Cfg);	//设置芯片PPS1和PPS2的输出电流

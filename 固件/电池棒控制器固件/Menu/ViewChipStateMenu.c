@@ -2,12 +2,14 @@
 #include "Key.h"
 #include "IP2366_REG.h"
 #include "PCA9536.h"
+#include "LogSystem.h"
+#include "24Cxx.h"
 #include "Config.h"
 #include <string.h>
 
 static bool ChipStateUpdated=false;
 static char ChipInfoSelect=0;
-
+static int UsedSpace=0;
 
 //显示高精度功率计状态
 static void ShowHPGaugeState(void)
@@ -43,6 +45,59 @@ static void ShowHPGaugeState(void)
 		LCD_ShowString(137,64,"mA",WHITE,LGRAY,12,0);		
 		}		
 	}
+
+//显示存储器状态
+static bool ShowStorageState(void)
+	{
+	int Capacity=MaxByteRange+1;
+	char Result;	
+	char UIDBUF[2];
+	
+  if(!UsedSpace)
+		{
+		LCD_ShowChinese(10,22,"正在获取外存储器状态",WHITE,LGRAY,0);
+		LCD_ShowChinese(46,40,"请稍等……",WHITE,LGRAY,0);
+		UsedSpace=CalcCurrentAvailableLogCount();
+		return false;
+		}
+  
+	if(UsedSpace==-1)Result=1; //进行读取时存储器异常，显示failed
+	else Result=M24C512_ReadUID(UIDBUF,2);
+	LCD_ShowChinese(4,21,"系统外存储器状态",WHITE,LGRAY,0);	
+	LCD_ShowChinese(4,35,"存储器总容量",WHITE,LGRAY,0);
+	LCD_ShowChinese(4,49,"存储器已用容量",WHITE,LGRAY,0);
+	if(Result)LCD_ShowChinese(131,21,"异常",RED,LGRAY,0);		
+	else LCD_ShowChinese(131,21,"正常",GREEN,LGRAY,0);		
+		
+	//显示总容量
+	if(Result)LCD_ShowChinese(131,35,"未知",WHITE,LGRAY,0);	
+	else if(Capacity<10000)
+		{
+		LCD_ShowIntNum(107,35,Capacity,4,WHITE,LGRAY,12);
+	  LCD_ShowString(142,35," B",WHITE,LGRAY,12,0);
+		}
+	else
+		{		
+		LCD_ShowIntNum(107,35,Capacity/1000,4,WHITE,LGRAY,12);
+		LCD_ShowString(142,35,"KB",WHITE,LGRAY,12,0);
+		}
+	//显示已用容量
+	Capacity=UsedSpace;
+	if(!CTestData.ROMImage.Data.Data.IsDataValid)Capacity-=sizeof(ChargeTestStorDef); //测容数据无效时减去测容数据的结果
+	if(Result)LCD_ShowChinese(131,49,"未知",WHITE,LGRAY,0);	
+	else if(Capacity<10000)
+		{
+		LCD_ShowIntNum(107,49,Capacity,4,WHITE,LGRAY,12);
+	  LCD_ShowString(142,49," B",WHITE,LGRAY,12,0);
+		}
+	else
+		{		
+		LCD_ShowIntNum(107,49,Capacity/1000,4,WHITE,LGRAY,12);
+		LCD_ShowString(142,49,"KB",WHITE,LGRAY,12,0);
+		}			
+	//返回状态
+	return true;
+	}	
 	
 //显示芯片充电配置
 static void ShowChipChargeState(void)
@@ -154,19 +209,20 @@ void ShowChipInfo(void)
 		case 0:ShowChipBasicInfo();break;
 		case 1:ShowChipChargeState();break;
 		case 2:ShowHPGaugeState();break;
+		case 3:ChipStateUpdated=ShowStorageState();break;
 		default:
 			ChipInfoSelect=0;
 		  ChipStateUpdated=false;
 		  return;  //卡出来的非法状态，退出
 		}
 	//渲染完毕，指示状态
-	ChipStateUpdated=true;
+	if(ChipInfoSelect<3)ChipStateUpdated=true;
 	}
 	
 void ShowChipKeyHandler(void)
 	{
 	//上下键翻页
-	if(KeyState.KeyEvent==KeyEvent_Up&&ChipInfoSelect<2)
+	if(KeyState.KeyEvent==KeyEvent_Up&&ChipInfoSelect<3)
 		{
 		ChipInfoSelect++;
 		ChipStateUpdated=false;
@@ -189,6 +245,7 @@ void ShowChipKeyHandler(void)
 //进入时重置菜单flag的函数
 void ResetChipMenuState(void)
 	{
+	UsedSpace=0;
 	ChipStateUpdated=false;
 	ChipInfoSelect=0;
 	}

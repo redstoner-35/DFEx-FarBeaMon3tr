@@ -316,6 +316,16 @@ bool IP2366_GetIfInputConnected(void)
 	return false;
 	}	
 
+//获取IP2366的C口是否已连接
+bool IP2366_GetIfCPortConnected(void)
+	{
+	char buf;
+	if(!IP2366_ReadReg(&buf,REG_TYPEC_STATE))return false; //读取TypeC状态寄存器
+	if(buf&0xF0)return true;
+	//其余情况返回false
+	return false;
+	}	
+	
 //2366使能或者除能芯片的充放电模块
 bool IP2366_EnableDCDC(bool IsEnableCharger,bool IsEnableDischarge)	
 	{

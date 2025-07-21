@@ -977,6 +977,11 @@
               <FileType>1</FileType>
               <FilePath>.\Menu\BatteryCalSetMenu.c</FilePath>
             </File>
+            <File>
+              <FileName>TellUserToReConnectTypeCMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\TellUserToReConnectTypeCMenu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

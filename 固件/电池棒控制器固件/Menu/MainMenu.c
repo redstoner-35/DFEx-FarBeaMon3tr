@@ -20,6 +20,7 @@ extern short SleepTimer;
 static bool ConnectState;
 static float VBUSAvgBuf[4]={0};
 static char VBusAvgCount=0;
+bool IsCPortConnected; //C口输入是否连接
 float VTypec=0,ITypeC=0,VBat=0,IBat=0;
 bool IsResultUpdated=true;
 RecvPDODef PDO=RecvPDO_None;
@@ -42,6 +43,8 @@ void IP2366_Telem(void)
 	IsTelemOK|=IP2366_GetVBUSState(&VBUS);
 	IsTelemOK|=IP2366_ReadChipState(&CState);
 	IsTelemOK|=IP2366_GetRecvPDO(&PDO);
+	
+	IsCPortConnected=IP2366_GetIfCPortConnected();
 	//开始进行INA226的测量	
 	if(IsEnableHPGauge)
 		{

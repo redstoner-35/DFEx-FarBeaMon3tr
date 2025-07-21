@@ -8,6 +8,7 @@
 bool IsResetRendered=false;
 static bool IsColResetStart=false;
 static bool ColResetResult=false;
+static bool IsColResetAlreadyDone=false;
 
 typedef enum
 	{
@@ -26,9 +27,17 @@ void DisplayResetOK(void)
 	if(RSTType==Reset_ColumbGauge&&!IsColResetStart)	
 		{
 		ColResetResult=true;
-		LCD_ShowChinese(28,23,"正在重置库仑计....",WHITE,LGRAY,0);//正在重置
-		if(LogData.DischargeTime)ColResetResult=ResetRunTimeLogArea();; 
+		LCD_ShowHybridString(14,35,"正在重置库仑计....",WHITE,LGRAY,0);//正在重置
+		if(LogData.DischargeTime||LogData.ChargeTime||LogData.BalanceTime||LogData.SysMaxTemp!=-100)ColResetResult=ResetRunTimeLogArea(); 
+		else IsColResetAlreadyDone=true;
 		IsColResetStart=true;
+		return;
+		}
+	if(RSTType==Reset_ColumbGauge&&IsColResetAlreadyDone)
+		{
+		LCD_ShowHybridString(14,23,"当前库仑计数据为空!",YELLOW,LGRAY,0);
+		LCD_ShowHybridString(14,40,"   重置操作失败",RED,LGRAY,0);
+		IsResetRendered=true;
 		return;
 		}
 	if(RSTType==Reset_ColumbGauge&&!ColResetResult&&IsColResetStart)
@@ -67,6 +76,7 @@ void ResetColumData(void)
 	RSTType=Reset_ColumbGauge;
 	IsResetRendered=false;
 	IsColResetStart=false;
+	IsColResetAlreadyDone=false;
 	}
 
 const MenuConfigDef ResetColMenu=

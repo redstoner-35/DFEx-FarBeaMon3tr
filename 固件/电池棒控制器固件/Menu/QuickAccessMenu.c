@@ -79,6 +79,7 @@ void ReturnFromQuickAccMenu(void)
 	extern ChipStatDef CState;
 	bool IsNeedToReConfig=false;
 	bool IsNeedToClearOCF;
+	extern bool IsCPortConnected;
 	bool CurrentStorMode=StorageMode==StorageMode_OFF?false:true;
 	//进行临时充电操作的比对
 	if(TempChargeConfig!=GetTempChargeModeStatus())
@@ -123,6 +124,12 @@ void ReturnFromQuickAccMenu(void)
 	if(ClearOCFlag&&IsNeedToClearOCF)IP2366_ClearOCFlag();
 	//打开仅放电模式，直接导航到适配器模拟
 	if(IsEnterDischargeMode)SwitchingMenu(&AdapterEmuMenu);
+	//如果C口连接则弹出提示让用户重新插拔C口	
+	else if(IP2366_GetIfCPortConnected())
+		{
+		IsCPortConnected=true;
+		SwitchingMenu(&InfoUserRemoveCCableMenu);
+		}
 	//返回主菜单
 	else
 		{

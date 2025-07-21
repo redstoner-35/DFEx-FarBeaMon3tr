@@ -93,6 +93,7 @@ typedef struct
 	}MenuConfigDef;	
 	
 //²Ëµ¥entry
+extern const MenuConfigDef InfoUserRemoveCCableMenu;
 extern const MenuConfigDef SafeAlmMenu;
 extern const MenuConfigDef MainMenu;
 extern const MenuConfigDef SetMainMenu;

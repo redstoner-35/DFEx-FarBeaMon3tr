@@ -150,7 +150,7 @@ void AboutMenuRender(void)
 	LCD_ShowChinese(133,40,"设计",WHITE,LGRAY,0);	
 	LCD_ShowChinese(7,61,"固件版本",WHITE,LGRAY,0);
 	LCD_ShowChar(57,61,':',WHITE,LGRAY,12,0);
-	LCD_ShowString(64,61,"V1.3 Build7",CYAN,LGRAY,12,0);	
+	LCD_ShowString(64,61,"V1.3 Build8",CYAN,LGRAY,12,0);	
 	AboutIsRendered=true;
 	}
 

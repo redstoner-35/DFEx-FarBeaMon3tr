@@ -28,7 +28,8 @@ void UpdataRunTimeLog(void)
 	{
 	char i;
 	float Cap;
-	extern bool IsUpdateCDUI;
+	extern bool IsUpdateCDUI,Is2368Telem;
+	extern float VTypec,ITypeC;
 	BatteryStateDef State=Batt_StandBy;
 	//获取Type-C状态
 	IP2366_GetChargerState(&State);
@@ -47,6 +48,7 @@ void UpdataRunTimeLog(void)
 	//进行平均值计算
 	else if(SampleCount>0)
 		{
+		Is2368Telem=true;          //触发C端采样
 		BATSample[0]+=ADCO.Vbatt;
 		BATSample[1]+=ADCO.Ibatt;
 		SampleCount--;
@@ -59,6 +61,11 @@ void UpdataRunTimeLog(void)
 		LogHeader.IsRunlogHasContent=true;
 		//进行平均计算
 		for(i=0;i<2;i++)BATSample[i]/=(float)8;
+		//获取Type-C最高功率和电流
+		Cap=fabs(VTypec*ITypeC);
+		if(LogData.MaximumTypeCPower<Cap)LogData.MaximumTypeCPower=Cap;
+		Cap=fabs(ITypeC);
+		if(LogData.MaximumTypeCCurrent<Cap)LogData.MaximumTypeCCurrent=Cap;
 		//累计充放电时间
 		if(State==Batt_discharging)LogData.DischargeTime++;
 		else LogData.ChargeTime++;		 
@@ -251,6 +258,26 @@ static int FindLatestEntryViaIncCode(signed char *CodeIN)
 	}
 #pragma pop
 
+	
+/*******************************************
+计算Log区域的已用空间
+********************************************/		
+int CalcCurrentAvailableLogCount(void)
+	{
+	
+	int i;
+	RunLogDataUnionDef Data;
+	for(i=0;i<RunTimeLoggerDepth;i++)
+		{
+		WatchDog_Feed();
+		Data.DataSec.IsRunlogHasContent=false;
+		if(!LoadRunLogDataFromROM(&Data,i))return -1;
+	  if(!Data.DataSec.IsRunlogHasContent)break;
+		}
+	if(i>0)i++;
+	return RunTimeLogBase+(i*sizeof(RunLogDataUnionDef));
+	}
+	
 /*******************************************
 将日志内的数据储存区进行CRC32数值的计算
 输入：遥测数据的union和日志数据的结构体
@@ -317,6 +344,8 @@ void LogDataSectionInit(RunLogDataUnionDef *DIN)
 	DIN->DataSec.Data.Content.TotalDischargeAh=0; //总计放出的Ah数
 	DIN->DataSec.Data.Content.TotalDischargeWh=0; //总计放出的Wh数
 	DIN->DataSec.Data.Content.SysMaxTemp=-100; //系统最高温度
+	DIN->DataSec.Data.Content.MaximumTypeCPower=-100;
+	DIN->DataSec.Data.Content.MaximumTypeCCurrent=-100; //采集数据
 	DIN->DataSec.Data.Content.MaximumBattCurrent=0; //电池端最大电流 
 	}
 /*******************************************
@@ -350,24 +379,36 @@ bool ResetRunTimeLogArea(void)
 ********************************************/
 void RunLogModule_POR(void)
  {
- int i,j;
+ int i,j,CheckState=55;
  RunLogDataUnionDef Data;
  unsigned int CRCResult;
  bool IsLogEmpty,IsLogFault=false;
  signed char SelfIncBuf[RunTimeLoggerDepth];
  //首先我们需要把整个log区域遍历一遍
- ShowPostInfo(55,"检查数据库\0","20",Msg_Statu);
+ ShowPostInfo(CheckState,"检查数据库\0","20",Msg_Statu);
  for(i=0;i<RunTimeLoggerDepth;i++)
 	 {
 	 //显示加载进度
-	 if(i==28)ShowPostInfo(57,"检查进度25%","21",Msg_Statu);	
-   else if(i==55)ShowPostInfo(62,"检查进度50%","22",Msg_Statu);		
-   else if(i==83)ShowPostInfo(65,"检查进度75%","23",Msg_Statu);
+	 if(i==28)
+			{
+			CheckState=57;
+			ShowPostInfo(CheckState,"检查进度25%","21",Msg_Statu);	
+			}
+   else if(i==55)
+			{
+			CheckState=61;
+			ShowPostInfo(CheckState,"检查进度50%","22",Msg_Statu);		
+			}
+   else if(i==83)
+			{
+			CheckState=63;
+			ShowPostInfo(CheckState,"检查进度75%","23",Msg_Statu);
+			}
    if(i==28||i==55||i==83)IsLogFault=false;	 
 	 //从ROM内读取数据
 	 if(!LoadRunLogDataFromROM(&Data,i))
       {
-	   	ShowPostInfo(55,"存储器读取异常\0","E5",Msg_Fault);
+	   	ShowPostInfo(CheckState,"存储器读取异常\0","E5",Msg_Fault);
 			SelfTestErrorHandler();
 	    }
 	 //检查log entry(如果发生损坏，则使用默认配置去重写)
@@ -377,14 +418,14 @@ void RunLogModule_POR(void)
 		 SelfIncBuf[i]=0;//该处因为已经损坏，读取到的自增码等于0
 		 if(!IsLogFault)
 			 {
-			 ShowPostInfo(55,"检测到损坏数据\0","2E",Msg_Warning);
+			 ShowPostInfo(CheckState,"检测到损坏数据\0","2E",Msg_Warning);
 			 delay_Second(1);
 			 }
 		 LogDataSectionInit(&Data);
 		 SaveRunLogDataToROM(&Data,i);
 		 if(!IsLogFault)
 			 {
-			 ShowPostInfo(55,"已进行自动修正\0","2E",Msg_Warning);
+			 ShowPostInfo(CheckState,"已进行自动修正\0","2E",Msg_Warning);
 			 delay_Second(1);
 			 IsLogFault=true;
 			 }

@@ -17,6 +17,8 @@ typedef struct
 	float TotalDischargeWh; //总计放出的Wh数
 	float SysMaxTemp; //系统最高温度
 	float MaximumBattCurrent; //电池端最大电流
+	float MaximumTypeCPower; //最大Type-C功率
+	float MaximumTypeCCurrent; //最大Type-C电流
 	//是否触发保护系统
 	bool IsEnablePunish; //是否触发保护机制
 	}LogContentDef;
@@ -54,7 +56,7 @@ typedef struct
  }RunLogEntryStrDef;	//运行日志结构体的定义
  
 //定义
-#define RunTimeLoggerDepth 125  //运行日志的深度
+#define RunTimeLoggerDepth 112  //运行日志的深度
 #define RunTimeLogBase CfgFileSize+sizeof(ChargeTestStorDef) //运行日志的起始位置
 #define RunTimeLogSize RunTimeLoggerDepth*sizeof(RunLogDataStrDef)  //运行日志的大小
 #define RunTimeLogKey "RLoG" //运行log的内容检查Key
@@ -65,6 +67,7 @@ typedef struct
 extern RunLogEntryStrDef RunLogEntry;
 
 //日志文件处理
+int CalcCurrentAvailableLogCount(void); //计算日志区域的已用存储空间
 bool ResetRunTimeLogArea(void); //复位日志区域
 void WriteRuntimeLogToROM(void); //写日志
 void ForceWriteRuntimelog(void); //强制写日志
