@@ -274,7 +274,8 @@ int CalcCurrentAvailableLogCount(void)
 		if(!LoadRunLogDataFromROM(&Data,i))return -1;
 	  if(!Data.DataSec.IsRunlogHasContent)break;
 		}
-	if(i>0)i++;
+	if(i>1)i--;     //其余情况固定-1
+	else if(!i)i=1; //统计的数量为0时固定=1
 	return RunTimeLogBase+(i*sizeof(RunLogDataUnionDef));
 	}
 	

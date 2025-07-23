@@ -51,7 +51,7 @@ static float Duty_Calc(int CurrentInput)
 	buf*=(float)0.0015; //uV转mV并根据1.5mA per LSB换算得到实际的电流值
 	buf*=CurrentSenseOpAmpGain; //将检流电阻处的目标电压(mV)乘以检流放大器的增益得到运放端的整定值
 	buf/=Data.MCUVDD*(float)1000; //计算出目标DAC输出电压和PWMDAC缓冲器供电电压(MCUVDD)之间的比值
-	buf*=101; //转换为百分比(乘以102补偿掉系统的换算误差)
+	buf*=102; //转换为百分比(乘以102补偿掉系统的换算误差)
 	//结果输出	
 	return buf;
 	}

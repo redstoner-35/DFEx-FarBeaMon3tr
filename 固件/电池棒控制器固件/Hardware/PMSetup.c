@@ -2,6 +2,11 @@
 #include "delay.h"
 #include "Pindefs.h"
 #include "GUI.h"
+#include "Config.h"
+#include "IP2366_REG.h"
+#include "INA226.h"
+#include "PCA9536.h"
+#include "LCD_Init.h"
 #include "BalanceMgmt.h"
 
 //电源管理引脚自动定义
@@ -90,6 +95,17 @@ void ShutSysOFF(void)
 	ClearScreen();
 	LCD_DeInit(); //除能LCD
 	Balance_ForceDiasble(); //发送命令关闭均衡系统
+	//关闭LCD
+	if(CfgData.SleepCfg!=System_Sleep_Deep)
+		{
+		PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_IN);
+		PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_IN);
+		PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_IN);  //把所有没用的IO设置为input tri-state
+		INA226_EnterPowerDownMode();
+		LCD_DisableBlackLight(); //关闭LCD背光开始休眠	
+		}	
+	else IP2366_ForceEnterDeepSleep(); //给IP2366强制放发送指令
+	//使系统掉电
 	GPIO_ClearOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为0,关闭LDO电源强迫单片机掉电
 	delay_ms(300);
 	NVIC_SystemReset();
@@ -105,10 +121,16 @@ void KickIP2366ToWakeUp(void)
 	//如果INT=0说明2366在睡觉
 	if(GPIO_ReadInBit(IP2366_INT_IOG,IP2366_INT_IOP)==RESET)do
 		{
-		GPIO_SetOutBits(IP2366_EN_IOG,IP2366_EN_IOP); 
-	  delay_ms(250);
-    GPIO_ClearOutBits(IP2366_EN_IOG,IP2366_EN_IOP);	//令2366-EN=1，尝试监测
-		delay_ms(200);	
+		
+		GPIO_SetOutBits(IP2366_EN_IOG,IP2366_EN_IOP); //令2366-EN=1
+		delay_ms(50);
+		GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_OUT);
+		GPIO_SetOutBits(IP2366_INT_IOG,IP2366_INT_IOP); 									//同时设置IP2366的INT为1尝试踢醒在非深度睡眠状态的2366
+	  delay_ms(200);
+    GPIO_ClearOutBits(IP2366_EN_IOG,IP2366_EN_IOP);										//令2366-EN=0，发出一个短脉冲模拟EN按键按下
+		GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_IN);
+		GPIO_ClearOutBits(IP2366_INT_IOG,IP2366_INT_IOP);                  //令INT=0释放2366 INT然后准备检测是否唤醒成功
+		delay_ms(200);		
 		if(GPIO_ReadInBit(IP2366_INT_IOG,IP2366_INT_IOP)==SET)break; //唤醒成功
 		//尝试失败，提示唤醒剩余次数
 		retry--;
@@ -146,9 +168,22 @@ void PowermanagementSleepControl(void)
 	//开始检测
 	GPIO_InputConfig(IP2366_INT_IOG,IP2366_INT_IOP,ENABLE); 
 	GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_IN);//设置为高阻输入使2366休眠
+	//非完全掉电睡眠模式，系统关闭INA226和PCA9536降低VCCIO功耗，令系统进入睡眠
+	if(CfgData.SleepCfg!=System_Sleep_Deep)
+		{
+		INA226_EnterPowerDownMode();
+		ClearScreen();
+		PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_IN);
+		PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_IN);
+		PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_IN);  //把所有没用的IO设置为input tri-state
+		LCD_DisableBlackLight(); //关闭LCD背光开始休眠
+		GPIO_ClearOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为0,关闭LDO电源强迫单片机掉电
+		while(1);		
+		}
 	if(GPIO_ReadInBit(IP2366_INT_IOG,IP2366_INT_IOP)==SET)
 		{
-		SleepTimer=10;
+		SleepTimer=4;
+		if(CfgData.SleepCfg==System_Sleep_Deep)IP2366_ForceEnterDeepSleep(); //给IP2366强制放发送指令
 		return; //如果IP2366未进入睡眠则继续等待
 		}
 	//立即释放IO
@@ -156,5 +191,3 @@ void PowermanagementSleepControl(void)
 	GPIO_ClearOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为0,关闭LDO电源强迫单片机掉电
 	while(1);		
 	}
-	
-	

@@ -108,6 +108,18 @@ void LCD_DeInit(void)
 	}	
 	
 /******************************************************************************
+      函数说明：永久性关闭LCD的背光并复位LCD
+      入口数据：无
+      返回值：  无
+******************************************************************************/		
+void LCD_DisableBlackLight(void)
+	{
+	GPIO_DirectionConfig(LCD_BLEN_IOG,LCD_BLEN_IOP,GPIO_DIR_IN);//配置为输入	
+	GPIO_PullResistorConfig(LCD_BLEN_IOG,LCD_BLEN_IOP,GPIO_PR_DISABLE); //关闭所有上下拉电阻，让背光IO浮空
+	GPIO_ClearOutBits(LCD_RST_IOG,LCD_RST_IOP); //令RST=0，屏幕除能
+	}
+	
+/******************************************************************************
       函数说明：LCD写入数据(16bit字长)
       入口数据：dat 写入的数据
       返回值：  无

@@ -3,6 +3,17 @@
 #include "delay.h"
 #include "I2CAddr.h"
 
+
+//令INA226进入低功率Power-down模式
+bool INA226_EnterPowerDownMode(void)
+ {
+ unsigned int ConfREG=0;
+ //读取Config寄存器并mask掉结果
+ if(!PMBUS_WordReadWrite(true,false,&ConfREG,INA226ADDR,0x0))return false;
+ ConfREG&=0xFFF8; //令MODE[2:0]=000，系统配置为Power-Down模式 
+ return PMBUS_WordReadWrite(true,true,&ConfREG,INA226ADDR,0x0);//写入
+ }
+
 //初始化INA226
 //返回枚举类型
 INA226InitStatDef INA226_INIT(INAinitStrdef * INAConf)

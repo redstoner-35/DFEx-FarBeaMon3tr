@@ -14,6 +14,7 @@
 #include "Strobe.h"
 #include "TurboICCMAX.h"
 #include "SetupMenu.h"
+#include "VersionCheck.h"
 
 //挡位结构体
 code ModeStrDef ModeSettings[ModeTotalDepth]=
@@ -270,9 +271,10 @@ bit IsMainMemEnabled; //是否开启主挡位记忆
 bit IsSpecMemEnabled; //是否开启特殊挡位记忆
 bit IsStrobePoweredFromOFF; //是否为关机模式下进入到一键爆闪
 bit IsPowerModeEnabled; //0=ECO MODE 1=POWER MODE	
+bit IsRampFault; //无极调光故障，当该bit置起后无极调光将会强制禁用	
 	
 //全局软件计时变量
-xdata unsigned char HoldChangeGearTIM; //挡位模式下长按换挡
+xdata unsigned char HoldChangeGearTIM=0; //挡位模式下长按换挡
 xdata unsigned char DisplayLockedTIM; //锁定和战术模式进入退出显示
 
 //内部变量和标志位
@@ -292,23 +294,48 @@ int QuerySystemFullScaleCurrent(void)
   return QueryCurrentGearILED();	
 	}	
 	
+//输入指定的Index，从index里面找到目标模式结构体并返回指针
+ModeStrDef *FindTargetMode(ModeIdxDef Mode,bool *IsResultOK)
+	{
+	unsigned char i;
+	*IsResultOK=false;
+	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode)
+		{
+		*IsResultOK=true;
+		break;
+		}
+	//返回对应的index
+	return &ModeSettings[i];
+	}
+	
 //初始化模式状态机
 void ModeFSMInit(void)
 {
-	unsigned char i;
+	bool Result;
 	//初始化无极调光
 	SysCfg.RampLimitReachDisplayTIM=0;
   ReadSysConfig(); //从EEPROM内读取无极调光配置
-  for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp) //遍历挡位设置结构体寻找无极调光的挡位并读取配置
+	
+	CurrentMode=FindTargetMode(Mode_Ramp,&Result);//遍历挡位设置结构体寻找无极调光的挡位并读取配置
+	if(Result)
 		{
-		SysCfg.RampBattThres=ModeSettings[i].LowVoltThres; //低压检测上限恢复
-		SysCfg.RampCurrentLimit=ModeSettings[i].Current; //找到挡位数据中无极调光的挡位，电流上限恢复
-		//读取数据结束后，检查读入的数据是否合法，不合法就直接修正
-		if(SysCfg.RampCurrent<ModeSettings[i].MinCurrent)SysCfg.RampCurrent=ModeSettings[i].MinCurrent;
-		if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;
+		SysCfg.RampBattThres=CurrentMode->LowVoltThres; //低压检测上限恢复
+		SysCfg.RampCurrentLimit=CurrentMode->Current; //找到挡位数据中无极调光的挡位，电流上限恢复
+		if(SysCfg.RampCurrent<CurrentMode->MinCurrent)SysCfg.RampCurrent=CurrentMode->MinCurrent;
+		if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;		//读取数据结束后，检查读入的数据是否合法，不合法就直接修正
+		//无级调光挡位正常
+		IsRampFault=0;	
+		}
+	//无法找到无极调光数值，禁止无极调光功能
+	else 
+		{
+		IsRampEnabled=0;
+		IsRampFault=1;	
+		LEDMode=LED_RedBlinkFifth; //触发LED提示
 		}
 	//复位变量和一部分模块
-	IsSwitchingKeyStillHold=0;
+	IsSlowFading=0;
+	IsRampKeyPressed=0;
 	SetupFSMState=SetupMenu_InACT;
 	ResetStrobeModule(); 											//复位爆闪控制器
 	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器
@@ -324,7 +351,7 @@ void ModeFSMInit(void)
 void ModeFSMTIMHandler(void)
 {
 	//无极调光相关的定时器
-	if(SysCfg.CfgSavedTIM)SysCfg.CfgSavedTIM--;
+	if(IsLargerThanOneU8(SysCfg.CfgSavedTIM))SysCfg.CfgSavedTIM--;
 	if(SysCfg.RampLimitReachDisplayTIM)
 		{
 		SysCfg.RampLimitReachDisplayTIM--;
@@ -337,28 +364,25 @@ void ModeFSMTIMHandler(void)
 //挡位跳转
 void SwitchToGear(ModeIdxDef TargetMode)
 	{
-	unsigned char i;
-	bool IsLastModeNeedStepDown;
+	bool IsLastModeNeedStepDown,Result;
+	ModeStrDef *ModeBuf;
 	//当前挡位已经是目标值，不执行
+	if(IsRampFault&&TargetMode==Mode_Ramp)return;  //无极调光异常，禁止换到无极调光模式
 	if(TargetMode==CurrentMode->ModeIdx)return;
 	//记录换档前的结果	
 	IsLastModeNeedStepDown=CurrentMode->IsNeedStepDown; //存下是否需要降档
 	//开始寻找
-	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==TargetMode)
-		{
-		//复位特殊功能挡位至初始状态
-    ResetSOSModule();		//复位整个SOS模块
-		BeaconFSM_Reset(); //复位整个信标模块
-		
-		//找到匹配index，将对应的结构体基地址赋值给指针
-		CurrentMode=&ModeSettings[i]; 		
-		CalcTurboILIM(); 	//重新计算极亮电流限制			
-		
-    //如果新老挡位都是常亮挡，则重新设置PI环避免电流过调
-		if(TargetMode>1&&TargetMode<11&&IsLastModeNeedStepDown)RecalcPILoop(Current); 
-		//已找到目标挡位，退出循环
-		break;
-		}
+	ModeBuf=FindTargetMode(TargetMode,&Result);
+	if(!Result)return;                    //找不到对应的挡位，退出
+	//应用挡位结果并重新计算极亮电流	
+	CurrentMode=ModeBuf;	
+	CalcTurboILIM();
+	//复位特殊功能挡位至初始状态
+	ResetSOSModule();						//复位整个SOS模块
+	BeaconFSM_Reset(); 					//复位整个信标模块	
+			
+	//如果新老挡位都是常亮挡，则重新设置PI环避免电流过调
+	if(TargetMode>1&&TargetMode<11&&IsLastModeNeedStepDown)RecalcPILoop(Current); 	
 	}
 	
 //特殊功能挡位独立记忆的处理函数
@@ -392,8 +416,19 @@ void ReturnToOFFState(void)
 			IsSlowFading=1;	//非战术模式的常亮挡位触发渐暗特效
 		}
   //执行挡位记忆并跳回到关机状态
-	if(CurrentMode->IsModeHasMemory&&IsMainMemEnabled)LastMode=CurrentMode->ModeIdx;
-	SwitchToGear(Mode_OFF); //强制跳回到关机挡位
+	if(IsMainMemEnabled) //挡位记忆开启
+		{
+		//该挡位有记忆，存下关机前的状态
+		if(CurrentMode->IsModeHasMemory)LastMode=CurrentMode->ModeIdx;
+		}
+	//无级调光模式下关闭挡位记忆，强制恢复到初始电流
+	else if(IsRampEnabled)
+		{
+		LoadMinimumRampCurrentToRAM();
+		SaveSysConfig(0);                //保存一遍配置，确保写入到EEPROM里面的数据一定是最低电流
+		}
+	//执行关机处理，强制跳回到关机挡位
+	SwitchToGear(Mode_OFF); 
 	}	
 	
 //长按换挡的间隔命令生成
@@ -472,10 +507,10 @@ static void RampAdjHandler(void)
 		}
 	//进行数据保存的判断
 	if(IsPress)SysCfg.CfgSavedTIM=32; //按键按下说明正在调整，复位计时器
-	else if(!SysCfg.CfgSavedTIM)
+	else if(SysCfg.CfgSavedTIM==1)
 		{
 		SysCfg.CfgSavedTIM--;
-		SaveSysConfig(0);  //一段时间内没操作说明已经调节完毕，保存数据
+		if(IsMainMemEnabled)SaveSysConfig(0);  //一段时间内没操作说明已经调节完毕，保存数据
 		}
 	}
 //进行关机和开机状态执行N击+长按事件处理的函数
@@ -489,14 +524,7 @@ static void ProcessNClickAndHoldHandler(void)
 			SwitchToGear(Mode_1Lumen);
 			break; 
 		case 2:TriggerVshowDisplay();break; //双击+长按查询电量
-		case 3: //三击+长按查询温度
-			TriggerTShowDisplay();
-			break;
-	  case 4:
-		  //开机状态下除了月光和特殊功能，以及极亮的任意挡位四击+长按直接进入月光
-		  if(CurrentMode->ModeIdx>9)break;
-   		if(CurrentMode->ModeIdx&0xFC)EnterMoonProcess();
-			break;
+		case 3:TriggerTShowDisplay();break;//三击+长按查询温度
 		//其余情况什么都不做
 		default:break;			
 		}
@@ -558,13 +586,14 @@ void ModeSwitchFSM(void)
 	ClickCount=getSideKeyShortPressCount();	//读取按键处理函数传过来的参数
 		
 	//挡位记忆参数检查
+	if(IsRampFault)IsRampEnabled=0;  //无极调光数据故障，禁止无极调光功能
 	if(LastSpecialMode<11||LastSpecialMode>13)LastSpecialMode=Mode_Strobe;        //特殊功能
 	if(LastMode<2||LastMode>13)LastMode=Mode_ExtremelyLow;									//全局常规记忆
 		
 	//处理FSM的特殊逻辑部分		
   ModeBeforeFSMSwitch=CurrentMode->ModeIdx;		 //存下进入之前的挡位
 	IsHalfBrightness=0; //按键灯默认全亮
-	switch(ModeBeforeFSMSwitch)	
+	if(VChkFSMState==VersionCheck_InAct)switch(ModeBeforeFSMSwitch)	
 		{
 		//关机状态
 		case Mode_OFF:		  
@@ -582,6 +611,10 @@ void ModeSwitchFSM(void)
 				case 7:
 					//7击进入设置菜单
 					TriggerSetupMenuDisplay();
+				  break;
+				case 8:
+					//8击触发版本查询
+					VersionCheck_Trigger();
 				  break;
 				//其余情况什么都不做
         default:break;				
@@ -611,7 +644,7 @@ void ModeSwitchFSM(void)
 					{
 					PowerToNormalMode(Mode_ExtremelyLow); //开机到极低亮模式
 					if(CurrentMode->ModeIdx==Mode_Moon)break;//换挡之后无法成功离开月光模式，不进行下面的复位操作
-					if(IsRampEnabled)RestoreToMinimumSysCurrent(); //如果是无极调光则恢复到最低电流
+					if(IsRampEnabled)LoadMinimumRampCurrentToRAM(); //如果是无极调光则恢复到最低电流
 					HoldChangeGearTIM|=0x40; //禁止换挡系统工作
 					}		    	
 		//1流明挡位						
@@ -649,11 +682,16 @@ void ModeSwitchFSM(void)
 		}
 		
 	//处理FSM中的表驱动部分
-	if(ModeBeforeFSMSwitch==CurrentMode->ModeIdx)ModeSwitchFSMTableDriver(ClickCount); //如果状态机FSM内有操作则跳过表驱动，否则执行表驱动
+	if(ModeBeforeFSMSwitch==CurrentMode->ModeIdx&&VChkFSMState==VersionCheck_InAct)
+		{
+		//如果状态机FSM内有操作或者当前处于版本检查状态则跳过表驱动，否则执行表驱动
+		ModeSwitchFSMTableDriver(ClickCount); 
+		}
 	ClearShortPressEvent(); //表驱动事项响应完毕，清除按键状态
 
   //应用输出电流
-	if(DisplayLockedTIM||IsDisplayLocked)Current=CalcIREFValue(50); //用户进入或者退出锁定，用50mA短暂点亮提示一下
+	if(VChkFSMState!=VersionCheck_InAct)Current=VersionCheckFSM()?CalcIREFValue(50):-1;
+	else if(DisplayLockedTIM||IsDisplayLocked)Current=CalcIREFValue(50); //用户进入或者退出锁定，用50mA短暂点亮提示一下
 	else switch(CurrentMode->ModeIdx)	
 		{ 
 		//极亮模式

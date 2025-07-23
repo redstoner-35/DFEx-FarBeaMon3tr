@@ -57,6 +57,13 @@ void UpdateIfSysCanOFF(void)
 //关闭系统
 void ManuallyShutSystemOFF(void)
 	{
+	//配置发生更改，重新初始化
+	if(!CheckIfConfigIsSame())
+		{
+		IP2366_ReInitBasedOnConfig(); //设置芯片配置
+		IP2366_SetIBatLIMBaseOnSysCfg(); //设置动态限流
+		}
+	//关机之前首先保存配置
 	WriteConfiguration(&CfgUnion,false);
 	IsEnableAdvancedMode=false;
 	Balance_ForceDiasble();
@@ -94,6 +101,12 @@ void EnterLVSet(void)
 	SwitchingMenu(&LVSetMenu);
 	}		
 
+//进入休眠配置
+void EnterSleepCfg(void)
+	{
+	SwitchingMenu(&SleepCfgMenu);
+	}	
+	
 //进入放电系统配置
 void EnterDisMgmt(void)
 	{
@@ -203,7 +216,7 @@ void EnterAutoExtBalMenu(void)
 	}	
 	
 //菜单项参数
-const SetupMenuSelDef MainSetup[25]=
+const SetupMenuSelDef MainSetup[26]=
 	{
 		{
 		"系统安全设置",
@@ -234,6 +247,12 @@ const SetupMenuSelDef MainSetup[25]=
 		false,		
 		&AlwaysTrue,
 		&EnterStorageModePref
+		},
+		{
+		"系统休眠配置",
+		false,
+		&AlwaysTrue,
+		&EnterSleepCfg
 		},
 		{
 		"过热保护温度设置",

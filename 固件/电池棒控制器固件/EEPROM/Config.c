@@ -70,6 +70,7 @@ void LoadDefaultConfig(CfgUnionDef *IN)
   IN->ROMImage.Data.Data.TypeCVoltageCal=1000;
 	IN->ROMImage.Data.Data.TypeCAmpereCal=1000;
 	//显示方向设置
+	IN->ROMImage.Data.Data.SleepCfg=System_Sleep_Deep; //默认开启深度睡眠模式
   IN->ROMImage.Data.Data.EnableFastBoot=true;
 	IN->ROMImage.Data.Data.EnableLargeMenu=true;
 	IN->ROMImage.Data.Data.DisplayDir=LCDDisplay_Hori_Invert;

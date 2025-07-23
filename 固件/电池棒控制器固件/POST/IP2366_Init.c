@@ -258,6 +258,7 @@ void IP2366_ReInitBasedOnConfig(void)
 		delay_ms(100);
 		}
 	//设置PPS和fixed PDO参数
+	IP2366_SetDeepSleepModeEnabled(CfgData.SleepCfg==System_Sleep_Deep?true:false);
 	IP2366_SetFixedPDO(&CfgData.FixedPDOCfg);
 	IP2366_SetPPSCurrent(&CfgData.PPSConfig);
   //设置OCP和清除OC Flag		
@@ -333,6 +334,19 @@ void IP2366_PostInit(void)
 		delay_Second(1);
 		ShowPostInfo(78,"电池是否正确安装?","EB",Msg_Warning);
 		delay_Second(1);
+		}
+	//设置芯片睡眠功能
+	if(!IP2366_SetDeepSleepModeEnabled(CfgData.SleepCfg==System_Sleep_Deep?true:false))
+		{
+		ShowPostInfo(78,"设置系统模式失败\0","EF",Msg_Fault);
+		SelfTestErrorHandler();
+		}
+	else if(CfgData.SleepCfg!=System_Sleep_Deep)
+		{
+		ShowPostInfo(78,"即插即用模式已开启\0","70",Msg_INFO);
+		delay_ms(400);
+		ShowPostInfo(78,"待机功耗将增大\0","70",Msg_INFO);
+		delay_ms(400);
 		}
 	//检测固件版本
 	ShowPostInfo(79,"读取芯片版本\0","11",Msg_Statu);

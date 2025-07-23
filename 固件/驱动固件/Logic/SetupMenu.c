@@ -1,6 +1,7 @@
 #include "SideKey.h"
 #include "ModeControl.h"
 #include "delay.h"
+#include "Strobe.h"
 #include "LEDMgmt.h"
 #include "SetupMenu.h"
 #include "LocateLED.h"
@@ -27,7 +28,9 @@ static void KeyAddFluxProcess(void)
 	else 
 		{
 		//Index进行自增，自增后立即使定时器变为0开始下一轮显示,显示最新的数值
-		SetupMenuIdx=(SetupMenuIdx+1)%7;
+		if(IsRampFault&&SetupMenuIdx==1)SetupMenuIdx++; 										//无极调光故障，设置菜单在设置项1的时候额外加1调光无极调光设置
+		SetupMenuIdx++;
+		SetupMenuIdx%=TotalSetupNum;
 		CommonSysFSMTIM=0;
 		SetupFSMState=SetupMenu_WaitShowContent;
  		}
@@ -90,7 +93,7 @@ LEDStateDef SetupMenuFSM(void)
 				//制造绿色闪烁(最后一项是黄色)提示当前选的菜单项
 				else if((CommonSysFSMTIM%4)&0x7E)
 					{
-					if(SetupMenuIdx==6)return LED_Amber;
+					if(SetupMenuIdx==(TotalSetupNum-1))return LED_Amber;
 					else return LED_Green;
 					}
 				break;
@@ -105,7 +108,7 @@ LEDStateDef SetupMenuFSM(void)
 	  case SetupMenu_SubmitContent:
 			  //等待用户松开按键
 				if(CommonSysFSMTIM&0xF8)return LED_GreenBlinkThird;
-				if(CommonSysFSMTIM||(SetupMenuIdx!=6&&getSideKeyNClickAndHoldEvent()==1))break;
+				if(CommonSysFSMTIM||(SetupMenuIdx!=(TotalSetupNum-1)&&getSideKeyNClickAndHoldEvent()==1))break;
         //非有源夜光模式，启动对应的Edit
 			  if(IsLargerThanOneU8(SetupMenuIdx))
 					{
@@ -126,9 +129,13 @@ LEDStateDef SetupMenuFSM(void)
 						case 5:
 							//菜单项6：是否开启特殊挡位记忆
 							BitBuf=IsPowerModeEnabled;
-							break;
-						//菜单项7：恢复出厂设置
-						case 6:ResetSysConfigToDefault();	
+							break;			
+						case 6:
+							//菜单项7：是否开启随机变频爆闪
+						  BitBuf=EnableRandomStrobe;
+						  break;
+						//菜单项8：恢复出厂设置
+						case 7:ResetSysConfigToDefault();	
 						}
 					CommonSysFSMTIM=20;
 					SetupTimedOutTIM=50;
@@ -157,6 +164,7 @@ LEDStateDef SetupMenuFSM(void)
 						case 3:IsMainMemEnabled=BitBuf;break; 		//菜单项3：是否开启主挡位记忆
 						case 4:IsSpecMemEnabled=BitBuf;break;			//菜单项4：是否开启特殊挡位记忆
 						case 5:IsPowerModeEnabled=BitBuf;break;		//菜单项5：POWER-ECO模式
+						case 6:EnableRandomStrobe=BitBuf;break;		//菜单项6：开启随机变频爆闪
 						}
 					//保存数据并提示
 					DisplayLockedTIM=4; //锁定指示闪一下

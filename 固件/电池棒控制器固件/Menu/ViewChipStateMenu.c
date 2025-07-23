@@ -84,6 +84,7 @@ static bool ShowStorageState(void)
 	//显示已用容量
 	Capacity=UsedSpace;
 	if(!CTestData.ROMImage.Data.Data.IsDataValid)Capacity-=sizeof(ChargeTestStorDef); //测容数据无效时减去测容数据的结果
+	if(Capacity>(MaxByteRange+1))Capacity=MaxByteRange+1; //限幅，禁止容量数据大于EEPROM已有存储数据
 	if(Result)LCD_ShowChinese(131,49,"未知",WHITE,LGRAY,0);	
 	else if(Capacity<10000)
 		{

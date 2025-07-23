@@ -2,6 +2,7 @@
 #include "cms8s6990.h"
 #include "stdbool.h"
 #include "SysConfig.h"
+#include "Strobe.h"
 #include "Flash.h"
 #include "SideKey.h"
 #include "SpecialMode.h"
@@ -62,10 +63,11 @@ static void PrepareFactoryDefaultCfg(void)
 	SysMode=Operation_Normal; //默认处于解锁模式
 	SysCfg.LocatorCfg=Locator_Green; //默认是绿灯亮
 	SysCfg.FadingCfg=Fading_OFF; //关闭电流拖尾
-	RestoreToMinimumSysCurrent();
+	LoadMinimumRampCurrentToRAM();
 	IsMainMemEnabled=1;
 	IsSpecMemEnabled=0; //开启正常挡位记忆，关闭特殊挡位记忆
 	IsRampEnabled=0; //默认为挡位模式
+	EnableRandomStrobe=1; //开启随机变频爆闪
 	IsPowerModeEnabled=0; //默认为ECO模式
 	}	
 	
@@ -126,10 +128,12 @@ void ReadSysConfig(void)
 		IsMainMemEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsEnableMainMemory_MSK?1:0;
 		IsSpecMemEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsEnableSpecMemory_MSK?1:0;
 		IsRampEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsRampEnabled_MSK?1:0;
+		EnableRandomStrobe=ROMData.Data.SysConfig.Data.BitfieldMem1&StrobeMode_MSK?1:0;
 		SysMode=ROMData.Data.SysConfig.Data.BitfieldMem1&IsLocked_MSK?Operation_Locked:Operation_Normal;
 		
 		SysCfg.LocatorCfg=ROMData.Data.SysConfig.Data.LocatorCfg; 
-		SysCfg.RampCurrent=ROMData.Data.SysConfig.Data.SysCurrent;
+		if(!IsMainMemEnabled)LoadMinimumRampCurrentToRAM();             //无记忆模式每次都读取最低电流
+		else SysCfg.RampCurrent=ROMData.Data.SysConfig.Data.RampCurrent;
 		SysCfg.FadingCfg=ROMData.Data.SysConfig.Data.FadingCfg;      //加载其余系统设置
 		//存储当前的index值
 		CurrentCRC=ROMData.Data.CheckSum;
@@ -142,6 +146,7 @@ void ReadSysConfig(void)
 	else 
 		{
 		PrepareFactoryDefaultCfg(); 
+		SysMode=Operation_Locked; //首次重建数据跳转为锁定状态
 		SaveSysConfig(1); //重建数据后立即保存参数
 		ShowEPROMCorrupted(); //显示EEPROM损坏
 		}
@@ -150,12 +155,12 @@ void ReadSysConfig(void)
 	}
 
 //恢复到无极调光模式的最低电流
-void RestoreToMinimumSysCurrent(void)	
+void LoadMinimumRampCurrentToRAM(void)	
 	{
-	unsigned char i;
-	extern code ModeStrDef ModeSettings[ModeTotalDepth];
-	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode_Ramp)
-			SysCfg.RampCurrent=ModeSettings[i].MinCurrent; //找到挡位数据中无极调光的挡位
+	bool Result;
+	ModeStrDef *Mode=FindTargetMode(Mode_Ramp,&Result);
+	if(Result)SysCfg.RampCurrent=Mode->MinCurrent; //找到挡位数据中无极调光的挡位
+	else SysCfg.RampCurrent=200; //默认恢复为200mA
 	}
 
 //保存无极调光配置
@@ -172,11 +177,12 @@ void SaveSysConfig(bit IsForceSave)
 	if(IsMainMemEnabled)BFBuf|=IsEnableMainMemory_MSK;	//是否启用主挡位记忆
 	if(IsSpecMemEnabled)BFBuf|=IsEnableSpecMemory_MSK;    //是否启用特殊功能挡位记忆
 	if(IsPowerModeEnabled)BFBuf|=PowerECOMode_MSK;        //是否启用POWER模式
+	if(EnableRandomStrobe)BFBuf|=StrobeMode_MSK;          //是否启用随机变频爆闪	
 		
 	SavedData.Data.SysConfig.Data.BitfieldMem1=BFBuf;
 	SavedData.Data.SysConfig.Data.FadingCfg=SysCfg.FadingCfg;
 	SavedData.Data.SysConfig.Data.LocatorCfg=SysCfg.LocatorCfg;
-  SavedData.Data.SysConfig.Data.SysCurrent=SysCfg.RampCurrent;
+  SavedData.Data.SysConfig.Data.RampCurrent=SysCfg.RampCurrent;
 	SavedData.Data.CheckSum=PEC8Check(SavedData.Data.SysConfig.ByteBuf,sizeof(SysStorDef)); //计算CRC
 	//进行数据比对
 	if(!IsForceSave&&SavedData.Data.CheckSum==CurrentCRC)

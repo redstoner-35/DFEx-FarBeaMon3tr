@@ -27,6 +27,7 @@ static u16 PickColorBasedOnType(MessageTypeDef Type)
 	switch(Type)
 		{
 		case Msg_POSTOK:return GREEN;
+		case Msg_INFO:return ORANGE;
 		case Msg_Statu:return CYAN;
 		case Msg_Warning:return YELLOW;
 		case Msg_Fault:return RED;
@@ -40,7 +41,7 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 	int i;
 	float len;
 	//根据消息类型设定颜色
-	u16 Color=PickColorBasedOnType(Type);;
+	u16 Color=PickColorBasedOnType(Type);
 	//根据百分比计算进度条要到达的长度
 	len=((float)Present)/(float)100*(float)143;
 	i=(int)len;

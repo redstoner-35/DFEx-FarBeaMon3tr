@@ -33,6 +33,7 @@ void main()
 	ADC_Init(); //初始化ADC
 	PWM_Init(); //启动PWM定时器
 	LED_Init(); //初始化侧按LED
+	WaitBatteryVoltageReady(); //等待电池电压就绪
 	ModeFSMInit(); //初始化挡位状态机
   SideKeyInit(); //侧按初始化	
 	OutputChannel_TestRun(); //进行输出通道试运行

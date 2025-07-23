@@ -283,7 +283,7 @@ static void ResetBattAvg(void)
 //在启动时显示电池电压
 void DisplayVBattAtStart(bit IsPOR)
 	{
-	char i=10;
+	unsigned char i=10;
 	//初始化平均值缓存,复位标志位
 	ResetBattAvg();
   //复位电池电压状态和电池显示状态机
@@ -299,6 +299,25 @@ void DisplayVBattAtStart(bit IsPOR)
 	if(!IsPOR||CurrentMode->ModeIdx!=Mode_OFF)return;
 	BattShowTimer=18;
 	}
+
+//等待电池电压就绪的循环（这个循环目的是使驱动只有在接电池的时候才能正常启动）
+void WaitBatteryVoltageReady(void)
+	{
+	unsigned char i=255;
+	do
+		{
+		//10mS测量一次电池电压，当电池电压大于7.2V时退出并继续启动
+		delay_ms(10);
+		SystemTelemHandler();
+    if(Data.RawBattVolt>7.20)return;
+		}
+	while(--i);
+	//等待超时，亮红灯，锁死
+	IsHalfBrightness=0;
+	LEDMode=LED_Red; //LED模式配置为红色常亮
+	while(1)LEDControlHandler();
+	}	
+
 //电池电量显示延时的处理
 void BattDisplayTIM(void)
 	{

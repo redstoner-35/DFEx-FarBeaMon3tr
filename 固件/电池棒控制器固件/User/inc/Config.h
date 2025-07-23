@@ -33,6 +33,12 @@ typedef enum
 	Balance_AlwaysEnabled, //均衡永远开启
 	}BalanceModeDef;	
 	
+typedef enum
+	{
+	System_Sleep_Deep, //系统开启深度睡眠模式（最低待机功耗但是无法检测到纯受电设备的插入）
+	System_Sleep_Normal //系统关闭深度睡眠模式（待机功耗增加但是可以检测到纯受电设备的插入）
+	}SystemSleepStateDef;	
+	
 //系统配置
 typedef struct
 	{
@@ -57,6 +63,7 @@ typedef struct
 	//过热保护配置		
 	int OverHeatLockTemp; //过热保护时间
 	//GUI和显示配置
+  SystemSleepStateDef SleepCfg; //系统睡眠配置
 	bool EnableLargeMenu; //启用大菜单
 	bool EnableFastBoot; //启用快速启动
 	LCDDisplayDirDef DisplayDir;

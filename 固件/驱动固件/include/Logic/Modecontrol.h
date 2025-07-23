@@ -93,6 +93,7 @@ extern bit IsStrobePoweredFromOFF; //是否从关机状态直接一键爆闪
 extern bit IsMainMemEnabled; //是否开启主挡位记忆
 extern bit IsSpecMemEnabled; //是否开启特殊挡位记忆	
 extern bit IsPowerModeEnabled; //功率模式是否开启	
+extern bit IsRampFault; //无极调光故障，当该bit置起后无极调光将会强制禁用	
 	
 //特殊宏定义
 #define QueryCurrentGearILED() CurrentMode->Current //获取当前挡位的电流函数
@@ -104,6 +105,7 @@ extern bit IsPowerModeEnabled; //功率模式是否开启
 #define ModeTotalDepth 14 //系统一共有几个挡位			
 	
 //函数
+ModeStrDef *FindTargetMode(ModeIdxDef Mode,bool *IsResultOK);//输入指定的Index，从index里面找到目标模式结构体并返回指针
 void ModeFSMTIMHandler(void);//挡位状态机所需的软件定时器处理
 void ModeSwitchFSM();//挡位状态机
 int QuerySystemFullScaleCurrent(void);	//获取系统挡位在没有任何外部影响情况下的全部电流

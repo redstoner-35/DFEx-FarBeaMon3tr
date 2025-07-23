@@ -76,6 +76,7 @@ void AutoBalFSMHandler(void)
 			//当自动均衡计时器停止计时后，关闭充放电并跳转到等待状态
 		  if(!AutoBalTIM)
 				{
+				IsUpdateBalUI=true; //状态变化时刷新UI
 				AutoBalState=AutoBalance_RunningBalance;
 				BreakCPortConnection();  //强制断开输出
 				break;
@@ -128,6 +129,7 @@ void AutoBalFSMHandler(void)
 		  //计时结束仍然没开始补电，跳转到结束阶段
 		  if(!AutoBalTIM)
 				{
+				IsUpdateBalUI=true; //状态变化时刷新UI
 				AutoBalState=AutoBalance_End;
 				AutoBalTIM=24;
 				break;
@@ -141,6 +143,7 @@ void AutoBalFSMHandler(void)
 			//当自动均衡计时器停止计时或者变为放电状态，标记补电循环已经结束，退出
 		  if(!AutoBalTIM||BATT==Batt_discharging)
 				{
+				IsUpdateBalUI=true; //状态变化时刷新UI
 				AutoBalState=AutoBalance_End;
 				AutoBalTIM=24;
 				break;

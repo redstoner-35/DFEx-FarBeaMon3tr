@@ -125,7 +125,7 @@ void ReturnFromQuickAccMenu(void)
 	//打开仅放电模式，直接导航到适配器模拟
 	if(IsEnterDischargeMode)SwitchingMenu(&AdapterEmuMenu);
 	//如果C口连接则弹出提示让用户重新插拔C口	
-	else if(IP2366_GetIfCPortConnected())
+	else if((IsNeedToClearOCF||IsNeedToReConfig)&&IP2366_GetIfCPortConnected())
 		{
 		IsCPortConnected=true;
 		SwitchingMenu(&InfoUserRemoveCCableMenu);

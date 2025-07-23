@@ -96,5 +96,6 @@ INA226InitStatDef INA226_INIT(INAinitStrdef * INAConf);
 bool INA226_GetBusInformation(INADoutSreDef *INADout);
 bool INA226_SetAlertRegister(unsigned int Value);
 bool INA226_QueueIfGaugeCanReady(void);
+bool INA226_EnterPowerDownMode(void);
 
 #endif

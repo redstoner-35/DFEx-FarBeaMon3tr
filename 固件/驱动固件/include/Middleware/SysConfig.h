@@ -9,11 +9,12 @@
 #define IsEnableMainMemory_MSK 0x04 //是否启用主挡位记忆 bit3
 #define IsEnableSpecMemory_MSK 0x08 //是否启用特殊挡位记忆 bit4
 #define PowerECOMode_MSK 0x10 //Power和ECO模式切换 bit5
+#define StrobeMode_MSK 0x20  //切换随机变频爆闪和高频爆闪 bit6
 
 //存储类型声明
 typedef struct
 	{
-	int SysCurrent;
+	int RampCurrent;
   unsigned char BitfieldMem1;
 	ShutdownFadingDef FadingCfg;
 	LocatorLEDDef LocatorCfg;
@@ -46,6 +47,6 @@ typedef union
 void ResetSysConfigToDefault(void); //尝试检测用户进行重置操作
 void ReadSysConfig(void);
 void SaveSysConfig(bit IsForceSave);	
-void RestoreToMinimumSysCurrent(void);	
+void LoadMinimumRampCurrentToRAM(void);	
 	
 #endif

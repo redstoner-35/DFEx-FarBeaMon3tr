@@ -190,7 +190,32 @@ bool IP2366_GetVRecharge(float *Vrecharge)
   //获取成功
 	return true;
 	}
-	
+
+//IP2366设置低功耗睡眠模式是否使能	
+bool IP2366_SetDeepSleepModeEnabled(bool IsEnableSleep)
+	{
+	char buf;
+	//读取SYS_CTL9
+	if(!IP2366_ReadReg(&buf,REG_SYSCTL9))return false;
+	if(IsEnableSleep)buf|=0x80;
+	else buf&=0x7F;
+	//尝试写数据
+	if(!IP2366_WriteReg(buf,REG_SYSCTL9))return false;
+	return true;	
+	}
+
+//IP2366强制进入低功耗睡眠模式
+bool IP2366_ForceEnterDeepSleep(void)	
+	{
+	char buf;
+	//读取SYS_CTL9
+	if(!IP2366_ReadReg(&buf,REG_SYSCTL9))return false;
+	if(buf&0x80)buf|=0x40; //如果EN_SYS_Standby=1，则令Enter_Standby=1，强制系统进入睡眠
+	//尝试写数据
+	if(!IP2366_WriteReg(buf,REG_SYSCTL9))return false;
+	return true;
+	}
+
 //IP2366设置停充电流和再充电阈值
 bool IP2366_SetReChargeParam(ReChargeConfig Vrecharge,IStopConfig IStop)
 	{

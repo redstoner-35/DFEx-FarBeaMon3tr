@@ -12,7 +12,8 @@ typedef enum
 	Msg_Statu, //状态信息
 	Msg_Warning, //警告
 	Msg_POSTOK, //自检结束
-	Msg_Fault  //故障
+	Msg_Fault,  //故障
+	Msg_INFO //信息提示	
 	}MessageTypeDef;
 
 typedef struct
@@ -150,6 +151,7 @@ extern const MenuConfigDef StorageModeSetMenu;
 extern const MenuConfigDef QuickAccessMenu;
 extern const MenuConfigDef BattVCALMenu;
 extern const MenuConfigDef BattICALMenu;
+extern const MenuConfigDef SleepCfgMenu;
 
 //内部数值增减管理
 int IntIncDec(int ValueIN,int Min,int Max,int PerStep); //

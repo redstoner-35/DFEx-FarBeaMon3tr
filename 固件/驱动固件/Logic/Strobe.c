@@ -7,6 +7,7 @@ extern volatile bit StrobeFlag;
 extern volatile bit LFStrobeFlag;
 
 //内部变量
+bit EnableRandomStrobe;                  //开启随机变频爆闪
 static xdata char StrobeFlagSel;
 static xdata unsigned char StrobeSelIdx; //爆闪选择index
 static xdata unsigned char StrobeCounter; //爆闪次数计时
@@ -49,11 +50,12 @@ void RandStrobeHandler(void)
 bit StrobeOutputHandler(void)
 	{
 	//根据爆闪flag选择一组频率		
-	switch(StrobeFlagSel)
+	if(EnableRandomStrobe)switch(StrobeFlagSel)
 		{
 		case 1:return LFStrobeFlag;
 		case 2:return (bit)Data.RandADResult^StrobeFlag;
-		case 3:return (bit)Data.RandADResult&LFStrobeFlag;
+		case 3:
+		return (bit)Data.RandADResult&LFStrobeFlag;
 		}
 	//默认情况
 	return StrobeFlag;

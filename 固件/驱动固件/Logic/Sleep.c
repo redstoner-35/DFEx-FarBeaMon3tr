@@ -12,6 +12,7 @@
 #include "LocateLED.h"
 #include "SetupMenu.h"
 #include "Strobe.h"
+#include "VersionCheck.h"
 
 //睡眠定时器
 volatile unsigned int SleepTimer;
@@ -52,8 +53,8 @@ static char QueryIsSystemNotAllowToSleep(void)
 	{
 	//系统处于定位指示灯选择或者设置菜单状态，不允许睡眠
 	if(LocLEDState||SetupFSMState)return 1;
-	//系统在显示电池电压不允许睡眠
-	if(VshowFSMState!=BattVdis_Waiting)return 1;
+	//系统在显示电池电压和版本号，不允许睡眠
+	if(VshowFSMState!=BattVdis_Waiting||VChkFSMState!=VersionCheck_InAct)return 1;
 	//系统开机了
 	if(IsLargerThanOneU8(CurrentMode->ModeIdx))return 1;
 	//允许睡眠

@@ -53,6 +53,7 @@ extern LCDDisplayDirDef Direction;
 extern volatile bool IsPDMATranferDone;
 	
 //寄存器操作函数
+void LCD_DisableBlackLight(void); //永久关闭LCD背光
 void LCD_DeInit(void); //除能并复位LCD
 void LCD_WR_DATA8(unsigned char dat); //写一个字节
 void LCD_WR_DATA(unsigned short dat);//写入两个字节

@@ -43,7 +43,7 @@ void delay_us(u16 us)
 {	 		  	  
 	u32 temp;	
 	__disable_irq(); //为了避免影响us级别定时的精度，需要屏蔽所有中断
-  #if (ms > 2796000)
+  #if (us > 2796000)
   #error Delayus()-ERROR: Delay time exceeded maxmium value
 	#endif	
 	SysTick->LOAD=(u32)us*systick_us_step;				//时间加载(SysTick->LOAD为24bit)

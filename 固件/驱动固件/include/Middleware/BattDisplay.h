@@ -48,6 +48,7 @@ extern xdata float Battery; //滤波之后的电池电压
 extern xdata BattVshowFSMDef VshowFSMState; //状态机状态	
 	
 //函数
+void WaitBatteryVoltageReady(void); //等待电池电压就绪
 void TriggerTShowDisplay(void); //启动温度显示
 void BattDisplayTIM(void); //电池电量显示函数处理
 void TriggerVshowDisplay(void); //启动电池电压显示

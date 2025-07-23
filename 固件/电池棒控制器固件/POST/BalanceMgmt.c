@@ -27,6 +27,12 @@ void BalanceMgmt_Init(void)
 	State=PCA9536_SetIOState(PCA9536_IOPIN_0,false); //将对应IO设置为0
 	State&=PCA9536_SetIOPolarity(PCA9536_IOPIN_0,PCA9536_IO_Normal); //正常极性
 	State&=PCA9536_SetIODirection(PCA9536_IOPIN_0,PCA9536_IODIR_OUT); //输出模式
+	PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_OUT);
+	PCA9536_SetIOState(PCA9536_IOPIN_1,false);
+	PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_OUT);
+	PCA9536_SetIOState(PCA9536_IOPIN_2,false);
+	PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_OUT);  
+	PCA9536_SetIOState(PCA9536_IOPIN_3,false);									//其余没用的IO输出低电平
 	//检查设置状态
 	if(!State)
 		{

@@ -14,6 +14,10 @@ typedef enum
 	SetupMenu_BitFieldEdit
 	}SetupMenuFSMDef;
 
+//内部参数定义
+#define TotalSetupNum 8	
+	
+	
 //外部参考
 extern xdata SetupMenuFSMDef SetupFSMState;
 	
