@@ -12,7 +12,7 @@ extern bool IsUpdateBalUI;
 extern bool IsTimeMet;
 extern BatteryStateDef BATT;
 extern bool IsDispChargingINFO;
-extern bool Is2368Telem;
+extern bool Is2366Telem;
 
 //函数声明
 bool SetSystemDischargeState(void);
@@ -64,7 +64,7 @@ void AutoBalFSMHandler(void)
 	{
 	extern int SleepTimer;	
   //进行系统的配置		
-	Is2368Telem=true; 
+	Is2366Telem=true; 
 	SleepTimer=480; //均衡运行期间禁止系统复位，休眠时间复位为一分钟
 	switch(AutoBalState)
 		{

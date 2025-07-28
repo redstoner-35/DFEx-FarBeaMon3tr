@@ -136,7 +136,7 @@ const MenuConfigDef ResetCTestMenu=
 void SelectResetConfig(void)
 	{
 	RSTType=Reset_SysConfig;
-	RestoreDefaultConfig();
+	RestoreFactoryWithoutSomeSettings();
 	IsResetRendered=false;
 	WriteConfiguration(&CfgUnion,false);
 	}	

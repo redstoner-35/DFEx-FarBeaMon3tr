@@ -9,7 +9,7 @@ const char I2CSlaveADDR[]={IP2366ADDR,M24C512ADDR,M24C512SecuADDR,SMIOADDR};
 
 
 //I2C延时
-#define IIC_delay() delay_us(5)
+#define IIC_delay() delay_us(4)
 
 //static void IIC_delay(void)
 //  {

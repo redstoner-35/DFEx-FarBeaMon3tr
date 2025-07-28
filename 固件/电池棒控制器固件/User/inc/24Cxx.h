@@ -12,8 +12,8 @@ LockState_Unlocked  //未上锁
 #include "I2CAddr.h"
 
 //设置使用的EEPROM
-//#define UsingEE_24C512
-#define UsingEE_24C64
+#define UsingEE_24C512
+//#define UsingEE_24C64
 //#ifdef UsingEE_24C1024
 
 /* EEPROM自动配置,禁止修改！ */

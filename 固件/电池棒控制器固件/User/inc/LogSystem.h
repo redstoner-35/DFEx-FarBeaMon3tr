@@ -5,6 +5,10 @@
 #include "CapTest.h"
 #include "Config.h"
 
+//定义
+#define RunTimeLoggerDepth 540  //运行日志的深度
+#define RunTimeLogKey "RLDB" //运行log的内容检查Key
+
 typedef struct
 	{
 	long BalanceTime; //均衡器运行时间
@@ -32,7 +36,7 @@ typedef union
 typedef struct
  {
  //运行日志头部
- signed char LogIncrementCode;//日志的递增码
+ signed short	LogIncrementCode;//日志的递增码
  unsigned int TotalLogCount;//总日志条数
  bool IsRunlogHasContent; //运行日志是否有内容
  char LogKey[4];  //用于检查log输入的key
@@ -52,14 +56,25 @@ typedef struct
  RunLogDataUnionDef Data;
  unsigned int CurrentDataCRC;
  unsigned int LastDataCRC; //CRC结果
- char ProgrammedEntry; //目标编程的entry
+ int ProgrammedEntry; //目标编程的entry
  }RunLogEntryStrDef;	//运行日志结构体的定义
  
-//定义
-#define RunTimeLoggerDepth 112  //运行日志的深度
-#define RunTimeLogBase CfgFileSize+sizeof(ChargeTestStorDef) //运行日志的起始位置
+typedef union
+{
+signed short IncCodeCache[RunTimeLoggerDepth];
+char ByteBuf[sizeof(signed short)*RunTimeLoggerDepth];
+}IncCodeCacheDef;	
+ 
+typedef union
+{
+signed short IncCode;
+char ByteBuf[sizeof(signed short)];
+}IncCodeSingleWriteDef;
+
+//地址定义
+#define RunTimeLogCacheBase CfgFileSize+sizeof(ChargeTestStorDef) //运行日志searching缓存的位置
 #define RunTimeLogSize RunTimeLoggerDepth*sizeof(RunLogDataStrDef)  //运行日志的大小
-#define RunTimeLogKey "RLoG" //运行log的内容检查Key
+#define RunTimeLogBase CfgFileSize+sizeof(IncCodeCacheDef)+sizeof(ChargeTestStorDef) //运行日志的起始位置
 
 //外部参考
 #define LogHeader RunLogEntry.Data.DataSec
@@ -67,6 +82,7 @@ typedef struct
 extern RunLogEntryStrDef RunLogEntry;
 
 //日志文件处理
+bool RunLogModule_VerifyDBHandler(int EntryNum,bool *IsCorrupted); //进行日志重建处理
 int CalcCurrentAvailableLogCount(void); //计算日志区域的已用存储空间
 bool ResetRunTimeLogArea(void); //复位日志区域
 void WriteRuntimeLogToROM(void); //写日志

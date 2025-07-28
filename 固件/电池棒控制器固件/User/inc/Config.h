@@ -6,6 +6,12 @@
 
 typedef enum
 	{
+	AutoSave_Disabled, //自动存盘关闭
+	AutoSave_Enabled	 //自动存盘开启
+	}AutoSaveCfgDef; //自动保存配置
+
+typedef enum
+	{
 	InstantCTest_NotTriggered, //下次上电直接进容量测试未启动
 	InstantCTest_Armed, //下次直接进容量测试已激活但是未动作
 	InstantCTest_EnteredOK //瞬时容量测试顺利进入
@@ -58,6 +64,7 @@ typedef struct
 	bool EnableThermalStepdown; //开启过热后自动掉功率的机制
 	bool EnableTCCalibration; //开启TypeC功率计修正值配置
 	//TypeC功率修正数据配置	
+	int TypeCAmpereCalCharge;  //充电时的修正值
 	int TypeCVoltageCal;  
 	int TypeCAmpereCal; //Type-C的电压和电流修正值，LSB=0.1% 1000=原始值的100%
 	//过热保护配置		
@@ -80,7 +87,8 @@ typedef struct
 	IP2366PPSPDOSetDef PPSConfig;
 	//Fixed PDO电流配置
 	IP2366FixPDOSetDef FixedPDOCfg;
-  //存储模式配置
+  //存储模式和自动存盘配置
+	AutoSaveCfgDef AutoSaveCfg;
 	StorageModeDef StorageModeINROM;
   //本地电池测量校准设置
 	int BatteryVoltageCalFactor;
@@ -109,17 +117,20 @@ typedef union
 extern CfgUnionDef CfgUnion;
 extern bool DCDCOutputBit; //输出bit
 extern StorageModeDef StorageMode; //存储模式缓存
-#define CfgFileSize sizeof(CfgUnion)	
+#define CfgFileSize (sizeof(CfgUnion)*2)	
 #define CfgData CfgUnion.ROMImage.Data.Data
 #define CfgChecksum CfgUnion.ROMImage.CRCResult
 
 //函数
+
+bool CheckIfConfigOK(bool IsBackup);  //检查指定的配置文件状态
+void SyncUnResetThings(CfgUnionDef *IN);  //检测出厂设置时同步不需要更改的内容
 bool CheckIfConfigIsSame(void); //配置相同
-bool ReadConfiguration(CfgUnionDef *Out);
+bool ReadConfiguration(CfgUnionDef *Out,bool IsUsingBackup);
 bool WriteConfiguration(CfgUnionDef *IN,bool ForceUpdate); //读写数据
-void RestoreDefaultConfig(void); //重置出厂
+void RestoreFactoryWithoutSomeSettings(void);//设置里面恢复出厂但是不重置校准配置
 void LoadConfig(void); //开机时读取配置
-void LoadDefaultConfig(CfgUnionDef *IN); //加载默认配置到某个地方
+void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride); //加载默认配置到某个地方
 unsigned int CalcROMCRC32(CfgUnionDef *IN); //计算CRC32
 
 #endif

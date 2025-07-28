@@ -8,15 +8,31 @@
 CfgUnionDef CfgUnion;
 StorageModeDef StorageMode;
 bool DCDCOutputBit;
+bool UsingBackupConfig=false;
 
-//将魔人配置加载到指定位置
-void LoadDefaultConfig(CfgUnionDef *IN)
+//检测出厂设置时同步不需要更改的内容
+void SyncUnResetThings(CfgUnionDef *IN)
+	{
+  IN->ROMImage.Data.Data.BatteryCurrentCalFactor=CfgData.BatteryCurrentCalFactor;
+  IN->ROMImage.Data.Data.BatteryVoltageCalFactor=CfgData.BatteryVoltageCalFactor;
+	IN->ROMImage.Data.Data.TypeCAmpereCalCharge=CfgData.TypeCAmpereCalCharge;
+	IN->ROMImage.Data.Data.TypeCVoltageCal=CfgData.TypeCVoltageCal;
+	IN->ROMImage.Data.Data.TypeCAmpereCal=CfgData.TypeCAmpereCal;
+	IN->ROMImage.Data.Data.EnableAdvAccess=CfgData.EnableAdvAccess;
+	IN->ROMImage.Data.Data.AutoSaveCfg=CfgData.AutoSaveCfg;
+	}
+
+//将默认配置加载到指定位置
+void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	{
 	extern bool IsEnable17AMode;	
 	extern bool IsSupportExterndPDO;
 	//校准系数配置
-	IN->ROMImage.Data.Data.BatteryCurrentCalFactor=1012;
-	IN->ROMImage.Data.Data.BatteryVoltageCalFactor=1000;
+	if(IsFactoryOverride)
+		{
+		IN->ROMImage.Data.Data.BatteryCurrentCalFactor=1012;
+		IN->ROMImage.Data.Data.BatteryVoltageCalFactor=1000;
+		}
 	//存储模式和低压保护配置
 	IN->ROMImage.Data.Data.StorageModeINROM=StorageMode_OFF;	
 	IN->ROMImage.Data.Data.Vlow=VLow_2V8;
@@ -33,7 +49,7 @@ void LoadDefaultConfig(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.VRecharge=Recharge_0V1;
 	IN->ROMImage.Data.Data.IStop=IStop_200mA;
 	IN->ROMImage.Data.Data.InputConfig.ChargeCurrent=IsEnable17AMode?IP2366_ICCMAX:9700;
-	IN->ROMImage.Data.Data.InputConfig.ChargePower=Power_100W;
+	IN->ROMImage.Data.Data.InputConfig.ChargePower=IsEnable17AMode?Power_140W:Power_65W;
 	IN->ROMImage.Data.Data.InputConfig.FullVoltage=4200;
 	IN->ROMImage.Data.Data.InputConfig.PreChargeCurrent=400;
 	IN->ROMImage.Data.Data.InputConfig.IsEnableCharger=true;
@@ -48,15 +64,15 @@ void LoadDefaultConfig(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.PDOCFG.EnablePPS2=true;
 	IN->ROMImage.Data.Data.PDOCFG.Enable20V=true;
 	IN->ROMImage.Data.Data.PDOCFG.Enable15V=true;
-	IN->ROMImage.Data.Data.PDOCFG.Enable12V=false; //屏蔽掉12V fixed PDO解决啸叫问题
-	IN->ROMImage.Data.Data.PDOCFG.Enable9V=true;
+	IN->ROMImage.Data.Data.PDOCFG.Enable12V=true;  
+	IN->ROMImage.Data.Data.PDOCFG.Enable9V=true;  //所有PDO都打开
 	//安全配置
 	IN->ROMImage.Data.Data.EnableThermalStepdown=true;
-	IN->ROMImage.Data.Data.EnableAdvAccess=false;
+  if(IsFactoryOverride)IN->ROMImage.Data.Data.EnableAdvAccess=false; //高级菜单使能不重置
   IN->ROMImage.Data.Data.EnableChargeConfig=false;
   IN->ROMImage.Data.Data.EnableChargPowerConfig=true;
 	IN->ROMImage.Data.Data.EnableDischargeConfig=true;
-	IN->ROMImage.Data.Data.EnableLVProtectConfig=true;
+	IN->ROMImage.Data.Data.EnableLVProtectConfig=false;
 	IN->ROMImage.Data.Data.EnablePDOConfig=true;
   IN->ROMImage.Data.Data.EnableOTPConfig=false;
 	IN->ROMImage.Data.Data.EnableTCCalibration=false;
@@ -67,14 +83,19 @@ void LoadDefaultConfig(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS1Set=false;
 	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS2Set=false;
 	//TypeC矫正设置
-  IN->ROMImage.Data.Data.TypeCVoltageCal=1000;
-	IN->ROMImage.Data.Data.TypeCAmpereCal=1000;
+	if(IsFactoryOverride)
+		{
+		IN->ROMImage.Data.Data.TypeCAmpereCalCharge=1000;
+		IN->ROMImage.Data.Data.TypeCVoltageCal=1000;
+		IN->ROMImage.Data.Data.TypeCAmpereCal=1000;
+		}
 	//显示方向设置
 	IN->ROMImage.Data.Data.SleepCfg=System_Sleep_Deep; //默认开启深度睡眠模式
   IN->ROMImage.Data.Data.EnableFastBoot=true;
 	IN->ROMImage.Data.Data.EnableLargeMenu=true;
 	IN->ROMImage.Data.Data.DisplayDir=LCDDisplay_Hori_Invert;
   //容量测试配置
+	IN->ROMImage.Data.Data.AutoSaveCfg=AutoSave_Enabled; //默认是自动存盘模式
 	IN->ROMImage.Data.Data.InstantCTest=InstantCTest_NotTriggered;
 	//最大PD输入配置
   IN->ROMImage.Data.Data.MaxVPD=IsEnable17AMode?PDMaxIN_28V:PDMaxIN_20V;
@@ -82,10 +103,16 @@ void LoadDefaultConfig(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.BalanceMode=Balance_ChgDisOnly; //均衡仅在充放电时启用
 	}
 
-//恢复默认设置
-void RestoreDefaultConfig(void)
+//恢复默认设置(重置一切东西)
+static void RestoreDefaultConfig(void)
 	{
-  LoadDefaultConfig(&CfgUnion);
+  LoadDefaultConfig(&CfgUnion,true);
+	}
+
+//设置里面恢复出厂但是不重置校准配置
+void RestoreFactoryWithoutSomeSettings(void)
+	{
+	 LoadDefaultConfig(&CfgUnion,false);
 	}
 
 //计算CRC32
@@ -129,9 +156,9 @@ unsigned int CalcROMCRC32(CfgUnionDef *IN)
 	}
 
 //读取数据
-bool ReadConfiguration(CfgUnionDef *Out)
+bool ReadConfiguration(CfgUnionDef *Out,bool IsUsingBackup)
 	{
-	return !M24C512_PageRead(Out->ByteBuf,0x0000,sizeof(CfgUnionDef));
+	return !M24C512_PageRead(Out->ByteBuf,IsUsingBackup?sizeof(CfgUnionDef):0x0000,sizeof(CfgUnionDef));
 	}
 	
 //写入数据
@@ -141,14 +168,24 @@ bool WriteConfiguration(CfgUnionDef *IN,bool ForceUpdate)
 	CfgUnionDef buf;
 	//计算并填写当前ROM的CRC,和ROM里面的比对,相同则不写入
 	CRCResult=CalcROMCRC32(IN);
-	if(!ReadConfiguration(&buf))return false;
+	if(!ReadConfiguration(&buf,UsingBackupConfig))return false;
 	bufReselt=CalcROMCRC32(&buf);
 	//强制更新模式关闭，ROM内数据没有损坏且当前配置一样则跳过写入并返回true
 	if(!ForceUpdate&&CRCResult==buf.ROMImage.CRCResult&&bufReselt==buf.ROMImage.CRCResult)return true;
 	//正常写入
 	IN->ROMImage.CRCResult=CRCResult;
-	return !M24C512_PageWrite(IN->ByteBuf,0x0000,sizeof(CfgUnionDef));
+	return !M24C512_PageWrite(IN->ByteBuf,UsingBackupConfig?sizeof(CfgUnionDef):0x0000,sizeof(CfgUnionDef));
 	}
+	
+//检查指定的配置文件状态
+bool CheckIfConfigOK(bool IsBackup)
+	{
+	CfgUnionDef buf;
+	if(!ReadConfiguration(&buf,IsBackup))return false;
+	if(CalcROMCRC32(&buf)!=buf.ROMImage.CRCResult)return false;
+	//检查通过，返回true
+	return true;
+	}	
 	
 //检查EEPROM和当前的配置是否相同
 bool CheckIfConfigIsSame(void)
@@ -157,7 +194,7 @@ bool CheckIfConfigIsSame(void)
 	CfgUnionDef buf;
 	//计算并填写当前ROM的CRC,和ROM里面的比对
 	CRCResult=CalcROMCRC32(&CfgUnion);
-	if(!ReadConfiguration(&buf))return false;
+	if(!ReadConfiguration(&buf,UsingBackupConfig))return false;
 	//配置一样
 	if(CRCResult==buf.ROMImage.CRCResult)return true;
 	return false;
@@ -168,10 +205,10 @@ void LoadConfig(void)
 	{
 	int CRCResult;
 	extern bool EnableDetailOutput;	
-	bool IsNeedToUpgrade=false;
+	bool IsNeedToUpgrade=false,result;
 	//读取数据	
-	ShowPostInfo(30,"加载系统配置\0","0D",Msg_Statu);
-	if(!ReadConfiguration(&CfgUnion))
+	ShowPostInfo(30,"加载系统配置文件\0","0D",Msg_Statu);
+	if(!ReadConfiguration(&CfgUnion,false))
 		{
 		ShowPostInfo(30,"存储器读取异常\0","E5",Msg_Fault);
 		SelfTestErrorHandler();
@@ -180,16 +217,48 @@ void LoadConfig(void)
 	CRCResult=CalcROMCRC32(&CfgUnion);
 	if(CRCResult!=CfgChecksum)
 		{
-		ShowPostInfo(30,"配置数据损坏","0E",Msg_Warning);
-		delay_Second(1);
-		RestoreDefaultConfig();
-		if(!WriteConfiguration(&CfgUnion,true))
+		ShowPostInfo(30,"尝试读取备用配置\0","3C",Msg_Warning);
+		delay_ms(300);
+		//主文件配置数据损坏，尝试读取备用	
+		if(!ReadConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(30,"存储器写入异常","E6",Msg_Fault);
+			ShowPostInfo(30,"存储器读取异常\0","E5",Msg_Fault);
 			SelfTestErrorHandler();
-			}		
-		ShowPostInfo(30,"已加载出厂设置","0E",Msg_Warning);	
-		delay_Second(1);	
+			}
+		CRCResult=CalcROMCRC32(&CfgUnion);	
+		if(CRCResult!=CfgChecksum)
+			{
+			//备用文件也坏了,重置所有数据
+			ShowPostInfo(30,"无可用的配置文件","0E",Msg_Warning);
+			delay_Second(1);
+			RestoreDefaultConfig();
+			UsingBackupConfig=false;
+			result=WriteConfiguration(&CfgUnion,true);  //写主配置文件 
+			UsingBackupConfig=true;
+			result&=WriteConfiguration(&CfgUnion,true); //写备用配置文件
+			if(!result)
+				{
+				ShowPostInfo(30,"存储器写入异常","E6",Msg_Fault);
+				SelfTestErrorHandler();
+				}		
+			ShowPostInfo(30,"已加载出厂设置","0E",Msg_Warning);	
+			delay_Second(1);	
+			}
+		else
+			{
+			ShowPostInfo(30,"主用配置文件损坏","1D",Msg_Warning);
+			delay_ms(300);	
+			//尝试对主用数据进行覆盖
+			UsingBackupConfig=false;
+			if(!WriteConfiguration(&CfgUnion,true))  //写主配置文件 
+				{
+				ShowPostInfo(30,"存储器写入异常","E6",Msg_Fault);
+				SelfTestErrorHandler();				
+				}
+			UsingBackupConfig=true;
+			ShowPostInfo(30,"已加载备用文件","1D",Msg_Warning);
+			delay_ms(300);
+			}
 		}
 	//对PD数据进行修正	
 	if(CfgData.InputConfig.ChargeCurrent>IP2366_ICCMAX)

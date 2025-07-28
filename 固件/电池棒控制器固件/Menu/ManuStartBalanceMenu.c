@@ -31,7 +31,7 @@ void BalMenuFSMProcess(void)
 	switch(BalState)
 		{
 		case BalMenu_SetTime:
-			 if(KeyState.KeyEvent==KeyEvent_Up&&BalanceHour<10)BalanceHour++;
+			 if(KeyState.KeyEvent==KeyEvent_Up&&BalanceHour<16)BalanceHour++;
 		   if(KeyState.KeyEvent==KeyEvent_Down&&BalanceHour>1)BalanceHour--; //增减均衡时间
 		   if(KeyState.KeyEvent==KeyEvent_ESC)
 					{
@@ -96,6 +96,8 @@ void BalMenuFSMProcess(void)
 void BalMenuGUIHandler(void)
 	{
 	int H,M,S;
+	extern float VBat;
+	extern bool IsDispChargingINFO,Is2366Telem;
 	if(!IsUpdateBalUI&&KeyState.KeyEvent==KeyEvent_None)return;
 	RenderMenuBG(); //显示背景
 	switch(BalState)
@@ -104,48 +106,49 @@ void BalMenuGUIHandler(void)
 		case BalMenu_SetTime:	
 			LCD_ShowChinese(35,21,"请指定均衡时间",WHITE,LGRAY,0);
 			LCD_ShowChinese(32,42,"共计",WHITE,LGRAY,0);
-		  LCD_ShowIntNum(54,42,BalanceHour,2,YELLOW,LGRAY,12);
-		  LCD_ShowChinese(70,42,"均衡小时",WHITE,LGRAY,12);
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			LCD_ShowIntNum(BalanceHour<10?57:61,42,BalanceHour,2,YELLOW,LGRAY,12);
+		  LCD_ShowChinese(79,42,"均衡小时",WHITE,LGRAY,12);
 		  break;
 		//均衡运行中
 		case BalMenu_Running:
 		  LCD_ShowChinese(33,22,"手动均衡运行中",GREEN,LGRAY,0);
-		  H=BalanceForceEnableTIM/8;
-		  M=(H%3600)/60;
-		  S=H%60;
-		  H/=3600;
-			LCD_ShowHybridString(14,40,"剩余:",WHITE,LGRAY,0);
-		  LCD_ShowIntNum(51,40,H,1,GREEN,LGRAY,12);
-		  LCD_ShowChinese(62,40,"时",WHITE,LGRAY,12);
-		  LCD_ShowIntNum(78,40,M,2,GREEN,LGRAY,12);
-		  LCD_ShowChinese(98,40,"分",WHITE,LGRAY,12);
-		  LCD_ShowIntNum(114,40,S,2,GREEN,LGRAY,12);
-		  LCD_ShowChinese(134,40,"秒",WHITE,LGRAY,12);
-		  LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	    Is2366Telem=true; 
+			if(!IsDispChargingINFO)
+				{
+				LCD_ShowHybridString(14+11,40,"电池电压:",WHITE,LGRAY,0);
+				LCD_ShowFloatNum1(68+11,40,VBat,2,CYAN,LGRAY,12);
+				LCD_ShowChar(109+11,40,'V',WHITE,LGRAY,12,0);	
+				}
+			else
+				{
+				H=BalanceForceEnableTIM/8;
+				M=(H%3600)/60;
+				S=H%60;
+				H/=3600;
+				LCD_ShowHybridString(H<10?14:11,40,"剩余:",WHITE,LGRAY,0);
+				LCD_ShowIntNum(H<10?51:45,40,H,H<10?1:2,GREEN,LGRAY,12);
+				LCD_ShowChinese(62,40,"时",WHITE,LGRAY,12);
+				LCD_ShowIntNum(78,40,M,2,GREEN,LGRAY,12);
+				LCD_ShowChinese(98,40,"分",WHITE,LGRAY,12);
+				LCD_ShowIntNum(114,40,S,2,GREEN,LGRAY,12);
+				LCD_ShowChinese(134,40,"秒",WHITE,LGRAY,12);
+				}
 		  break;
 		//手动均衡完成	
     case BalMenu_Finished:			
 			LCD_ShowChinese(33,22,"手动均衡已完成",GREEN,LGRAY,0);
 			LCD_ShowChinese(32,41,"共计",WHITE,LGRAY,0);
-		  LCD_ShowIntNum(54,41,BalanceHour,2,GREEN,LGRAY,12);
-		  LCD_ShowChinese(70,41,"均衡小时",WHITE,LGRAY,12);
-		  LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+		  LCD_ShowIntNum(BalanceHour<10?57:61,41,BalanceHour,2,YELLOW,LGRAY,12);
+		  LCD_ShowChinese(79,41,"均衡小时",WHITE,LGRAY,12);
 		  break;
 		//均衡失败
 		case BalMenu_Failed:	
-			LCD_ShowChinese(28,22,"手动均衡异常结束",RED,LGRAY,0);
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-			LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-			LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			LCD_ShowChinese(28,35,"手动均衡异常结束",RED,LGRAY,0);
 		  break;
 		}
+	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
+	LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
+	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
 	IsUpdateBalUI=false;
 	}
 	

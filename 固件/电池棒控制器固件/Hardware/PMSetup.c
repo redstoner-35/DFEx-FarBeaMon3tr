@@ -152,9 +152,13 @@ void KickIP2366ToWakeUp(void)
 	}
 	
 //休眠状态判断
+void IP2366_ReInitBasedOnConfig(void);
+void IP2366_SetIBatLIMBaseOnSysCfg(void);
+	
 void PowermanagementSleepControl(void)
   {
 	extern bool IsEnablePowerOFF;
+	extern bool IsConfigSaved;
 	extern int BalanceForceEnableTIM;
 	//当前未处于睡眠状态、均衡开启或者Type-C处于连接中，不执行
 	if(!IsEnablePowerOFF||BalanceForceEnableTIM)
@@ -168,6 +172,14 @@ void PowermanagementSleepControl(void)
 	//开始检测
 	GPIO_InputConfig(IP2366_INT_IOG,IP2366_INT_IOP,ENABLE); 
 	GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_IN);//设置为高阻输入使2366休眠
+	//掉电之前先进行存盘和重配置芯片处理（如果打开睡眠模式的话需要重配置否则芯片睡不醒）
+  if(IsConfigSaved||!CheckIfConfigIsSame())
+		{
+		IP2366_ReInitBasedOnConfig(); //设置芯片配置
+		IP2366_SetIBatLIMBaseOnSysCfg(); //设置动态限流
+		IsConfigSaved=false;
+		}	
+	if(CfgData.AutoSaveCfg==AutoSave_Enabled||!CfgData.EnableAdvAccess)WriteConfiguration(&CfgUnion,false); //开启自动存盘(非管理员模式)在断电前进行存盘
 	//非完全掉电睡眠模式，系统关闭INA226和PCA9536降低VCCIO功耗，令系统进入睡眠
 	if(CfgData.SleepCfg!=System_Sleep_Deep)
 		{

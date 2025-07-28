@@ -15,7 +15,7 @@ bool IsTelemOK=false;
 IP2366VBUSStateDef VBUS;
 BatteryStateDef BATT;
 QuickChargeStateDef QCState=QuickCharge_None;
-bool Is2368Telem=false;
+bool Is2366Telem=false;
 extern short SleepTimer;
 static bool ConnectState;
 static float VBUSAvgBuf[4]={0};
@@ -38,7 +38,7 @@ void IP2366_Telem(void)
 	extern bool IsEnableHPGauge;	
 	INADoutSreDef VBUSData;
 	//判断是否启用传输
-	if(!Is2368Telem)return;
+	if(!Is2366Telem)return;
 	IsTelemOK=IP2366_GetChargerState(&BATT);
 	IsTelemOK|=IP2366_GetVBUSState(&VBUS);
 	IsTelemOK|=IP2366_ReadChipState(&CState);
@@ -98,14 +98,15 @@ void IP2366_Telem(void)
 			if(Result>4&&Result<30)VTypec=Result;
 			//读取TypeC电流结果
 			Result=VBUSAvgBuf[1]/(float)SADCAvgCount;
-			Result*=(float)CfgData.TypeCAmpereCal;
+			if(BATT==Batt_discharging)Result*=(float)CfgData.TypeCAmpereCal;
+			else Result*=(float)CfgData.TypeCAmpereCalCharge;
 			Result/=(float)1000;
 			if(fabsf(Result)<7.6)ITypeC=Result;
 			for(i=0;i<4;i++)VBUSAvgBuf[i]=0;
 			}		
 		if(VBUS.IsTypeCConnected)SleepTimer=480; //禁止睡眠
 		}
-	Is2368Telem=false;
+	Is2366Telem=false;
 	}
 
 //计算效率并输出百分比
@@ -178,7 +179,7 @@ void MainMenuRenderProcess(void)
 		return;
 		}
 	//启动传输
-	Is2368Telem=true;
+	Is2366Telem=true;
 	if(!IsTelemOK||!IsResultUpdated)return;
 	//显示TypeC电压电流
 	LCD_ShowPicture(19,0,39,15,USBLogo);

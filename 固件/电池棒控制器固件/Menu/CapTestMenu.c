@@ -30,7 +30,7 @@ typedef enum
 //外部变量
 extern IP2366VBUSStateDef VBUS;
 extern BatteryStateDef BATT;
-extern bool Is2368Telem;	
+extern bool Is2366Telem;	
 extern bool IsTelemOK;
 extern const unsigned char TellUserToInsertTypeC[3158];
 	
@@ -72,7 +72,7 @@ void CTestAverageACC(void)
 	if(ConfirmTimeCounter>0)ConfirmTimeCounter--;	
 	//测容系统没有激活，禁止遥测
 	if(CFSMState!=CapTest_WaitTypeCInsert&&CFSMState!=CapTest_Running&&CFSMState!=CapTest_ConfirmForceStopTest)return;
-	Is2368Telem=true;
+	Is2366Telem=true;
 	if(WaitBackToContinue>0)WaitBackToContinue--;
 	//监测当前2366是否在充电
 	if(!IsTelemOK)return; //数据获取失败

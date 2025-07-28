@@ -32,6 +32,18 @@ const intEditMenuCfg AmpCal=
   &ReturnToTCCalMenu,
 	};	
 	
+const intEditMenuCfg AmpCalDis=
+	{	
+	&CfgData.TypeCAmpereCalCharge,
+	500,
+	1500, //对应50%-150%原始值
+	1, //LSB=0.1%
+	"  ", 
+	"负偏",
+	"正偏",
+  &ReturnToTCCalMenu,
+	};	
+	
 //占位函数，在自定义渲染模式下CALL整数编辑菜单
 void VCALMenuDummy(void)
 	{
@@ -42,8 +54,35 @@ void ICALMenuDummy(void)
 	{
 	IntEditHandler(&AmpCal);
 	}
-	
+
+void ChgICALMenuDummy(void)
+	{
+		IntEditHandler(&AmpCalDis);
+	}
+
 //菜单输入
+const MenuConfigDef TypeCChgICALMenu=
+	{
+	MenuType_Custom,
+	//布尔类的入口
+	NULL,
+	//枚举编辑的入口
+	NULL,
+  NULL,
+  NULL,		
+	//自定义入口
+	&ChgICALMenuDummy, //渲染函数
+	NULL, //按键处理
+	//不是设置菜单不需要用别的事情
+	"TypeC电流校准(充电)",
+	NULL,
+	NULL, 
+	NULL,
+	//进入的时候初始化菜单编辑
+	&IntEditInitHandler,
+	NULL
+	};	
+	
 const MenuConfigDef TypeICALMenu=
 	{
 	MenuType_Custom,
@@ -57,7 +96,7 @@ const MenuConfigDef TypeICALMenu=
 	&ICALMenuDummy, //渲染函数
 	NULL, //按键处理
 	//不是设置菜单不需要用别的事情
-	"TypeC电流校准",
+	"TypeC电流校准(放电)",
 	NULL,
 	NULL, 
 	NULL,

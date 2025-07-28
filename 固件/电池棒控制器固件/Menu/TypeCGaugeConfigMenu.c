@@ -28,8 +28,13 @@ void EnterBattVCAL(void)
 	SwitchingMenu(&BattVCALMenu);
 	}
 	
+void EnterTCChgICal(void)
+	{
+	SwitchingMenu(&TypeCChgICALMenu);
+	}
+	
 //菜单项参数
-const SetupMenuSelDef TCGaugeSetup[6]=
+const SetupMenuSelDef TCGaugeSetup[7]=
 	{
 		{
 		"TypeC功率数据源",
@@ -44,7 +49,13 @@ const SetupMenuSelDef TCGaugeSetup[6]=
 		&EnterTCVCAL
 		},
 		{
-		"TypeC电流校准",
+		"TypeC电流校准(充电)",
+		false,
+		&AlwaysTrue,
+		&EnterTCChgICal
+		},
+		{
+		"TypeC电流校准(放电)",
 		false,
 		&AlwaysTrue,
 		&EnterTCICAL

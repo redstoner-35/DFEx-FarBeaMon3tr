@@ -989,6 +989,16 @@
               <FileType>1</FileType>
               <FilePath>.\Menu\DeepSleepModeMenu.c</FilePath>
             </File>
+            <File>
+              <FileName>ConfigMgmtMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\ConfigMgmtMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>DataBaseCheckMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\DataBaseCheckMenu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1020,5 +1030,14 @@
     <components/>
     <files/>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>CMSPanel</LayName>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>

@@ -19,9 +19,9 @@ void InfoUserToRemoveCPort(void)
 void InfoUserRMTCKeyHandler(void)
 	{
 	extern bool IsCPortConnected;
-	extern bool Is2368Telem;
+	extern bool Is2366Telem;
 	//启用测量
-	Is2368Telem=true;
+	Is2366Telem=true;
 	//C口断开连接后，自动退出
 	if(!IsCPortConnected||KeyState.KeyEvent==KeyEvent_BothEnt)
 		{

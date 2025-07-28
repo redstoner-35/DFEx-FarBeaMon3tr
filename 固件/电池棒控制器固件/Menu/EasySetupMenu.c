@@ -141,12 +141,8 @@ const SetupMenuSelDef EasySetup[20]=
 		}
 	};
 
-void BackFromEsetupToMainMenu(void)
-	{
-	ClearScreen(); //清屏
-	WriteConfiguration(&CfgUnion,false); //写入配置
-	SwitchingMenu(&MainMenu);
-	}	
+//回主菜单处理
+void ReturnToMainMenu(void);
 	
 const MenuConfigDef EasySetMainMenu=
 	{
@@ -164,7 +160,7 @@ const MenuConfigDef EasySetMainMenu=
 	"系统设置",
 	EasySetup,
 	NULL,
-	&BackFromEsetupToMainMenu, 
+	&ReturnToMainMenu, 
 	//进入和退出构造函数没有事情要做
 	NULL,
 	NULL

@@ -26,7 +26,7 @@ typedef enum
 	}AdapEmuFSMDef;	
 	
 //外部变量
-extern bool Is2368Telem;
+extern bool Is2366Telem;
 extern IP2366VBUSStateDef VBUS;
 extern BatteryStateDef BATT;
 extern float VTypec,ITypeC,VBat,IBat;
@@ -115,7 +115,7 @@ void ExitAdapterEmulation(void)
 //处理适配器模拟进入失败的函数
 static void AdapterInitFaultHandler(void)
 	{
-	Is2368Telem=true;
+	Is2366Telem=true;
 	if(!IsResultUpdated)return;
 	RenderMenuBG();
 	LCD_ShowChinese(14,22,"适配器模拟开启失败！",RED,LGRAY,0);
@@ -247,7 +247,7 @@ void AdapterEmuRender(void)
 		  IsResultUpdated=true;
 		  break;
 	  case AdapEmu_WaitForOutput:
-			Is2368Telem=true;
+			Is2366Telem=true;
 			if(!IsResultUpdated)break;
 			RenderMenuBG();
 			LCD_ShowChinese(14,22,"适配器模拟开启中……",WHITE,LGRAY,0);
@@ -283,7 +283,7 @@ void AdapterEmuRender(void)
 			break;
 		//适配器模拟运行中，正常显示
 		case AdapEmu_Running:
-			Is2368Telem=true;
+			Is2366Telem=true;
 			//进行故障判断
 		  if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt)EmuState=AdapEmu_StopDueToFault; //系统故障，跳转到模拟结束阶段
 		  if(CheckIfBattTooLow())EmuState=AdapEmu_StopDueToLowBatt; //电池电量过低，模拟结束
@@ -297,7 +297,7 @@ void AdapterEmuRender(void)
 		//由于系统故障，模拟停止
 		case AdapEmu_StopDueToLowBatt:
 		case AdapEmu_StopDueToFault:
-			Is2368Telem=true;
+			Is2366Telem=true;
 		  if(!IsResultUpdated)break;
 		  RenderMenuBG();
 		  if(EmuState==AdapEmu_StopDueToLowBatt)LCD_ShowChinese(10,22,"电池电量过低，模拟停止",RED,LGRAY,0);

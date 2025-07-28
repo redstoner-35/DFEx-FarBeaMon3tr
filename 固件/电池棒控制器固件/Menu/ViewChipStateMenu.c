@@ -46,12 +46,49 @@ static void ShowHPGaugeState(void)
 		}		
 	}
 
+//显示配置文件状态
+static bool ShowConfigState(void)
+	{
+	extern bool UsingBackupConfig;
+		
+	if(!UsedSpace)
+		{
+		LCD_ShowChinese(10,22,"正在获取外存储器状态",WHITE,LGRAY,0);
+		LCD_ShowChinese(46,40,"请稍等……",WHITE,LGRAY,0);
+		UsedSpace=CalcCurrentAvailableLogCount();
+		return false;
+		}
+	LCD_ShowChinese(4,21,"当前欲编程日志入口",WHITE,LGRAY,0);
+	LCD_ShowChinese(4,35,"当前配置文件",WHITE,LGRAY,0);
+	LCD_ShowChinese(4,49,"主用配置文件状态",WHITE,LGRAY,0);
+	LCD_ShowChinese(4,64,"备用配置文件状态",WHITE,LGRAY,0);
+	
+  if(UsedSpace==-1)LCD_ShowChinese(131,21,"未知",WHITE,LGRAY,0);			
+	else LCD_ShowIntNum(124,21,RunLogEntry.ProgrammedEntry,4,WHITE,LGRAY,12);	
+		
+	if(UsedSpace==-1)LCD_ShowChinese(131,35,"未知",RED,LGRAY,0);		
+	else if(UsingBackupConfig)LCD_ShowChinese(131,35,"备用",YELLOW,LGRAY,0);	
+  else LCD_ShowChinese(131,35,"主用",GREEN,LGRAY,0);		
+	
+	if(UsedSpace==-1)LCD_ShowChinese(131,49,"未知",RED,LGRAY,0);	
+	else if(!CheckIfConfigOK(false))LCD_ShowChinese(131,49,"损坏",RED,LGRAY,0);	
+	else LCD_ShowChinese(131,49,"正常",GREEN,LGRAY,0);	
+
+	if(UsedSpace==-1)LCD_ShowChinese(131,64,"未知",RED,LGRAY,0);	
+	else if(!CheckIfConfigOK(true))LCD_ShowChinese(131,64,"损坏",RED,LGRAY,0);	
+	else LCD_ShowChinese(131,64,"正常",GREEN,LGRAY,0);	
+		
+	//返回状态
+	return true;
+	}	
+
 //显示存储器状态
 static bool ShowStorageState(void)
 	{
 	int Capacity=MaxByteRange+1;
 	char Result;	
 	char UIDBUF[2];
+	float fbuf;
 	
   if(!UsedSpace)
 		{
@@ -66,6 +103,7 @@ static bool ShowStorageState(void)
 	LCD_ShowChinese(4,21,"系统外存储器状态",WHITE,LGRAY,0);	
 	LCD_ShowChinese(4,35,"存储器总容量",WHITE,LGRAY,0);
 	LCD_ShowChinese(4,49,"存储器已用容量",WHITE,LGRAY,0);
+	LCD_ShowChinese(4,64,"总日志条数",WHITE,LGRAY,0);
 	if(Result)LCD_ShowChinese(131,21,"异常",RED,LGRAY,0);		
 	else LCD_ShowChinese(131,21,"正常",GREEN,LGRAY,0);		
 		
@@ -78,7 +116,8 @@ static bool ShowStorageState(void)
 		}
 	else
 		{		
-		LCD_ShowIntNum(107,35,Capacity/1000,4,WHITE,LGRAY,12);
+		fbuf=(float)Capacity/(float)1024;
+		LCD_ShowFloatNum1(100,35,fbuf,fbuf<99?2:1,WHITE,LGRAY,12);
 		LCD_ShowString(142,35,"KB",WHITE,LGRAY,12,0);
 		}
 	//显示已用容量
@@ -93,9 +132,21 @@ static bool ShowStorageState(void)
 		}
 	else
 		{		
-		LCD_ShowIntNum(107,49,Capacity/1000,4,WHITE,LGRAY,12);
+		fbuf=(float)Capacity/(float)1024;
+		LCD_ShowFloatNum1(100,49,fbuf,fbuf<99?2:1,WHITE,LGRAY,12);
 		LCD_ShowString(142,49,"KB",WHITE,LGRAY,12,0);
 		}			
+	if(Result)LCD_ShowChinese(131,64,"未知",WHITE,LGRAY,0);		
+	else if(RunLogEntry.Data.DataSec.TotalLogCount<10000)
+		{
+		LCD_ShowIntNum(107,64,RunLogEntry.Data.DataSec.TotalLogCount,4,WHITE,LGRAY,12);
+		LCD_ShowChinese(142,64,"条",WHITE,LGRAY,12);
+		}
+	else
+	 {
+	 LCD_ShowFloatNum1(89,64,(float)RunLogEntry.Data.DataSec.TotalLogCount/(float)1000,2,WHITE,LGRAY,12);
+	 LCD_ShowChinese(130,64,"千条",WHITE,LGRAY,12);
+	 }
 	//返回状态
 	return true;
 	}	
@@ -211,6 +262,7 @@ void ShowChipInfo(void)
 		case 1:ShowChipChargeState();break;
 		case 2:ShowHPGaugeState();break;
 		case 3:ChipStateUpdated=ShowStorageState();break;
+		case 4:ChipStateUpdated=ShowConfigState();break;
 		default:
 			ChipInfoSelect=0;
 		  ChipStateUpdated=false;
@@ -223,7 +275,7 @@ void ShowChipInfo(void)
 void ShowChipKeyHandler(void)
 	{
 	//上下键翻页
-	if(KeyState.KeyEvent==KeyEvent_Up&&ChipInfoSelect<3)
+	if(KeyState.KeyEvent==KeyEvent_Up&&ChipInfoSelect<4)
 		{
 		ChipInfoSelect++;
 		ChipStateUpdated=false;

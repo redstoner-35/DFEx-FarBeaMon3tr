@@ -28,7 +28,7 @@ void UpdataRunTimeLog(void)
 	{
 	char i;
 	float Cap;
-	extern bool IsUpdateCDUI,Is2368Telem;
+	extern bool IsUpdateCDUI,Is2366Telem;
 	extern float VTypec,ITypeC;
 	BatteryStateDef State=Batt_StandBy;
 	//获取Type-C状态
@@ -37,8 +37,8 @@ void UpdataRunTimeLog(void)
 		{
 		SampleCount=8;
 		for(i=0;i<2;i++)BATSample[i]=0;
-		//日志未保存，计算CRC32
-		if(!IsLogSaved)
+		//当系统回归到待机状态之后，且日志未保存，则计算CRC32并保存日志
+		if(State==Batt_StandBy&&!IsLogSaved)
 			{
 			IsLogSaved=true;
 			RunLogEntry.CurrentDataCRC=CalcRunLogCRC32(&RunLogEntry.Data); //计算运行日志的CRC32
@@ -48,7 +48,7 @@ void UpdataRunTimeLog(void)
 	//进行平均值计算
 	else if(SampleCount>0)
 		{
-		Is2368Telem=true;          //触发C端采样
+		Is2366Telem=true;          //触发C端采样
 		BATSample[0]+=ADCO.Vbatt;
 		BATSample[1]+=ADCO.Ibatt;
 		SampleCount--;
@@ -92,6 +92,59 @@ void UpdataRunTimeLog(void)
 	}
 
 /*******************************************
+将指定的运行日志的缓存数据域（用于从ROM内快速寻
+找出最新的entry）从ROM内指定的位置中读出并写入
+到RAM内。
+
+输入：输出缓存数据的union
+输出:如果成功读取,则返回true,否则返回false
+********************************************/	
+static bool ReadEntireLogCache(IncCodeCacheDef *CodeCache)	
+{
+//空指针不允许执行
+if(CodeCache==NULL)return false;
+//读取数据
+return !M24C512_PageRead(CodeCache->ByteBuf,RunTimeLogCacheBase,sizeof(IncCodeCacheDef));
+}
+/*******************************************
+从缓存中读取指定index的自增码
+
+输入：自增码的具体数值输出，以及目标的位置
+输出:如果成功读取,则返回true,否则返回false
+********************************************/	
+static bool ReadOneCodeFromIndex(int LogEntryNum,signed short *Result)
+{
+IncCodeSingleWriteDef Buf;
+//传进来的参数是错的
+if(Result==NULL)return false;
+if(LogEntryNum<0||LogEntryNum>RunTimeLoggerDepth-1)return false; //Entry不合法
+//读取数据
+if(M24C512_PageRead(Buf.ByteBuf,RunTimeLogCacheBase+(LogEntryNum*sizeof(IncCodeSingleWriteDef)),sizeof(IncCodeSingleWriteDef)))return false;
+//成功读取，返回结果
+*Result=Buf.IncCode;
+return true;
+}
+
+
+/*******************************************
+将指定的运行日志所对应的自增码，更新到的缓存数
+据域（用于从ROM内快速寻找出最新的entry）的指定
+位置
+
+输入：自增码的具体数值，以及目标的位置
+输出:如果成功写入,则返回true,否则返回false
+********************************************/	
+static bool UpdateLogCache(signed short IncCode,int LogEntryNum)
+{
+IncCodeSingleWriteDef Buf;
+//传进来的参数是错的
+if(IncCode<-(RunTimeLoggerDepth+1)||IncCode>RunTimeLoggerDepth+1)return false; //自增码不合法
+if(LogEntryNum<0||LogEntryNum>RunTimeLoggerDepth-1)return false; //Entry不合法
+//开始处理数据
+Buf.IncCode=IncCode;
+return !M24C512_PageWrite(Buf.ByteBuf,RunTimeLogCacheBase+(LogEntryNum*sizeof(IncCodeSingleWriteDef)),sizeof(IncCodeSingleWriteDef));
+}
+/*******************************************
 将指定的运行日志的数据域从ROM内指定的entry中
 读出并写入到RAM内。
 
@@ -113,7 +166,7 @@ static bool LoadRunLogDataFromROM(RunLogDataUnionDef *DataOut,int LogEntryNum)
 将指定的运行日志的数据域写入到ROM内指定的
 entry中。
 输入：输出遥测数据的union，目标写入的entry
-输出:如果成功读取,则返回true,否则返回false
+输出:如果成功写入,则返回true,否则返回false
 ********************************************/
 static bool SaveRunLogDataToROM(RunLogDataUnionDef *DataIn,int LogEntryNum)
  {
@@ -172,7 +225,8 @@ void CalcLastLogCRCBeforePO(void)
 #pragma O0
 void ForceWriteRuntimelog(void)
   {
-	signed char SelfIncCode,OldCode;
+	signed short SelfIncCode,OldCode;
+	bool result;
 	//计算新的自增码
 	SelfIncCode=RunLogEntry.Data.DataSec.LogIncrementCode;
 	OldCode=RunLogEntry.Data.DataSec.LogIncrementCode;
@@ -184,7 +238,9 @@ void ForceWriteRuntimelog(void)
   RunLogEntry.Data.DataSec.LogIncrementCode=SelfIncCode;//将计算好的自增码写进去
 	RunLogEntry.Data.DataSec.TotalLogCount++; //日志写入计数器+1
 	//尝试编程
-  if(SaveRunLogDataToROM(&RunLogEntry.Data,RunLogEntry.ProgrammedEntry))
+	result=SaveRunLogDataToROM(&RunLogEntry.Data,RunLogEntry.ProgrammedEntry); 
+	result&=UpdateLogCache(SelfIncCode,RunLogEntry.ProgrammedEntry);  //写入缓存区域和数据域
+  if(result)
 	  {
 		CalcLastLogCRCBeforePO();  //编程结束后将新的log的CRC-32值替换过去避免重复写入
     RunLogEntry.ProgrammedEntry=(RunLogEntry.ProgrammedEntry+1)%RunTimeLoggerDepth;//编程成功，指向下一个entry，如果达到额定的entry数目则翻转回来  		
@@ -212,7 +268,7 @@ entry。
 输入：包含自增code的数组
 输出：最新的一组entry所在的位置
 ********************************************/
-static int FindLatestEntryViaIncCode(signed char *CodeIN)
+static int FindLatestEntryViaIncCode(signed short *CodeIN)
   {
 	int i;
   //判断数组的第0个元素是正还是负还是0
@@ -240,7 +296,7 @@ static int FindLatestEntryViaIncCode(signed char *CodeIN)
 		for(i=0;i<RunTimeLoggerDepth-1;i++)//小于0
 			{
 			/*
-	                i  i+1
+	                   i i+1
 			[-10 -9 -8 -7 -6 6 7 8 9 10]这种情况.
 			-6是最新的，后面的是旧数据，返回结果	
 			*/
@@ -264,8 +320,7 @@ static int FindLatestEntryViaIncCode(signed char *CodeIN)
 ********************************************/		
 int CalcCurrentAvailableLogCount(void)
 	{
-	
-	int i;
+	int i,result;
 	RunLogDataUnionDef Data;
 	for(i=0;i<RunTimeLoggerDepth;i++)
 		{
@@ -276,7 +331,10 @@ int CalcCurrentAvailableLogCount(void)
 		}
 	if(i>1)i--;     //其余情况固定-1
 	else if(!i)i=1; //统计的数量为0时固定=1
-	return RunTimeLogBase+(i*sizeof(RunLogDataUnionDef));
+	//计算并返回结果
+  result=i*sizeof(signed short);		
+	result+=RunTimeLogCacheBase+(i*sizeof(RunLogDataUnionDef));
+	return result;
 	}
 	
 /*******************************************
@@ -287,7 +345,7 @@ unsigned int CalcLogContentCRC32(RunLogDataUnionDef *DIN)
 	{
  unsigned int DATACRCResult;
  char i;
- unsigned char StorBuf;
+ unsigned short StorBuf;
  CKCU_PeripClockConfig_TypeDef CLKConfig={{0}};
  //初始化CRC32      
  CLKConfig.Bit.CRC = 1;
@@ -372,40 +430,64 @@ bool ResetRunTimeLogArea(void)
  return true;
  }
  
- /********************************************
-驱动上电自检时检测整个运行数据区域的自检函数
-负责检查并修复损坏的log entry，然后根据entry
-内写入的自增码判断哪个entry是最新的，从里面
-读取数据
-********************************************/
-void RunLogModule_POR(void)
+/********************************************
+给GUI处理函数用于检查Cache状态并进行损坏数据的
+重建的处理
+********************************************/ 
+bool RunLogModule_VerifyDBHandler(int EntryNum,bool *IsCorrupted)
  {
- int i,j,CheckState=55;
- RunLogDataUnionDef Data;
- unsigned int CRCResult;
- bool IsLogEmpty,IsLogFault=false;
- signed char SelfIncBuf[RunTimeLoggerDepth];
- //首先我们需要把整个log区域遍历一遍
- ShowPostInfo(CheckState,"检查数据库\0","20",Msg_Statu);
+ RunLogDataUnionDef Data; 
+ signed short Result;
+ *IsCorrupted=false;
+ WatchDog_Feed();
+ if(!LoadRunLogDataFromROM(&Data,EntryNum))return false;
+ if(!ReadOneCodeFromIndex(EntryNum,&Result))return false;
+ if(CalcLogContentCRC32(&Data)!=Data.DataSec.LogContentSum||strncmp(Data.DataSec.LogKey,RunTimeLogKey,4))
+	 {
+	 *IsCorrupted=true;
+	 LogDataSectionInit(&Data);
+	 SaveRunLogDataToROM(&Data,EntryNum);
+	 }
+	else if(Data.DataSec.LogIncrementCode!=Result)
+	 {
+	 *IsCorrupted=true;
+	 UpdateLogCache(Data.DataSec.LogIncrementCode,EntryNum);
+	 }
+ //正常执行，返回true
+ return true;
+ }
+ 
+/********************************************
+当缓存数据库异常的时候，进行缓存重建和数据修复
+的处理
+********************************************/
+static void RunLogModule_ReCreateCache(IncCodeCacheDef *CodeBuf,int CheckState)
+ {
+ int i,CorruptedCount=0;
+ char CorruptMsg[32];
+ RunLogDataUnionDef Data; 
+ bool IsLogFault; 
  for(i=0;i<RunTimeLoggerDepth;i++)
 	 {
 	 //显示加载进度
-	 if(i==28)
+	 if(i==(RunTimeLoggerDepth/4))
 			{
-			CheckState=57;
-			ShowPostInfo(CheckState,"检查进度25%","21",Msg_Statu);	
+			CheckState++;
+			ShowPostInfo(CheckState,"重建进度25%","21",Msg_INFO);	
+			IsLogFault=false;
 			}
-   else if(i==55)
+   if(i==(RunTimeLoggerDepth/2))
 			{
-			CheckState=61;
-			ShowPostInfo(CheckState,"检查进度50%","22",Msg_Statu);		
+			CheckState++;
+			ShowPostInfo(CheckState,"重建进度50%","22",Msg_INFO);		
+			IsLogFault=false;	
 			}
-   else if(i==83)
+   if(i==((RunTimeLoggerDepth*3)/4))
 			{
-			CheckState=63;
-			ShowPostInfo(CheckState,"检查进度75%","23",Msg_Statu);
-			}
-   if(i==28||i==55||i==83)IsLogFault=false;	 
+			CheckState++;
+			ShowPostInfo(CheckState,"重建进度75%","23",Msg_INFO);
+			IsLogFault=false;	
+			} 
 	 //从ROM内读取数据
 	 if(!LoadRunLogDataFromROM(&Data,i))
       {
@@ -413,13 +495,18 @@ void RunLogModule_POR(void)
 			SelfTestErrorHandler();
 	    }
 	 //检查log entry(如果发生损坏，则使用默认配置去重写)
-	 CRCResult=CalcLogContentCRC32(&Data); //计算CRC32
-	 if(CRCResult!=Data.DataSec.LogContentSum||strncmp(Data.DataSec.LogKey,RunTimeLogKey,4))
+	 if(CalcLogContentCRC32(&Data)!=Data.DataSec.LogContentSum||strncmp(Data.DataSec.LogKey,RunTimeLogKey,4))
 	   {
-		 SelfIncBuf[i]=0;//该处因为已经损坏，读取到的自增码等于0
+		 CorruptedCount++;
+		 CodeBuf->IncCodeCache[i]=0;//该处因为已经损坏，读取到的自增码等于0
 		 if(!IsLogFault)
 			 {
+			 delay_Second(1);
 			 ShowPostInfo(CheckState,"检测到损坏数据\0","2E",Msg_Warning);
+			 delay_Second(1);
+			 memset(CorruptMsg,0,32);
+			 snprintf(CorruptMsg,32,"位于地址:%d处",i);
+			 ShowPostInfo(CheckState,CorruptMsg,"2E",Msg_Warning);
 			 delay_Second(1);
 			 }
 		 LogDataSectionInit(&Data);
@@ -430,26 +517,150 @@ void RunLogModule_POR(void)
 			 delay_Second(1);
 			 IsLogFault=true;
 			 }
-		 continue;
 		 }
 	 //检查通过的entry，将自增码写入到缓冲区内
-	 SelfIncBuf[i]=Data.DataSec.LogIncrementCode;
+	 else CodeBuf->IncCodeCache[i]=Data.DataSec.LogIncrementCode;
+	 //将重建之后的缓存数据写入到结果里面
+	 if(!UpdateLogCache(CodeBuf->IncCodeCache[i],i))
+		 {
+	   ShowPostInfo(CheckState,"更新缓存数据失败\0","E5",Msg_Fault);
+		 SelfTestErrorHandler();		 
+		 }
 	 }
- //遍历完毕，查询自增码获得最新的log entry并计算CRC32
- i=FindLatestEntryViaIncCode(SelfIncBuf);
- ShowPostInfo(65,"读取数据库\0","24",Msg_Statu);
- if(!LoadRunLogDataFromROM(&RunLogEntry.Data,i))//从ROM内读取选择的Entry作为目前数据的内容
-    {
-		ShowPostInfo(65,"数据库读取失败\0","E9",Msg_Fault);
-		SelfTestErrorHandler();
-	  }
+ ShowPostInfo(CheckState,"缓存重建完成\0","24",Msg_INFO);
+ delay_Second(1);
+ if(CorruptedCount>0)
+	 { 
+	 memset(CorruptMsg,0,32);
+	 snprintf(CorruptMsg,32,"共发现%d条损坏数据",CorruptedCount);
+	 ShowPostInfo(CheckState,CorruptMsg,"24",Msg_Warning);
+	 delay_Second(1);
+	 }
+ }
+
+/********************************************
+驱动上电自检时检测整个运行数据区域的自检函数
+负责检查并修复损坏的log entry，然后根据entry
+内写入的自增码判断哪个entry是最新的，从里面
+读取数据
+********************************************/
+void RunLogModule_POR(void)
+ {
+ int i,CodeCacheEntryData,j;
+ signed short LastCode,CurrentCode;
+ RunLogDataUnionDef Data;
+ bool IsLogEmpty;
+ IncCodeCacheDef CodeBuf;
+ //首先从EEPROM内读取一遍数据库缓存
+ ShowPostInfo(55,"读取数据库缓存\0","20",Msg_Statu);
+ if(!ReadEntireLogCache(&CodeBuf))
+	 {
+	 ShowPostInfo(55,"存储器读取异常\0","E5",Msg_Fault);
+	 SelfTestErrorHandler();
+	 }
+ //检查数据库缓存
+ j=0;
+ for(i=0;i<RunTimeLoggerDepth-1;i++)
+	{
+	//取出数据
+	LastCode=CodeBuf.IncCodeCache[i];
+	CurrentCode=CodeBuf.IncCodeCache[i+1];
+	//检测ROM内是否包含连续的相同内容，如果整个数据库内出现多达五处相邻数据相等，则说明自增数据库异常
+	if(LastCode!=0&&CurrentCode!=0&&CurrentCode==LastCode)j++;
+	if(j>=5)break;  
+	}	 
+ if(i<RunTimeLoggerDepth-1)
+  {
+	//找到数据库异常的地方，尝试重建缓存
+	ShowPostInfo(55,"缓存数据库异常\0","21",Msg_Warning);
+  delay_Second(1);
+	ShowPostInfo(55,"尝试重建缓存\0","21",Msg_Warning);
+	RunLogModule_ReCreateCache(&CodeBuf,55);
+	}
+ //进行缓存命中尝试
+ CodeCacheEntryData=FindLatestEntryViaIncCode(CodeBuf.IncCodeCache);
+ ShowPostInfo(59,"尝试缓存命中\0","25",Msg_Statu);
  IsLogEmpty=true;
- if(SelfIncBuf[0])for(j=0;j<RunTimeLoggerDepth;j++)if(SelfIncBuf[j])IsLogEmpty=false; //如果第一个入口不是空的，则检查entry是不是已经空了
- ShowPostInfo(70,"加载库仑计数据\0","25",Msg_Statu);
+ for(i=0;i<RunTimeLoggerDepth+1;i++)
+	{	 
+ if(!LoadRunLogDataFromROM(&Data,CodeCacheEntryData))	//从ROM内读取选择的Entry作为目前数据的内容
+   {
+	 ShowPostInfo(59,"数据库读取失败\0","E9",Msg_Fault);
+	 SelfTestErrorHandler();
+	 } 
+  //检查数据是否OK
+	if(CalcLogContentCRC32(&Data)==Data.DataSec.LogContentSum&&!strncmp(Data.DataSec.LogKey,RunTimeLogKey,4))break;
+	//数据不OK，往前找一个entry
+	if(IsLogEmpty)
+		{
+		IsLogEmpty=false;
+		ShowPostInfo(59,"缓存命中异常\0","21",Msg_Warning);
+		delay_Second(1);
+		ShowPostInfo(59,"建议运行DB检查\0","21",Msg_Warning);	
+		delay_Second(1);
+		}
+  if(CodeCacheEntryData>0)CodeCacheEntryData--;
+	else CodeCacheEntryData=RunTimeLoggerDepth-1;
+	}
+ if(IsLogEmpty)ShowPostInfo(60,"缓存命中成功\0","26",Msg_Statu);
+ if(i==RunTimeLoggerDepth+1)
+  {
+	//整个数据库都遍历了一遍，没找到合法的数据，尝试重建数据库
+	ShowPostInfo(59,"日志数据异常\0","27",Msg_Warning);
+  delay_Second(1);
+	ShowPostInfo(59,"尝试重建缓存\0","27",Msg_Warning);
+	RunLogModule_ReCreateCache(&CodeBuf,59);
+	ReadEntireLogCache(&CodeBuf); //重建缓存之后需要重新读一遍数据库
+	CodeCacheEntryData=FindLatestEntryViaIncCode(CodeBuf.IncCodeCache); //重新获取一次自增数据
+	}
+ //将指定Entry的数据直接读入系统日志中 
+ ShowPostInfo(63,"加载库仑计数据\0","28",Msg_Statu);
+ if(!LoadRunLogDataFromROM(&RunLogEntry.Data,CodeCacheEntryData))	//从ROM内读取选择的Entry作为目前数据的内容
+   {
+	 ShowPostInfo(63,"数据读取失败\0","E9",Msg_Fault);
+	 SelfTestErrorHandler();
+	 } 	 
+ if(RunLogEntry.Data.DataSec.LogIncrementCode!=CodeBuf.IncCodeCache[CodeCacheEntryData])
+	{
+	//如果读出来的entry日志和目标的数据不一致，则说明缓存数据异常，此时更新日志
+	UpdateLogCache(RunLogEntry.Data.DataSec.LogIncrementCode,CodeCacheEntryData);  //写入缓存区域和数据域 
+	ShowPostInfo(59,"缓存数据异常\0","29",Msg_Warning); 
+	delay_Second(1);
+	ShowPostInfo(65,"已进行覆盖处理\0","29",Msg_Warning);
+	delay_Second(1);
+	}
  RunLogEntry.LastDataCRC=CalcRunLogCRC32(&RunLogEntry.Data);
- RunLogEntry.CurrentDataCRC=CalcRunLogCRC32(&RunLogEntry.Data);//计算CRC-32
+ RunLogEntry.CurrentDataCRC=CalcRunLogCRC32(&RunLogEntry.Data);//计算CRC-32 
+ ///开始进行后续检查
+ IsLogEmpty=true;
+ if(CodeBuf.IncCodeCache[0])for(i=0;i<RunTimeLoggerDepth;i++)if(CodeBuf.IncCodeCache[i])IsLogEmpty=false; //如果第一个入口不是空的，则检查entry是不是已经空了 
  if(IsLogEmpty)RunLogEntry.ProgrammedEntry=0;//如果目前事件日志一组记录都没有，则从0开始记录
- else RunLogEntry.ProgrammedEntry=(i+1)%RunTimeLoggerDepth;//目前entry已经有数据了，从下一条entry开始
+ else 
+	{
+	ShowPostInfo(65,"检查库仑计数据内容\0","2A",Msg_Statu);
+	j=0;
+	RunLogEntry.ProgrammedEntry=(CodeCacheEntryData+1)%RunTimeLoggerDepth;//目前entry已经有数据了，从下一条entry开始
+	for(i=0;i<4;i++)
+	  {
+		if(!LoadRunLogDataFromROM(&Data,(i+RunLogEntry.ProgrammedEntry)%RunTimeLoggerDepth))
+      {
+	   	ShowPostInfo(65,"存储器读取异常\0","E5",Msg_Fault);
+			SelfTestErrorHandler();
+	    }	
+		//找到损坏的entry，统计损坏的条目数
+		if(!Data.DataSec.TotalLogCount||!Data.DataSec.LogIncrementCode)j++;
+		}	
+	
+	//当前要写入的条目且只有该条目发生损坏，进行修复处理，然后指向下一个条目
+	if(j==1)
+			{
+			ShowPostInfo(65,"数据库内容异常\0","2F",Msg_Warning);
+			delay_Second(1);
+			ShowPostInfo(65,"已进行覆盖处理\0","2F",Msg_Warning);
+			delay_Second(1);
+			ForceWriteRuntimelog(); //强制写入当前条目并更新到下一个内容
+			}
+	}
  //进行攻击监测
  AttackDetectInit();
  }

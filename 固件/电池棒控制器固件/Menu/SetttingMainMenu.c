@@ -57,14 +57,16 @@ void UpdateIfSysCanOFF(void)
 //关闭系统
 void ManuallyShutSystemOFF(void)
 	{
+	extern bool IsConfigSaved;
 	//配置发生更改，重新初始化
-	if(!CheckIfConfigIsSame())
+	if(IsConfigSaved||!CheckIfConfigIsSame())
 		{
 		IP2366_ReInitBasedOnConfig(); //设置芯片配置
 		IP2366_SetIBatLIMBaseOnSysCfg(); //设置动态限流
+		IsConfigSaved=false;
 		}
 	//关机之前首先保存配置
-	WriteConfiguration(&CfgUnion,false);
+	if(CfgData.AutoSaveCfg==AutoSave_Enabled||!CfgData.EnableAdvAccess)WriteConfiguration(&CfgUnion,false);
 	IsEnableAdvancedMode=false;
 	Balance_ForceDiasble();
 	delay_ms(100);
@@ -74,17 +76,33 @@ void ManuallyShutSystemOFF(void)
 //回到主菜单
 void ReturnToMainMenu(void)
 	{
+	bool IsConfigModified=false;
+	extern bool IsConfigSaved;
+	extern bool IsCPortConnected;
 	//检查配置是否发生变化，如果发生变化，则重新初始化芯片应用设置
-	if(!CheckIfConfigIsSame())
+	if(IsConfigSaved||!CheckIfConfigIsSame())
 		{
+		IsConfigModified=true;
 		IP2366_ReInitBasedOnConfig(); //设置芯片配置
 		IP2366_SetIBatLIMBaseOnSysCfg(); //设置动态限流
 		}
 	//回去之前首先保存配置，然后退出	
-	WriteConfiguration(&CfgUnion,false);
+	if(CfgData.AutoSaveCfg==AutoSave_Enabled||!CfgData.EnableAdvAccess)WriteConfiguration(&CfgUnion,false);
 	IsEnableAdvancedMode=false;
-	ClearScreen(); //清屏
-	SwitchingMenu(&MainMenu);
+	if(IsConfigModified&&IP2366_GetIfCPortConnected())
+		{
+		//配置发生更改，重新初始化后弹出拔掉C口的提示
+		IsCPortConnected=true;
+		SwitchingMenu(&InfoUserRemoveCCableMenu);
+		}
+	else
+		{		
+		//配置没有发生变更，不用弹出提示直接回主菜单
+		ClearScreen(); 
+		SwitchingMenu(&MainMenu);
+		}
+	//清除flag
+	IsConfigSaved=false;
 	}
 	
 //进入功率设置菜单
@@ -351,7 +369,7 @@ const SetupMenuSelDef MainSetup[26]=
 		&ViewChipState,
 		},
 		{
-		"恢复出厂设置",
+		"配置文件管理",
 		false,
 		&AlwaysTrue,
 		&EnterResetFactory,

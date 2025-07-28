@@ -11,7 +11,7 @@
 extern bool IsTelemOK;
 extern float VTypec,ITypeC,VBat,IBat;
 extern ChipStatDef CState;
-extern bool Is2368Telem;
+extern bool Is2366Telem;
 extern RecvPDODef PDO;
 extern bool IsUpdateCDUI;
 extern BatteryStateDef BATT;
@@ -155,7 +155,7 @@ static void RenderBattState(void)
 	extern bool IsDispChargingINFO;
 	extern bool IsEnableTempChargeOnly;
 	//检测UI是否结束渲染
-	Is2368Telem=true;
+	Is2366Telem=true;
 	time=(BATT==Batt_discharging)?LogData.DischargeTime:LogData.ChargeTime; //获取充放电时间
 	if(!IsTelemOK)return;
 	if(BATT!=Batt_StandBy&&fabsf(ADCO.Ibatt)>MinimumCurrentFactor)	//系统处于开机状态，且日志正在累加，按照结果渲染数据
@@ -270,7 +270,7 @@ void RenderTypeCState(void)
 	extern bool IsDispChargingINFO;
 	extern bool IsEnableHPGauge;	
 	//启动传输
-	Is2368Telem=true;
+	Is2366Telem=true;
 	if(!VBUS.IsTypeCConnected||CState.VBusState==VBUS_NoPower)
 		{
 		//Type-C被移除，立即退出本菜单

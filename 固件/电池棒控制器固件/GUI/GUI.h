@@ -94,6 +94,8 @@ typedef struct
 	}MenuConfigDef;	
 	
 //菜单entry
+extern const MenuConfigDef AutoSaveCfgMenu;
+extern const MenuConfigDef TypeCChgICALMenu;
 extern const MenuConfigDef InfoUserRemoveCCableMenu;
 extern const MenuConfigDef SafeAlmMenu;
 extern const MenuConfigDef MainMenu;
@@ -152,6 +154,11 @@ extern const MenuConfigDef QuickAccessMenu;
 extern const MenuConfigDef BattVCALMenu;
 extern const MenuConfigDef BattICALMenu;
 extern const MenuConfigDef SleepCfgMenu;
+extern const MenuConfigDef PSWDVerifyBeforeUpdateBCFGMenu;
+extern const MenuConfigDef PSWDVerifyBeforeRestoreBCFGMenu;
+extern const MenuConfigDef DiscardCurrentPendingChangesMenu;
+extern const MenuConfigDef SaveSystemSettingMenu;
+extern const MenuConfigDef DatabaseCheckMenu;
 
 //内部数值增减管理
 int IntIncDec(int ValueIN,int Min,int Max,int PerStep); //
