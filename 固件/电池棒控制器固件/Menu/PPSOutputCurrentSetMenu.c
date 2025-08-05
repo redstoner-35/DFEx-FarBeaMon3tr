@@ -36,12 +36,11 @@ const intEditMenuCfg PPS2CurrentEdit=
 //检查数值是否合法
 void CheckPPSIsetIsOK(void)
 	{
-	extern bool IsEnable17AMode;
 	//非公版固件允许设置
-	if(IsEnable17AMode)return;
+	if(CurrentIP2366FW->IsExtendPDOCapable&&CfgData.InputConfig.ChargePower==Power_140W)return;
 	//复位PPS电流
-	if(CfgData.PPSConfig.PPS2Current>3000)CfgData.PPSConfig.PPS2Current=3000;
-	if(CfgData.PPSConfig.PPS1Current>3000)CfgData.PPSConfig.PPS1Current=3000;
+	if(CfgData.InputConfig.ChargePower<Power_65W&&CfgData.PPSConfig.PPS2Current>3000)CfgData.PPSConfig.PPS2Current=3000;
+	if(CfgData.InputConfig.ChargePower<Power_140W&&CfgData.PPSConfig.PPS1Current>3000)CfgData.PPSConfig.PPS1Current=3000;
 	}	
 	
 //PPS1电流设置菜单	

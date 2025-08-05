@@ -34,6 +34,8 @@ typedef enum
 	REG_STATE_CTL3=0x38,
   REG_TYPEC_STATE=0x34,
 	REG_RECEIVED_PDO=0x35,
+	REG_MFR_ICREV=0x39,
+  REG_IC_TEMP=0x3A,
 	REG_VBAT_LSB=0x50,
 	REG_VBAT_MSB=0x51,
   REG_VSYS_LSB=0X52,
@@ -48,12 +50,12 @@ typedef enum
 
 typedef enum
 	{
-	Power_30W,
-	Power_45W,
-	Power_60W,
-	Power_65W,
-	Power_100W,
-	Power_140W
+	Power_30W=0,
+	Power_45W=1,
+	Power_60W=2,
+	Power_65W=3,
+	Power_100W=4,
+	Power_140W=5
 	}ChargePowerDef;
 
 typedef enum
@@ -87,6 +89,14 @@ typedef enum
  QuickCharge_None, //无快充
  QuickCharge_PlaceHolder, //QC枚举里面的占位符，其实没用只是用来复位GUI
  }QuickChargeStateDef;	
+ 
+typedef enum
+{
+Hardware_Ver_Unknown=0, //未知版本或者没有该寄存器
+Hardware_Ver_B=1,
+Hardware_Ver_C=2,
+Hardware_Ver_D=3,       //对应芯片硬件版本BCD
+}IP2366HWRevDef;
  
 typedef enum
  {
@@ -218,29 +228,32 @@ typedef struct
 	bool IsEnableHSCPOut; //开启高压SCP
 	}IP2366OutConfigDef;
 
+typedef struct
+	{
+	char FWID[5];
+	int IP2366ICCMAX; //支持的最大电池端电流
+	bool IsHSCPCapable; //是否支持HSCP对外Source
+	bool IsExtendPDOCapable; //是否支持额外的PDO编辑
+	ChargePowerDef MaxCapableChgPower; //最大支持的充电功率
+	float ShuntValue; //检流电阻阻值
+	bool IsHyperChargeCapable; //是否支持超充
+	bool ExtendedROREGCapable; //是否支持额外的可读取寄存器（例如MFR_IC_VERSION和IC_TEMP）
+	}IP2366FWCapDef;	
+	
 //电流回读参数配置
 #define BusCurrentCalFactor 0.985	//IP2366读回来的电流修正值
-	
-//峰值电流参数配置
-#if (BATTCOUNT == 4)	
 
-#define IP2366_ICCMAX 13000 //四串版本是13000mA
 	
-#elif (BATTCOUNT == 3 || BATTCOUNT == 2)
-	
-#define IP2366_ICCMAX 16000 //2-3串版本是16000mA
-	
-#else
-	
-#error "Invaild Battery Count Settings!"	
-	
-#endif
+//外部参考
+extern const IP2366FWCapDef *CurrentIP2366FW;	
 	
 //特殊数值运算函数
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
-
+bool IP2366_GetChipTemp(char *TempOut,bool *IsTempLimitTriggered); //获取芯片本身的温度数据
+IP2366HWRevDef IP2366_GetChipHWRev(void); //获取芯片的硬件版本号
+bool IP2366_UpdateChipCap(char VendorString[5]); //获取芯片能力
 bool IP2366_ForceEnterDeepSleep(void);		//IP2366强制进入低功耗睡眠模式
 bool IP2366_SetDeepSleepModeEnabled(bool IsEnableSleep); //IP2366设置低功耗睡眠模式是否使能	
 bool IP2366_GetIfCPortConnected(void);   //获取IP2366的C口是否已连接
@@ -258,6 +271,7 @@ bool IP2366_SetInputState(IP2366InputDef * Cfg); //设置输入状态
 bool IP2366_SetOutputState(IP2366OutConfigDef * CFG); //设置输出状态	
 bool IP2366_GetRecvPDO(RecvPDODef *PDOResult);	//获取输入的PDO状态
 bool IP2366_GetVBUSState(IP2366VBUSStateDef * State); //获取VBUS状态
+bool IP2366_GetVBUSVoltage(float *VBUS);//获取C口VBUS的电压
 bool IP2366_GetChargerState(BatteryStateDef *State);	//获取充电状态
 bool IP2366_DetectIfPresent(void);	//监测IP2366是否存在
 bool IP2366_SetTypeCRole(TypeCRoleDef Role); //设置TypeC的模式

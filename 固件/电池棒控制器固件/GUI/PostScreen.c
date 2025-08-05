@@ -9,16 +9,21 @@ static int Presentage=0;
 static MessageTypeDef LastType=Msg_Statu;
 static short LastMsgLen=0;
 bool EnableDetailOutput=false;
+static bool IsWarningAsserted;
+static bool IsINFOAsserted;
 
 //初步显示自检屏幕
 void PostScreenInit(void)
 	{
+	IsINFOAsserted=false;		
+	IsWarningAsserted=false;
+	//显示屏幕
 	ClearScreen();	
 	LCD_ShowPicture(33,24,91,11,PostSign);
 	LCD_DrawRectangle(5,59,153,75,WHITE);
 	LCD_DrawRectangle(7,61,8,73,CYAN);
 	LCD_Fill(7,61,8,73,CYAN);	
-	LCD_ShowString(137,46,"00",WHITE,BLACK,12,0);		
+	LCD_ShowString(137,46,"FF",WHITE,BLACK,12,0);		
 	}
 
 //根据信息类型选择对应的颜色
@@ -35,13 +40,26 @@ static u16 PickColorBasedOnType(MessageTypeDef Type)
 	//其余情况返回黑色
 	return BLACK;
 	}
+	
+//根据自检结果返回对应的自检ID
+const char *QueryPostDoneID(void)
+	{
+	if(IsWarningAsserted)return "AC";
+	else if(IsINFOAsserted)return "AB";
+	//系统自检正常通过，返回AA
+	return "AA";
+	}	
 //显示自检信息
 void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 	{
-	int i;
+	int i,msglen;
 	float len;
-	//根据消息类型设定颜色
-	u16 Color=PickColorBasedOnType(Type);
+	char MsgBuf[40];
+	u16 Color;
+	//根据消息类型设定颜色和置起flag
+	if(Type==Msg_Warning)IsWarningAsserted=true;
+	if(Type==Msg_INFO)IsINFOAsserted=true;
+	Color=PickColorBasedOnType(Type);            //调用函数根据事件类型选择颜色
 	//根据百分比计算进度条要到达的长度
 	len=((float)Present)/(float)100*(float)143;
 	i=(int)len;
@@ -53,7 +71,9 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 		LCD_Fill(7,61,8+Presentage,73,Color);	
 		if(Presentage<i)Presentage++;
 		if(Presentage>i)Presentage--;
-		delay_ms(1);
+		//进度条动画延时
+		if(EnableDetailOutput)delay_ms(4);
+		else delay_ms(8);
 		}
 	while(Presentage!=i);
 	//如果下一条自检信息不是异常，则进行消隐动画
@@ -74,7 +94,15 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 			delay_ms(2);
 			}
 		//显示新的文字
-		LCD_ShowHybridString(5,46,Msg,Color,BLACK,0);
+		msglen=strlen(Msg);  //计算长度
+		for(i=1;i<=msglen;i++)
+			{
+			memset(MsgBuf,0,sizeof(MsgBuf));
+			memcpy(MsgBuf,Msg,i);
+			LCD_ShowHybridString(5,46,Msg,Color,BLACK,0);
+			delay_ms(30);
+			}
+		//显示自检ID
 		LCD_ShowString(137,46,ID,WHITE,BLACK,12,0);		
 		}
 	else LCD_ShowString(137,46,ID,WHITE,BLACK,12,0);	

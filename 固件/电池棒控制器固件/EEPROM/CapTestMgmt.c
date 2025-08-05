@@ -90,25 +90,25 @@ bool WriteCapData(ChargeTestUnionDef *IN,bool ForceUpdate)
 void POR_ReadCapData(void)
 	{
 	int CRCResult;
-	ShowPostInfo(50,"加载测容数据\0","15",Msg_Statu);
+	ShowPostInfo(50,"加载测容数据\0","10",Msg_Statu);
 	if(!ReadCapData(&CTestData))
 		{
-		ShowPostInfo(50,"存储器读取异常\0","E5",Msg_Fault);
+		ShowPostInfo(50,"存储器读取异常\0","E8",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	//检查配置
 	CRCResult=CalcCapDataCRC32(&CTestData.ROMImage.Data);
 	if(CRCResult!=LastCDataCRC)
 		{
-		ShowPostInfo(50,"测容数据损坏","1E",Msg_Warning);
+		ShowPostInfo(50,"测容数据损坏","11",Msg_Warning);
 		delay_Second(1);
 		ClearHistoryData();
 		if(!WriteCapData(&CTestData.ROMImage.Data,true))
 			{
-			ShowPostInfo(50,"存储器写入异常","E6",Msg_Fault);
+			ShowPostInfo(50,"存储器写入异常","E9",Msg_Fault);
 			SelfTestErrorHandler();
 			}
-		ShowPostInfo(50,"已清除损坏数据","0E",Msg_Warning);	
+		ShowPostInfo(50,"已清除损坏数据","11",Msg_Warning);	
 		delay_Second(1);	
 		}
 	//初始化当前的测容数据

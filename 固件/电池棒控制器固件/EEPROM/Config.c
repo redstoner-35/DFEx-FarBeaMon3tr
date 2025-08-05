@@ -25,8 +25,6 @@ void SyncUnResetThings(CfgUnionDef *IN)
 //将默认配置加载到指定位置
 void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	{
-	extern bool IsEnable17AMode;	
-	extern bool IsSupportExterndPDO;
 	//校准系数配置
 	if(IsFactoryOverride)
 		{
@@ -40,16 +38,18 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable12VPDOSet=false;
 	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable15VPDOSet=false;
 	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable9VPDOSet=false;
-	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable20VPDOSet=false;
+	if(!CurrentIP2366FW->IsHyperChargeCapable)IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable20VPDOSet=false;
+	else IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable20VPDOSet=CurrentIP2366FW->IsExtendPDOCapable;
 	IN->ROMImage.Data.Data.FixedPDOCfg.PDO9VICCMAX=3000;
 	IN->ROMImage.Data.Data.FixedPDOCfg.PDO12VICCMAX=3000;
 	IN->ROMImage.Data.Data.FixedPDOCfg.PDO15VICCMAX=3000;
-	IN->ROMImage.Data.Data.FixedPDOCfg.PDO20VICCMAX=IsSupportExterndPDO?7000:4000;
+	if(!CurrentIP2366FW->IsHyperChargeCapable)IN->ROMImage.Data.Data.FixedPDOCfg.PDO20VICCMAX=4000;
+	else IN->ROMImage.Data.Data.FixedPDOCfg.PDO20VICCMAX=CurrentIP2366FW->IsExtendPDOCapable?7000:4000;
 	//输入配置
 	IN->ROMImage.Data.Data.VRecharge=Recharge_0V1;
 	IN->ROMImage.Data.Data.IStop=IStop_200mA;
-	IN->ROMImage.Data.Data.InputConfig.ChargeCurrent=IsEnable17AMode?IP2366_ICCMAX:9700;
-	IN->ROMImage.Data.Data.InputConfig.ChargePower=IsEnable17AMode?Power_140W:Power_65W;
+	IN->ROMImage.Data.Data.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
+	IN->ROMImage.Data.Data.InputConfig.ChargePower=CurrentIP2366FW->MaxCapableChgPower;
 	IN->ROMImage.Data.Data.InputConfig.FullVoltage=4200;
 	IN->ROMImage.Data.Data.InputConfig.PreChargeCurrent=400;
 	IN->ROMImage.Data.Data.InputConfig.IsEnableCharger=true;
@@ -78,10 +78,10 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	IN->ROMImage.Data.Data.EnableTCCalibration=false;
 	IN->ROMImage.Data.Data.OverHeatLockTemp=85;
 	//PPS1和PPS2电流
-	IN->ROMImage.Data.Data.PPSConfig.PPS1Current=3000;
-  IN->ROMImage.Data.Data.PPSConfig.PPS2Current=IsEnable17AMode?3000:5000;
-	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS1Set=false;
-	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS2Set=false;
+	IN->ROMImage.Data.Data.PPSConfig.PPS1Current=CurrentIP2366FW->IsExtendPDOCapable?6350:3000;
+  IN->ROMImage.Data.Data.PPSConfig.PPS2Current=CurrentIP2366FW->IsExtendPDOCapable?6350:3000;
+	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS1Set=CurrentIP2366FW->IsExtendPDOCapable;
+	IN->ROMImage.Data.Data.PPSConfig.IsEnablePPS2Set=CurrentIP2366FW->IsExtendPDOCapable;
 	//TypeC矫正设置
 	if(IsFactoryOverride)
 		{
@@ -98,7 +98,7 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	IN->ROMImage.Data.Data.AutoSaveCfg=AutoSave_Enabled; //默认是自动存盘模式
 	IN->ROMImage.Data.Data.InstantCTest=InstantCTest_NotTriggered;
 	//最大PD输入配置
-  IN->ROMImage.Data.Data.MaxVPD=IsEnable17AMode?PDMaxIN_28V:PDMaxIN_20V;
+  IN->ROMImage.Data.Data.MaxVPD=CurrentIP2366FW->IsHyperChargeCapable?PDMaxIN_28V:PDMaxIN_20V;
   //均衡系统配置
 	IN->ROMImage.Data.Data.BalanceMode=Balance_ChgDisOnly; //均衡仅在充放电时启用
 	}
@@ -206,30 +206,31 @@ void LoadConfig(void)
 	int CRCResult;
 	extern bool EnableDetailOutput;	
 	bool IsNeedToUpgrade=false,result;
+  CfgUnionDef BackUpCfg;
 	//读取数据	
-	ShowPostInfo(30,"加载系统配置文件\0","0D",Msg_Statu);
+	ShowPostInfo(30,"加载系统配置文件\0","09",Msg_Statu);
 	if(!ReadConfiguration(&CfgUnion,false))
 		{
-		ShowPostInfo(30,"存储器读取异常\0","E5",Msg_Fault);
+		ShowPostInfo(30,"存储器读取异常\0","E8",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	//检查配置
 	CRCResult=CalcROMCRC32(&CfgUnion);
 	if(CRCResult!=CfgChecksum)
 		{
-		ShowPostInfo(30,"尝试读取备用配置\0","3C",Msg_Warning);
+		ShowPostInfo(32,"尝试读取备用配置\0","0A",Msg_Statu);
 		delay_ms(300);
 		//主文件配置数据损坏，尝试读取备用	
 		if(!ReadConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(30,"存储器读取异常\0","E5",Msg_Fault);
+			ShowPostInfo(32,"存储器读取异常\0","E8",Msg_Fault);
 			SelfTestErrorHandler();
 			}
 		CRCResult=CalcROMCRC32(&CfgUnion);	
 		if(CRCResult!=CfgChecksum)
 			{
 			//备用文件也坏了,重置所有数据
-			ShowPostInfo(30,"无可用的配置文件","0E",Msg_Warning);
+			ShowPostInfo(32,"无可用的配置文件","W4",Msg_Warning);
 			delay_Second(1);
 			RestoreDefaultConfig();
 			UsingBackupConfig=false;
@@ -238,41 +239,75 @@ void LoadConfig(void)
 			result&=WriteConfiguration(&CfgUnion,true); //写备用配置文件
 			if(!result)
 				{
-				ShowPostInfo(30,"存储器写入异常","E6",Msg_Fault);
+				ShowPostInfo(32,"存储器写入异常","E9",Msg_Fault);
 				SelfTestErrorHandler();
 				}		
-			ShowPostInfo(30,"已加载出厂设置","0E",Msg_Warning);	
+			ShowPostInfo(32,"已加载出厂设置","W4",Msg_Warning);	
 			delay_Second(1);	
 			}
 		else
 			{
-			ShowPostInfo(30,"主用配置文件损坏","1D",Msg_Warning);
+			ShowPostInfo(32,"主用配置文件损坏","0B",Msg_Warning);
 			delay_ms(300);	
 			//尝试对主用数据进行覆盖
 			UsingBackupConfig=false;
 			if(!WriteConfiguration(&CfgUnion,true))  //写主配置文件 
 				{
-				ShowPostInfo(30,"存储器写入异常","E6",Msg_Fault);
+				ShowPostInfo(32,"存储器写入异常","E9",Msg_Fault);
 				SelfTestErrorHandler();				
 				}
 			UsingBackupConfig=true;
-			ShowPostInfo(30,"已加载备用文件","1D",Msg_Warning);
+			ShowPostInfo(32,"已加载备用文件","0B",Msg_Warning);
 			delay_ms(300);
 			}
 		}
-	//对PD数据进行修正	
-	if(CfgData.InputConfig.ChargeCurrent>IP2366_ICCMAX)
+	else
 		{
-		ShowPostInfo(30,"峰值电流配置非法\0","1F",Msg_Warning);
+		ShowPostInfo(32,"检查备用配置文件\0","42",Msg_Statu);
+		//系统检查通过，检查备用配置文件
+		if(!ReadConfiguration(&BackUpCfg,false))
+			{
+			ShowPostInfo(32,"存储器读取异常\0","E8",Msg_Fault);
+			SelfTestErrorHandler();
+			}
+		//CRC32比对处理
+		CRCResult=CalcROMCRC32(&BackUpCfg);
+		if(CRCResult!=BackUpCfg.ROMImage.CRCResult)
+			{
+			ShowPostInfo(32,"备用配置文件损坏","WB",Msg_Warning);
+			delay_ms(300);	
+			UsingBackupConfig=true;
+			if(!WriteConfiguration(&CfgUnion,true))  //写主配置文件 
+				{
+				ShowPostInfo(32,"存储器写入异常","E9",Msg_Fault);
+				SelfTestErrorHandler();				
+				}		
+			ShowPostInfo(32,"已覆盖为主用配置","WB",Msg_Warning);
+			delay_ms(300);
+			}
+		}
+	ShowPostInfo(35,"检查系统配置数据\0","0C",Msg_Statu);
+	//对PD数据进行修正	
+	if(CfgData.InputConfig.ChargeCurrent>CurrentIP2366FW->IP2366ICCMAX)
+		{
+		ShowPostInfo(35,"峰值电流配置非法\0","W5",Msg_Warning);
 		delay_Second(1);
-    CfgData.InputConfig.ChargeCurrent=IP2366_ICCMAX;
+    CfgData.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
 		IsNeedToUpgrade=true;	
 		}		
-	if(CfgData.MaxVPD==PDMaxIN_20V&&(CfgData.InputConfig.ChargePower==Power_140W||CfgData.InputConfig.ChargePower==Power_100W))	
+	if(CfgData.InputConfig.ChargePower>CurrentIP2366FW->MaxCapableChgPower)
 		{
-		ShowPostInfo(30,"系统配置非法\0","0F",Msg_Warning);
+		//充电功率超过芯片capable的能力，修正
+		ShowPostInfo(35,"充电功率配置非法\0","WC",Msg_Warning);
 		delay_Second(1);
-		CfgData.InputConfig.ChargePower=Power_65W;	
+		CfgData.InputConfig.ChargePower=CurrentIP2366FW->MaxCapableChgPower;	
+		IsNeedToUpgrade=true;		
+		}
+	if(CfgData.MaxVPD==PDMaxIN_20V&&CfgData.InputConfig.ChargePower==Power_140W)	
+		{
+		ShowPostInfo(35,"PD输入配置非法\0","W6",Msg_Warning);
+		delay_Second(1);
+		CfgData.InputConfig.ChargePower=CurrentIP2366FW->MaxCapableChgPower;	
 		IsNeedToUpgrade=true;	
 		}
 	//需要更新配置
@@ -280,12 +315,12 @@ void LoadConfig(void)
 		{
 		if(!WriteConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(30,"存储器写入异常\0","E6",Msg_Fault);
+			ShowPostInfo(35,"存储器写入异常\0","E9",Msg_Fault);
 			SelfTestErrorHandler();
 			}		
 		else
 			{			
-			ShowPostInfo(30,"已进行自动修正\0","0F",Msg_Warning);
+			ShowPostInfo(35,"已进行自动修正\0","0D",Msg_Warning);
 			delay_Second(1);
 			}
 		}

@@ -116,7 +116,7 @@ void InternalADC_LoadCalibration(int Vcal,int Ical)
 void InternalADC_Init(void)
   {
 	 int i;
-	 ShowPostInfo(5,"配置ADC模块","02",Msg_Statu);
+	 ShowPostInfo(5,"配置ADC模块","03",Msg_Statu);
 	 //将LED Vf测量引脚和温度引脚配置为AD模式
 	 AFIO_GPxConfig(GPIO_PA, ISenseOut_IOP,AFIO_FUN_ADC0);
 	 AFIO_GPxConfig(GPIO_PA,ISenseREF_IOP,AFIO_FUN_ADC0);
@@ -146,23 +146,23 @@ void InternalADC_Init(void)
 	 ADCO.Vbatt=0;
 	 ADC_Cmd(HT_ADC0, ENABLE);
 	 //触发ADC转换
-	 ShowPostInfo(8,"检查NTC","03",Msg_Statu);
+	 ShowPostInfo(8,"检查热敏电阻","04",Msg_Statu);
    for(i=0;i<5;i++)if(!ADC_GetResult())
 		{
-		ShowPostInfo(8,"ADC转换异常","E0",Msg_Fault);
+		ShowPostInfo(8,"ADC转换异常","E1",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	 //基准电压故障
 	 if(ADCO.IVREF<1.2||ADCO.IVREF>1.3)
 		{
-		ShowPostInfo(8,"IREF电压故障","8A",Msg_Fault);
+		ShowPostInfo(8,"IREF电压故障","E2",Msg_Fault);
 		SelfTestErrorHandler();
 		
 		}
 	 //监测温度状态
 	 if(!ADCO.IsNTCOK)
 	  {
-		ShowPostInfo(8,"热敏电阻故障","E1",Msg_Fault);
+		ShowPostInfo(8,"热敏电阻故障","E3",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	}

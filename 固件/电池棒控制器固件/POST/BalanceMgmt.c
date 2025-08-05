@@ -23,7 +23,7 @@ static bool BalTypeCConnectedState=false; //均衡连接状态
 void BalanceMgmt_Init(void)
 	{
 	bool State;
-	ShowPostInfo(52,"均衡控制器配置","30",Msg_Statu);
+	ShowPostInfo(52,"均衡控制器配置","12",Msg_Statu);
 	State=PCA9536_SetIOState(PCA9536_IOPIN_0,false); //将对应IO设置为0
 	State&=PCA9536_SetIOPolarity(PCA9536_IOPIN_0,PCA9536_IO_Normal); //正常极性
 	State&=PCA9536_SetIODirection(PCA9536_IOPIN_0,PCA9536_IODIR_OUT); //输出模式
@@ -32,15 +32,15 @@ void BalanceMgmt_Init(void)
 	PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_OUT);
 	PCA9536_SetIOState(PCA9536_IOPIN_2,false);
 	PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_OUT);  
-	PCA9536_SetIOState(PCA9536_IOPIN_3,false);									//其余没用的IO输出低电平
+	PCA9536_SetIOState(PCA9536_IOPIN_3,false);									//其余IO默认输出低电平
 	//检查设置状态
 	if(!State)
 		{
-		ShowPostInfo(52,"均衡控制器异常","3E",Msg_Fault);
+		ShowPostInfo(52,"均衡控制器异常","ED",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	//应用校准数据
-	ShowPostInfo(53,"应用ADC校准数据","31",Msg_Statu);
+	ShowPostInfo(53,"应用ADC校准数据","13",Msg_Statu);
 	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor);
 	}
 	

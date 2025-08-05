@@ -108,9 +108,7 @@ void ReturnToMainMenu(void)
 //进入功率设置菜单
 void EnterPSet(void)
 	{
-	//根据配置选择进哪个菜单
-	if(CfgData.MaxVPD==PDMaxIN_20V)SwitchingMenu(&PowerSetMenuNoEPR);
-	else SwitchingMenu(&PowerSetMenu);
+	SwitchingMenu(&PowerSetMenu);
 	}	
 	
 //进入功率设置菜单
@@ -128,9 +126,8 @@ void EnterSleepCfg(void)
 //进入放电系统配置
 void EnterDisMgmt(void)
 	{
-	extern bool IsEnableHSCPMode;
-	//仅特殊固件
-	if(IsEnableHSCPMode)SwitchingMenu(&DisChgCfgMenu);
+	//特殊固件下解锁HSCP支持
+	if(CurrentIP2366FW->IsHSCPCapable)SwitchingMenu(&DisChgCfgMenu);
 	else SwitchingMenu(&DisChgCfgMenuNoHSCP);
 	}
 //进入充电管理

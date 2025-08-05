@@ -6,8 +6,8 @@
 #include "Config.h"
 
 //定义
-#define RunTimeLoggerDepth 540  //运行日志的深度
-#define RunTimeLogKey "RLDB" //运行log的内容检查Key
+#define RunTimeLoggerDepth 550  //运行日志的深度
+#define RunTimeLogKey "R@DB" //运行log的内容检查Key
 
 typedef struct
 	{
@@ -23,6 +23,9 @@ typedef struct
 	float MaximumBattCurrent; //电池端最大电流
 	float MaximumTypeCPower; //最大Type-C功率
 	float MaximumTypeCCurrent; //最大Type-C电流
+	short SystemSCPCount;   //系统触发短路保护的次数
+	short SystemOCPCount;   //系统触发过流保护的次数
+	short VBUSOVPCount; //输入过压触发的次数
 	//是否触发保护系统
 	bool IsEnablePunish; //是否触发保护机制
 	}LogContentDef;
@@ -59,12 +62,19 @@ typedef struct
  int ProgrammedEntry; //目标编程的entry
  }RunLogEntryStrDef;	//运行日志结构体的定义
  
+typedef struct
+{
+char CacheFrontKey[8];
+signed short IncCodeCache[RunTimeLoggerDepth];
+char CacheRearKey[8];
+}IncCodeROMImageDef;
+
 typedef union
 {
-signed short IncCodeCache[RunTimeLoggerDepth];
-char ByteBuf[sizeof(signed short)*RunTimeLoggerDepth];
-}IncCodeCacheDef;	
- 
+IncCodeROMImageDef CodeData;
+char ByteBuf[sizeof(IncCodeROMImageDef)];
+}IncCodeROMUnionDef;
+
 typedef union
 {
 signed short IncCode;
@@ -72,9 +82,11 @@ char ByteBuf[sizeof(signed short)];
 }IncCodeSingleWriteDef;
 
 //地址定义
-#define RunTimeLogCacheBase CfgFileSize+sizeof(ChargeTestStorDef) //运行日志searching缓存的位置
 #define RunTimeLogSize RunTimeLoggerDepth*sizeof(RunLogDataStrDef)  //运行日志的大小
-#define RunTimeLogBase CfgFileSize+sizeof(IncCodeCacheDef)+sizeof(ChargeTestStorDef) //运行日志的起始位置
+#define RunTimeLogBase CfgFileSize+sizeof(IncCodeROMImageDef)+sizeof(ChargeTestStorDef) //运行日志的起始位置
+#define RunTimeLogGuardKeyFrontBase CfgFileSize+sizeof(ChargeTestStorDef)
+#define RunTimeLogCacheBase RunTimeLogGuardKeyFrontBase+(8*sizeof(char)) //运行日志searching缓存的位置
+#define RunTimeLogGuardKeyRearBase RunTimeLogCacheBase+(sizeof(signed short)*RunTimeLoggerDepth) //运行日志缓存尾部的Guard Key的位置
 
 //外部参考
 #define LogHeader RunLogEntry.Data.DataSec
@@ -82,6 +94,8 @@ char ByteBuf[sizeof(signed short)];
 extern RunLogEntryStrDef RunLogEntry;
 
 //日志文件处理
+bool WriteLogCacheKeyArea(void);
+bool CompareLogCacheKeyIsOK(bool *Result); //比较和重新写入日志缓存区域的Guard Key
 bool RunLogModule_VerifyDBHandler(int EntryNum,bool *IsCorrupted); //进行日志重建处理
 int CalcCurrentAvailableLogCount(void); //计算日志区域的已用存储空间
 bool ResetRunTimeLogArea(void); //复位日志区域

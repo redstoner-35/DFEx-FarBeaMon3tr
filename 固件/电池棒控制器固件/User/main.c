@@ -11,6 +11,7 @@
 #include "LogSystem.h"
 #include "WatchDog.h"
 #include "BalanceMgmt.h"
+#include "AUXPSU.h"
 
 //函数声明
 void PowerMgmtSetup(void);
@@ -35,6 +36,7 @@ void PushDefaultResultToVBat(void);
 void OverChargeDetectModule(void);
 void HPPowerGuage_Start(void);
 void AutoBalTIMHandler(void);
+void AdapEmuTIMHandler(void);
 
 //常量
 bool SensorRefreshFlag=false;
@@ -62,11 +64,11 @@ int main(void)
  //底层外设初始化
  LCD_HardwareInit();
  LCD_Init(); //进行LCD的硬件初始化和寄存器初始化
- SideKey_Init(); //侧按初始化 	
  PostScreenInit(); //显示自检的初始主界面
  LCD_EnableBackLight(); //启动LCD背光，LCD开始显示
  //开始图形化自检
  EnableHBTimer(); //初始化系统8Hz心跳定时器
+ SideKey_Init(); //侧按初始化 	
  InternalADC_Init(); //ADC初始化 
  KickIP2366ToWakeUp(); //踢一脚2366唤醒
  SMBUS_Init(); //启动SMBUS
@@ -81,13 +83,14 @@ int main(void)
  IP2366_PostInit(); //IP2366应用后配置
  HPPowerGuage_Start(); //初始化高精度功率计
  PushDefaultResultToVBat(); //将电池电压数据默认应用给结构体进行显示
- //自检结束,将进度条跳到100%
- ShowPostInfo(100,"系统初始化完成","AA",Msg_POSTOK);
- delay_ms(!CfgData.EnableFastBoot?400:150); //关闭快速启动则多延时一会让人可以看清
- WatchDog_Init(); //启动看门狗
- ClearScreen();
  EnteredInstantCapTest(); //尝试进入测试菜单
+ AUXPSU_DetectIfCPortTriggerPresent(); //检测C口诱骗硬件是否存在
+ //自检完毕，进入系统
+ ShowPostInfo(100,"系统初始化完成",(char *)QueryPostDoneID(),Msg_POSTOK);
+ delay_ms(!CfgData.EnableFastBoot?400:150); //关闭快速启动则多延时一会让人可以看清
+ ClearScreen();
  SensorRefreshFlag=false; //清除flag
+ WatchDog_Init(); //启动看门狗
  //主循环
  while(1)
    {
@@ -113,7 +116,9 @@ int main(void)
 	 OverChargeDetectModule(); //过充检测
 	 DetectIfIP2366Reset(); //监测IP2366是否复位
 	 GUIDelayHandler(); //GUI延时处理
+	 AdapEmuTIMHandler(); //适配器模拟计时器处理
 	 IP2366_ReConfigOutWhenTypeCOFF(); //从VBUS起来的重新连接
+	 AUXPSU_Mgmt(); //进行辅助电源的配置
 	 IntEditMenuKeyEffHandler(); //实现按下特效
 	 TCResetFSM(); //实现Type-C重连
 	 AttackTimeCounter(); //防止爆破攻击的保护

@@ -4,6 +4,7 @@
 #include "ADC.h"
 #include "Key.h"
 #include "delay.h"
+#include "AUXPSU.h"
 #include <math.h>
 
 typedef enum
@@ -18,13 +19,14 @@ typedef enum
 	{
 	AdapEmu_Initial,
 	AdapEmu_WaitForOutput,
+	AdapEmu_TryToUseFakeLoad,
 	AdapEmu_StartTypeC,
 	AdapEmu_InitFailed,
 	AdapEmu_Running,
 	AdapEmu_StopDueToFault,
 	AdapEmu_StopDueToLowBatt
 	}AdapEmuFSMDef;	
-	
+
 //外部变量
 extern bool Is2366Telem;
 extern IP2366VBUSStateDef VBUS;
@@ -38,7 +40,14 @@ extern ChipStatDef CState;
 bool IsEnableAdapterEmu=false; //是否开启适配器模拟
 static AdapEmuErrorDef EmuErrorName;
 static AdapEmuFSMDef EmuState=AdapEmu_Initial;	
+static short EmuFSMTIM=0;		
+bool IsEnabledFakeAToCMode=false; //标志位，是否开启假的A to C输出功能	
 	
+//状态机计时器
+void AdapEmuTIMHandler(void)
+	{
+	if(EmuFSMTIM>0)EmuFSMTIM--;
+	}
 	
 //内部函数，检查电池是否过低
 static bool CheckIfBattTooLow(void)
@@ -76,6 +85,7 @@ void EnterAdapterEmulationPrePare(void)
 	{
 	BatteryStateDef BattState;
 	//获取芯片当前状态	
+	IsEnabledFakeAToCMode=false;
 	if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt)
 		{
 		EmuState=AdapEmu_InitFailed;
@@ -90,6 +100,7 @@ void EnterAdapterEmulationPrePare(void)
 	//尝试对芯片通信
 	else if(!IP2366_GetChargerState(&BattState))EmuState=AdapEmu_InitFailed;
 	else if(!IP2366_EnableDCDC(false,true))EmuState=AdapEmu_InitFailed; //关闭充电系统
+	else if(BattState==Batt_StandBy&&IsCPortTriggerOK)EmuState=AdapEmu_TryToUseFakeLoad; //如果C口假负载存在，则进行假负载连接的尝试
 	else if(BattState!=Batt_discharging)EmuState=AdapEmu_WaitForOutput; //非放电模式跳转到等待负载连接
 	//通信成功，如果系统已经是放电则直接启动typec
 	else EmuState=AdapEmu_StartTypeC;
@@ -146,7 +157,19 @@ static void AdapterEmuRunningHandler(void)
 	float Power;			
 	//显示标题
 	if(IsSystemOverheating)LCD_ShowChinese(22,23,"系统过热，模拟暂停",ORANGE,LGRAY,0);
-	else LCD_ShowChinese(25,23,"适配器模拟已开启",GREEN,LGRAY,0);
+	else 
+		{
+	  if(IsCPortTriggerOK&&IsDispChargingINFO)
+			{
+			if(!VBUS.IsTypeCConnected&&!IsEnabledFakeAToCMode) //C口未连接且未开启模拟则显示按下Enter
+				LCD_ShowHybridString(13,23,"按下Enter开启A口模拟",WHITE,LGRAY,0);
+			else if(IsEnabledFakeAToCMode)
+				LCD_ShowHybridString(22,23,"USB-A口模拟已开启",GREEN,LGRAY,0);
+			else //其余情况照常显示适配器模拟已开启 
+				LCD_ShowChinese(25,23,"适配器模拟已开启",GREEN,LGRAY,0);
+			}
+	  else LCD_ShowChinese(25,23,"适配器模拟已开启",GREEN,LGRAY,0);
+		}
 	//显示输出
 	LCD_ShowChinese(6,44,"输出",WHITE,LGRAY,0);
 	LCD_ShowChar(30,44,':',WHITE,LGRAY,12,0);
@@ -246,12 +269,33 @@ void AdapterEmuRender(void)
 			EnterAdapterEmulationPrePare();
 		  IsResultUpdated=true;
 		  break;
+	  case AdapEmu_TryToUseFakeLoad:
+			RenderMenuBG();
+			LCD_ShowChinese(14,22,"适配器模拟开启中……",WHITE,LGRAY,0);
+			EmuFSMTIM=20;
+		  //打开C口5.1K诱骗电路
+		  if(!AUXPSU_SetTypeCFVoutState(true))
+				{
+			  EmuErrorName=Error_CommFault;
+			  EmuState=AdapEmu_InitFailed; //C口诱骗电路异常，无法成功答案开
+				}
+			//打开成功，跳转到输出等待阶段
+			else EmuState=AdapEmu_WaitForOutput;
+			IsResultUpdated=true;
+			break;
+    //等待输出建立				
 	  case AdapEmu_WaitForOutput:
 			Is2366Telem=true;
 			if(!IsResultUpdated)break;
 			RenderMenuBG();
 			LCD_ShowChinese(14,22,"适配器模拟开启中……",WHITE,LGRAY,0);
-		  LCD_ShowHybridString(17,37,"请将负载连接到USB",YELLOW,LGRAY,0);			
+		  if(EmuFSMTIM==1)
+				{
+				//计时1秒后仍然没有成功切换到输出状态，说明是旧版硬件需要手动拿OTG骗一下，显示提示
+				EmuFSMTIM--;
+				AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路
+				}
+		  else if(!EmuFSMTIM)LCD_ShowHybridString(17,37,"请将负载连接到USB",YELLOW,LGRAY,0);			
 		  //屏幕已刷新，标记结束模拟
 			IsResultUpdated=false;
 			//等待系统进入放电模式
@@ -278,8 +322,12 @@ void AdapterEmuRender(void)
 				EmuErrorName=Error_CommFault;
 				EmuState=AdapEmu_InitFailed;
 				}
-			//开启成功，进入运行模式
-		  else EmuState=AdapEmu_Running;
+			//开启成功，进入运行模式   
+		  else
+				{	
+        AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路					
+				EmuState=AdapEmu_Running;
+				}
 			break;
 		//适配器模拟运行中，正常显示
 		case AdapEmu_Running:
@@ -314,9 +362,19 @@ void AdapterEmuRender(void)
 void AdapterMenuKeyProc(void)
 	{
 	extern bool IsEnterDischargeMode;
+	//C口诱骗硬件存在的情况下，按下Enter开启A to C输出模式
+	if(IsCPortTriggerOK&&KeyState.KeyEvent==KeyEvent_Enter&&EmuState==AdapEmu_Running)
+		{
+		//尝试激活A to C模拟
+		if(!IsEnabledFakeAToCMode)IsEnabledFakeAToCMode=AUXPSU_SetTypeCFVoutState(true); 
+		//尝试关闭A to C模拟		
+		else if(AUXPSU_SetTypeCFVoutState(false))IsEnabledFakeAToCMode=false;
+		}
   //按下esc返回菜单		
 	if(KeyState.KeyEvent==KeyEvent_ESC)
 		{
+		//退出时需要强制关闭C口对外诱骗电路
+		AUXPSU_SetTypeCFVoutState(false); 
 		//从快捷菜单进来的，直接回主菜单
 		if(IsEnterDischargeMode)
 			{

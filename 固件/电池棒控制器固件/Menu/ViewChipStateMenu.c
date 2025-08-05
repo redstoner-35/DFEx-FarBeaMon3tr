@@ -6,6 +6,7 @@
 #include "24Cxx.h"
 #include "Config.h"
 #include <string.h>
+#include "AUXPSU.h"
 
 static bool ChipStateUpdated=false;
 static char ChipInfoSelect=0;
@@ -29,6 +30,7 @@ static void ShowHPGaugeState(void)
 	else if(!PinState)LCD_ShowChinese(131,35,"正常",WHITE,LGRAY,0);		
 	else LCD_ShowChinese(131,35,"启用",GREEN,LGRAY,0);
 	//显示PPS1和PPS2电流
+  if(!IsEnableAdvancedMode)return;                    //开了高级模式才允许查看
 	Result=IP2366_GetPPSCurrent(&PPS1ICC,&PPS2ICC);
 	LCD_ShowHybridString(4,49,"PPS1广播电流",WHITE,LGRAY,0);
 	LCD_ShowHybridString(4,64,"PPS2广播电流",WHITE,LGRAY,0);	
@@ -81,6 +83,53 @@ static bool ShowConfigState(void)
 	//返回状态
 	return true;
 	}	
+	
+//显示硬件版本号
+static void DisplayChipTemp(void)
+	{
+	bool Result,IsTempLoopACT;
+	char Temp;
+	u16 Color;
+	LCD_ShowHybridString(4,21,"PSOC硬件版本",WHITE,LGRAY,0);
+	LCD_ShowHybridString(4,35,"PSOC温度",WHITE,LGRAY,0);
+	LCD_ShowHybridString(4,49,"PSOC限温保护",WHITE,LGRAY,0);
+	LCD_ShowHybridString(4,64,"C口自动诱骗",WHITE,LGRAY,0);
+
+	if(!CurrentIP2366FW->ExtendedROREGCapable)LCD_ShowString(134,21,"N/A",WHITE,LGRAY,12,0);
+	else switch(IP2366_GetChipHWRev())
+		{
+		case Hardware_Ver_Unknown:LCD_ShowChinese(131,21,"未知",WHITE,LGRAY,0);break;
+		case Hardware_Ver_B:LCD_ShowHybridString(131,21,"B版",WHITE,LGRAY,0);break;
+		case Hardware_Ver_C:LCD_ShowHybridString(131,21,"C版",WHITE,LGRAY,0);break;
+		case Hardware_Ver_D:LCD_ShowHybridString(131,21,"D版",WHITE,LGRAY,0);break;
+		}
+	
+	//获取温度数据
+	Result=IP2366_GetChipTemp(&Temp,&IsTempLoopACT);
+	if(!CurrentIP2366FW->ExtendedROREGCapable)LCD_ShowChinese(119,35,"不支持",WHITE,LGRAY,0);
+	else if(!Result)LCD_ShowChinese(103,35,"不可用",WHITE,LGRAY,0);
+	else
+		{
+		if(Temp<10)Color=BLUE;
+		else if(Temp<75)Color=GREEN;
+		else if(Temp<80)Color=YELLOW;
+		else Color=RED;
+		//正数温度
+		if(Temp<10)LCD_ShowFloatNum1(98,35,(float)Temp,3,Color,LGRAY,12); //9.999显示
+		else if(Temp<100)LCD_ShowFloatNum1(98,35,(float)Temp,2,Color,LGRAY,12); //99.99显示
+		else LCD_ShowFloatNum1(98,35,(float)Temp,1,Color,LGRAY,12); //999.9显示
+		//显示摄氏度符号
+		LCD_ShowChinese12x12(143,35,"℃",WHITE,LGRAY,12,0); //显示汉字
+		}
+	//显示限温保护是否激活
+	if(!CurrentIP2366FW->ExtendedROREGCapable)LCD_ShowChinese(119,49,"不支持",WHITE,LGRAY,0);
+	else if(!Result)LCD_ShowChinese(131,49,"未知",WHITE,LGRAY,0);		
+	else if(!IsTempLoopACT)LCD_ShowChinese(131,49,"关闭",GREEN,LGRAY,0);
+	else LCD_ShowChinese(131,49,"激活",RED,LGRAY,0);
+	//显示是否支持诱骗
+	if(!IsCPortTriggerOK)LCD_ShowChinese(119,64,"不支持",WHITE,LGRAY,0);
+	else LCD_ShowChinese(119,64,"已启用",GREEN,LGRAY,0);
+	}
 
 //显示存储器状态
 static bool ShowStorageState(void)
@@ -204,21 +253,26 @@ static void ShowChipBasicInfo(void)
 	char ChipIDBuf[6];
 	int ICCMax;
 	ChipStatDef State;
+	int i;
 	RecvPDODef PDOState;
 	//获取芯片字符串
 	memset(ChipIDBuf,0,sizeof(ChipIDBuf));
 	Result=IP2366_GetFirmwareTimeStamp(ChipIDBuf);
 	LCD_ShowChinese(4,21,"固件时间戳",WHITE,LGRAY,0);
 	if(!Result)LCD_ShowString(130,21,"N/A",RED,LGRAY,12,0);
-	else if(!IsEnableAdvancedMode)LCD_ShowString(118,21,"*****",WHITE,LGRAY,12,0);
-  else LCD_ShowString(118,21,ChipIDBuf,IsEnable17AMode?CYAN:WHITE,LGRAY,12,0);
+	else 
+		{
+		//显示芯片ID（非高级模式下mask掉固件后三位）
+	  if(!IsEnableAdvancedMode)for(i=2;i<5;i++)ChipIDBuf[i]='*';
+		LCD_ShowString(118,21,ChipIDBuf,IsEnableAdvancedMode&&CurrentIP2366FW->IsHyperChargeCapable?CYAN:WHITE,LGRAY,12,0);
+		}
 	//获取VBUS状态
 	LCD_ShowChinese(4,35,"峰值电流",WHITE,LGRAY,0);
 	Result=IP2366_GetCurrentPeakCurrent(&ICCMax);
 	if(!Result)LCD_ShowChinese(131,35,"未知",WHITE,LGRAY,0);
 	else
 		{
-		if(!IsEnableAdvancedMode)LCD_ShowString(95,35,"?????",WHITE,LGRAY,12,0);
+		if(!IsEnableAdvancedMode)LCD_ShowString(95,35," *** ",WHITE,LGRAY,12,0);
 		else LCD_ShowIntNum(95,35,ICCMax,5,WHITE,LGRAY,12);
 		LCD_ShowString(137,35,"mA",WHITE,LGRAY,12,0);
 		}
@@ -254,6 +308,7 @@ void ShowChipInfo(void)
 	{
 	//已经渲染过了
 	if(ChipStateUpdated)return;
+	if(!IsEnableAdvancedMode&&ChipInfoSelect>2)ChipInfoSelect=0;
   RenderMenuBG();
 	//按照index渲染对应的结果
   switch(ChipInfoSelect)		
@@ -261,21 +316,23 @@ void ShowChipInfo(void)
 		case 0:ShowChipBasicInfo();break;
 		case 1:ShowChipChargeState();break;
 		case 2:ShowHPGaugeState();break;
-		case 3:ChipStateUpdated=ShowStorageState();break;
-		case 4:ChipStateUpdated=ShowConfigState();break;
+		case 3:DisplayChipTemp();break;
+		case 4:ChipStateUpdated=ShowStorageState();break;
+		case 5:ChipStateUpdated=ShowConfigState();break;
 		default:
 			ChipInfoSelect=0;
 		  ChipStateUpdated=false;
 		  return;  //卡出来的非法状态，退出
 		}
 	//渲染完毕，指示状态
-	if(ChipInfoSelect<3)ChipStateUpdated=true;
+	if(ChipInfoSelect<4)ChipStateUpdated=true;
 	}
 	
 void ShowChipKeyHandler(void)
 	{
+	char MaximumPage=IsEnableAdvancedMode?5:2;
 	//上下键翻页
-	if(KeyState.KeyEvent==KeyEvent_Up&&ChipInfoSelect<4)
+	if(KeyState.KeyEvent==KeyEvent_Up&&ChipInfoSelect<MaximumPage)
 		{
 		ChipInfoSelect++;
 		ChipStateUpdated=false;

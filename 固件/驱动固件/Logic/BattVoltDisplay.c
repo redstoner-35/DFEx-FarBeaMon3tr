@@ -17,7 +17,7 @@ bit IsBatteryFault; //电池电压低于保护值
 static unsigned char BattShowTimer; //电池电量显示计时
 static unsigned char OneLMShowBattStateTimer=0; //1LM模式下显示电池状态的计时器
 static xdata AverageCalcDef BattVolt;	
-static unsigned char LowVoltStrobeTIM;
+static xdata unsigned char LowVoltStrobeTIM;
 static xdata int VbattSample; //取样的电池电压
 
 //外部全局变量
@@ -25,7 +25,7 @@ BattStatusDef BattState; //电池电量标记位
 xdata float Battery; //等效单节电池电压
 xdata unsigned char CommonSysFSMTIM;  //电压显示计时器
 xdata BattVshowFSMDef VshowFSMState; //电池电压显示所需的计时器和状态机转移
-static bit IsReportingTemperature; //报告温度
+static bit IsReportingTemperature=0; //报告温度
 
 //内部使用的先导显示表
 static code LEDStateDef VShowIndexCode[]=
@@ -171,8 +171,21 @@ static void BatVshowFSM(void)
 			//头部显示结束后开始正式显示电压
 			LEDMode=VshowEnter_ShowIndex();
 		  if(CommonSysFSMTIM)break;
-			//电池电压超过显示范围，进行限幅
-		  if(VbattSample>999)VbattSample/=10;
+			//电池电压为大于10V的数，进行四舍五入处理保留小数点后一位的结果
+		  if(VbattSample>999)
+			   {
+				 /********************************************************
+				 这里四舍五入的原理是电池电压会被采样为整数，1LSB=0.01V。例如
+				 电池电压为12.59V采样之后就会变成1259。那么此时我们需要对小数
+				 点后两位进行四舍五入判断，得到一位小数的结果。由于整数结果的
+				 个位实际上等于浮点的电池电压中的小数点后两位，因此我们只需要
+				 通过和10求余数就可以取出小数点后结果的2位，然后如果结果大于4
+				 则进行进位，令小数点后一位+1就实现了四舍五入了。对整个采样结
+				 果除以10之后就会自动去掉小数点后两位的值保留1位小数。
+				 *********************************************************/					 
+				 if((VbattSample%10)>4)VbattSample+=10;
+				 VbattSample/=10;
+				 }
 			//配置计时器显示第一组电压
 			VshowFSMGenTIMValue(VbattSample/100,BattVdis_Show10V);
 		  break;
@@ -243,30 +256,26 @@ static void BatVshowFSM(void)
 //电池电量状态机
 static void BatteryStateFSM(void)
 	{
-	float Thres;
-	//进行极亮阈值计算
-	if(CurrentMode->ModeIdx!=Mode_Turbo)Thres=3.7;
-	else Thres=3.5;
 	//状态机处理	
 	switch(BattState) 
 		 {
 		 //电池电量充足
 		 case Battery_Plenty: 
-				if(Battery<Thres)BattState=Battery_Mid; //电池电压小于3.7，回到电量较低状态
+				if(Battery<3.6)BattState=Battery_Mid; //电池电压小于3.6，回到电量较低状态
 			  break;
 		 //电池电量较为充足
 		 case Battery_Mid:
-			  if(Battery>(Thres+0.3))BattState=Battery_Plenty; //电池电压大于3.8，回到充足状态
-				if(Battery<3.0)BattState=Battery_Low; //电池电压低于3.2则切换到电量低的状态
+			  if(Battery>3.9)BattState=Battery_Plenty; //电池电压大于3.9，回到充足状态
+				if(Battery<3.3)BattState=Battery_Low; //电池电压低于3.3则切换到电量低的状态
 				break;
 		 //电池电量不足
 		 case Battery_Low:
-		    if(Battery>3.4)BattState=Battery_Mid; //电池电压高于3.5，切换到电量中等的状态
-			  if(Battery<2.9)BattState=Battery_VeryLow; //电池电压低于2.8，报告严重不足
+		    if(Battery>3.6)BattState=Battery_Mid; //电池电压高于3.6，切换到电量中等的状态
+			  if(Battery<3.0)BattState=Battery_VeryLow; //电池电压低于3.0，报告严重不足
 		    break;
 		 //电池电量严重不足
 		 case Battery_VeryLow:
-			  if(Battery>3.2)BattState=Battery_Low; //电池电压回升到3.0，跳转到电量不足阶段
+			  if(Battery>3.3)BattState=Battery_Low; //电池电压回升到3.3，跳转到电量不足阶段
 		    break;
 		 }
 	}

@@ -56,9 +56,19 @@ void DataBaseCheckHandler(void)
 	 }
   else if(LogEntryNum==RunTimeLoggerDepth)
 	 {
-	 //校验成功完成
-	 LogChkGUIRendered=false;
-	 LogEntryNum++;
+	 //进行Guard Key的检测和修复	 
+	 if(!CompareLogCacheKeyIsOK(&Result))
+			{
+			LogEntryNum=RunTimeLoggerDepth+2; //如果校验失败则直接跳转至Fail阶段
+			LogChkGUIRendered=false;
+			}	
+	 //校验成功完成	 
+	 else
+			{					
+			if(!Result)LogEntryNum=WriteLogCacheKeyArea()?LogEntryNum+1:LogEntryNum+2;
+			else LogEntryNum++;         //如果Guard Key损坏则对数据进行修复
+			LogChkGUIRendered=false;
+			}
 	 }
 	}
 	

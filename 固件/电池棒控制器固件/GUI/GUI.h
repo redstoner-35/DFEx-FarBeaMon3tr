@@ -178,8 +178,9 @@ void IntEditInitHandler(void);	//整数编辑进入时的处理
 extern bool AlwaysTrue;
 extern bool AlwaysFalse;	
 	
-//自检错误处理
+//自检错误处理和ID查询
 void SelfTestErrorHandler(void);
+const char *QueryPostDoneID(void);	
 	
 //内部变量
 extern bool IsEnableAdvancedMode; //是否开启高级模式

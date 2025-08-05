@@ -171,7 +171,7 @@ static void RenderBattState(void)
 	else if(IsEnableTempChargeOnly||!DCDCOutputBit)Color=LIGHTBLUE; //非存储模式下开启仅充电，电池电压为淡蓝色
 	else Color=LIGHTGREEN; //都没有开启则绿色
 	//显示电池电压
-	LCD_ShowFloatNum1(3,3,VBat,2,Color,BLACK,24);
+	LCD_ShowFloatNum1(3,3,VBat,VBat<10?3:2,Color,BLACK,24);
 	LCD_ShowChar(73,3,'V',Color,BLACK,24,0);
 	//电流
 	LCD_Fill(3,28,84,76,BLACK);

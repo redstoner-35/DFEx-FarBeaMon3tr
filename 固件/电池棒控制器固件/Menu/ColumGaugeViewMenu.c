@@ -128,12 +128,23 @@ static void ShowbalanceStatic(void)
 	LCD_ShowChar(147,64,'W',WHITE,LGRAY,12,0);			
 	}
 	
+static void ShowSystemEventCount(void)
+	{
+	LCD_ShowChinese(3,21,"过流保护次数",WHITE,LGRAY,0);
+	LCD_ShowIntNum(87,21,LogData.SystemOCPCount,5,LogData.SystemOCPCount>10?YELLOW:WHITE,LGRAY,12);
+	LCD_ShowChinese(3,35,"短路保护次数",WHITE,LGRAY,0);
+	LCD_ShowIntNum(87,35,LogData.SystemSCPCount,5,LogData.SystemSCPCount>10?YELLOW:WHITE,LGRAY,12);
+	LCD_ShowChinese(3,49,"过压保护次数",WHITE,LGRAY,0);
+	LCD_ShowIntNum(87,49,LogData.VBUSOVPCount,5,LogData.VBUSOVPCount>0?RED:WHITE,LGRAY,12);
+	}	
+	
 //容量显示的按键处理
 void ColHisKeyHandler(void)
 	{
+	char MaximumPageCount=IsEnableAdvancedMode?3:2;
 	//上下翻页
 	if(KeyState.KeyEvent==KeyEvent_Down&&ShowCMenuState>0)ShowCMenuState--;
-	if(KeyState.KeyEvent==KeyEvent_Up&&ShowCMenuState<2)ShowCMenuState++;
+	if(KeyState.KeyEvent==KeyEvent_Up&&ShowCMenuState<MaximumPageCount)ShowCMenuState++;
 	//退出
 	if(KeyState.KeyEvent==KeyEvent_ESC)
 		{
@@ -152,11 +163,13 @@ void ShowColHisGUI(void)
 	{
 	if(!IsUpdateCDUI)return;
 	RenderMenuBG();
+	if(!IsEnableAdvancedMode&&ShowCMenuState>2)ShowCMenuState=0; //非高级模式禁止查看事件数量
 	switch(ShowCMenuState)
 		{
 		case 0:ShowColumbDataUpper();break;
 		case 1:ShowColumbDataLower();break;
 		case 2:ShowbalanceStatic();break;
+		case 3:ShowSystemEventCount();break;
 		}
 	IsUpdateCDUI=false;
 	}

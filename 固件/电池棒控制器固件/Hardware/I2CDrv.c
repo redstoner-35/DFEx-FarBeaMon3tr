@@ -2,6 +2,7 @@
 #include "I2C.h"
 #include "delay.h"
 #include "GUI.h"
+#include <string.h>
 #include "I2CAddr.h"
 
 //内部设备地址列表
@@ -21,7 +22,8 @@ const char I2CSlaveADDR[]={IP2366ADDR,M24C512ADDR,M24C512SecuADDR,SMIOADDR};
 void SMBUS_Init(void)
   {
 	 char i;
-	 ShowPostInfo(16,"启动SMBUS控制器\0","08",Msg_Statu);
+	 char FaultADDRINFO[32];
+	 ShowPostInfo(16,"启动SMBUS控制器\0","06",Msg_Statu);
 	 //配置GPIO(SCL)
    AFIO_GPxConfig(IIC_SCL_IOB,IIC_SCL_IOP, AFIO_FUN_GPIO);//I2C SCL(用来做时钟)
    GPIO_DirectionConfig(IIC_SCL_IOG,IIC_SCL_IOP,GPIO_DIR_OUT);//配置为输出
@@ -39,8 +41,11 @@ void SMBUS_Init(void)
 			IIC_Send_Byte(I2CSlaveADDR[i]);
 			if(IIC_Wait_Ack())
 				{
-				ShowPostInfo(16,"从机通信异常\0","W1",Msg_Warning);
+				ShowPostInfo(16,"从机通信异常\0","W2",Msg_Warning);
 				delay_Second(1);
+				memset(FaultADDRINFO,0,sizeof(FaultADDRINFO));
+				snprintf(FaultADDRINFO,32,"异常地址:0x%02X",I2CSlaveADDR[i]);
+				ShowPostInfo(16,FaultADDRINFO,"W2",Msg_Warning);
 				break;
 				}
 			delay_us(60);

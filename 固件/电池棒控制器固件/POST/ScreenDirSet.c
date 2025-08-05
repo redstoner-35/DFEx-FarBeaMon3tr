@@ -22,7 +22,7 @@ void SetScreenDirection(void)
 
 void ApplyScreenDirection(void)
 	{
-	ShowPostInfo(72,"设置显示方向\0","2F",Msg_Statu);
+	ShowPostInfo(72,"设置显示方向\0","27",Msg_Statu);
 	SetScreenDirection(); //应用屏幕方向
 	PostScreenInit(); //重新显示自检界面
 	}

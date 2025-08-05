@@ -40,9 +40,9 @@ void IP2366_Telem(void)
 	//判断是否启用传输
 	if(!Is2366Telem)return;
 	IsTelemOK=IP2366_GetChargerState(&BATT);
-	IsTelemOK|=IP2366_GetVBUSState(&VBUS);
-	IsTelemOK|=IP2366_ReadChipState(&CState);
-	IsTelemOK|=IP2366_GetRecvPDO(&PDO);
+	IsTelemOK&=IP2366_GetVBUSState(&VBUS);
+	IsTelemOK&=IP2366_ReadChipState(&CState);
+	IsTelemOK&=IP2366_GetRecvPDO(&PDO);
 	
 	IsCPortConnected=IP2366_GetIfCPortConnected();
 	//开始进行INA226的测量	
@@ -89,7 +89,7 @@ void IP2366_Telem(void)
 			{
 			IsResultUpdated=true;
 			VBusAvgCount=0;
-			VBat=VBUSAvgBuf[2]/(float)SADCAvgCount;
+			VBat=VBUSAvgBuf[2]/(float)SADCAvgCount;				
 			IBat=VBUSAvgBuf[3]/(float)SADCAvgCount;
       //读取TypeC结果
 			Result=VBUSAvgBuf[0]/(float)SADCAvgCount;
@@ -102,6 +102,9 @@ void IP2366_Telem(void)
 			else Result*=(float)CfgData.TypeCAmpereCalCharge;
 			Result/=(float)1000;
 			if(fabsf(Result)<7.6)ITypeC=Result;
+			//进行电池端电压补偿计算	
+			if(VTypec<VBat)VBat+=0.033; //当前Type-C没有连接，系统靠电池供电需要补偿的VBat保险电阻的压降（33mA@1Ω=0.033V）
+			//读取结束，清除平均缓存结果	
 			for(i=0;i<4;i++)VBUSAvgBuf[i]=0;
 			}		
 		if(VBUS.IsTypeCConnected)SleepTimer=480; //禁止睡眠

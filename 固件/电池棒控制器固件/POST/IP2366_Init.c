@@ -7,26 +7,12 @@
 #include "BalanceMgmt.h"
 #include <string.h>
 
-//合法的芯片ID
-const char ValidChipFWID[3][5]=
-	{
-	"YCNNH",
-	"YFYMS",
-	"XE2TC"
-	};
-
 //全局变量
-static const char NonStdFwID[]={"YFYMS"};
-static const char HSCPFwID[]={"YCEDS"};
-static const char Extend20VPDOFwID[]={"YFYMS"}; //支持20V 7A寄存器调整的PDO
 bool IsBootFromVBUS;	
-bool IsEnable17AMode=true;
-bool IsEnableHSCPMode=false;
 bool IsEnableDischargeAtStor=true;
 static char WaitAfterTypeCRemoved;	
 bool CurrentStorDisState=true;
 bool IsSystemOverheating=false;
-bool IsSupportExterndPDO;   //当前PMIC版本是否支持20V 7A寄存器调整
 static bool IP2366DCDCState=false;
 
 //计算存储模式开启时，是否打开放电模块
@@ -48,11 +34,12 @@ bool IP2366_IsEnableDischarge(float VBatRaw)
 void IP2366_PreInit(void)
 	{
 	char i=5;
-	int j;
-	char VendorString[5];
+	char VendorString[6];
+	char FWIDReport[32];
 	IP2366InputDef ICFG;
 	IP2366OutConfigDef OCFG;
-	ShowPostInfo(25,"充电IC初配置","09",Msg_Statu);
+	IP2366HWRevDef HWID;
+	ShowPostInfo(25,"充电IC初配置","07",Msg_Statu);
 	//配置结构体
 	ICFG.ChargeCurrent=9700;
 	ICFG.ChargePower=Power_100W;
@@ -69,30 +56,45 @@ void IP2366_PreInit(void)
 		{
 		if(IP2366_DetectIfPresent())break;
 		delay_ms(200);
-		ShowPostInfo(25,"尝试连接至IC","0A",Msg_Warning);
+		ShowPostInfo(25,"尝试连接至IC","W3",Msg_Warning);
 		i--;
 		}
 	while(i>0);	
 	//尝试了五次仍然失败，提示错误发送
 	if(i==0)	
 		{
-		ShowPostInfo(25,"充电IC通信失败","E3",Msg_Fault);
+		ShowPostInfo(25,"充电IC通信失败","E5",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	IP2366_SetInputState(&ICFG);
 	//监测Type-C状态
   if(!IP2366_GetIfInputConnected())IP2366_SetOutputState(&OCFG); //禁用输出		
-	//读取芯片并且进行比对
+	
+	//读取芯片并且进行比对，比对的同时更新芯片capability set
+	ShowPostInfo(25,"充电IC版本检查","08",Msg_Statu);
+	memset(VendorString,0,sizeof(VendorString));    
 	if(!IP2366_GetFirmwareTimeStamp(VendorString))		
 		{
-		ShowPostInfo(79,"读取芯片版本失败\0","DE",Msg_Fault);
+		ShowPostInfo(79,"读取固件版本失败\0","E6",Msg_Fault);
 		SelfTestErrorHandler();
 		}		
-	for(j=0;j<3;j++)if(!strncmp(ValidChipFWID[j],VendorString,5))break;
-	if(j==3)
+	if(!IP2366_UpdateChipCap(VendorString))
 		{
-		ShowPostInfo(79,"不受支持的芯片版本\0","FF",Msg_Fault);
+		memset(FWIDReport,0,sizeof(FWIDReport));
+		snprintf(FWIDReport,sizeof(FWIDReport),"固件ID:%s",VendorString);
+		ShowPostInfo(79,FWIDReport,"E7",Msg_Fault);
+		delay_Second(1);
+		ShowPostInfo(79,"不受支持的固件版本\0","E7",Msg_Fault);
 		SelfTestErrorHandler();	
+		}
+	//如果芯片支持读取硬件版本，则读取芯片的硬件版本并进行比对
+	if(!CurrentIP2366FW->ExtendedROREGCapable)return;
+	HWID=IP2366_GetChipHWRev();
+	if(HWID!=Hardware_Ver_D)
+		{
+		if(HWID==Hardware_Ver_Unknown)ShowPostInfo(79,"读取芯片版本失败\0","E6",Msg_Fault);
+		else ShowPostInfo(79,"不受支持的硬件版本\0","E7",Msg_Fault); 
+		SelfTestErrorHandler();
 		}
 	}
 	
@@ -243,7 +245,7 @@ void IP2366_ReInitBasedOnConfig(void)
 	if(IsEnableAdapterEmu)ICFG.IsEnableCharger=false; //关闭充电器
 	else ICFG.IsEnableCharger=IsSystemOverheating?false:true; //充电器如果过热触发则关闭
 	//填写ICCMAX
-	ICFG.ChargeCurrent=OCFG.IsEnableOutput?IP2366_ICCMAX:CfgData.InputConfig.ChargeCurrent; //初始化时如果开启输出则填写9.7A					
+	ICFG.ChargeCurrent=OCFG.IsEnableOutput?CurrentIP2366FW->IP2366ICCMAX:CfgData.InputConfig.ChargeCurrent; //初始化时如果开启输出则按照固件能力填写				
 	IP2366_SetInputState(&ICFG);
 	//设置Type-C模式
 	if(!IsBootFromVBUS&&!OCState) //如果是在过充阶段或者是单独插着Type-C，那就不能发送TCRST命令不然单片机直接断电了
@@ -272,7 +274,7 @@ void IP2366_SetIBatLIMBaseOnSysCfg(void)
 	int Current;
 	//计算动态限流
 	if(IP2366_GetIfInputConnected())Current=CfgData.InputConfig.ChargeCurrent; //充电模式已连接，设置为充电限流
-	else Current=CfgData.InputConfig.ChargeCurrent>9700?CfgData.InputConfig.ChargeCurrent:9700; //为了确保放电正常运行，当充电未接入时设置为9.7A限流(如果电池限流比这个大那就设置为9700)
+	else Current=CfgData.InputConfig.ChargeCurrent>CurrentIP2366FW->IP2366ICCMAX?CfgData.InputConfig.ChargeCurrent:CurrentIP2366FW->IP2366ICCMAX; //为了确保放电正常运行，当充电未接入时设置为9.7A限流(如果电池限流比这个大那就设置为9700)
 	//设置ICCMAX寄存器	
 	IP2366_SetICCMax(Current); 
 	}
@@ -315,10 +317,11 @@ void IP2366_PostInit(void)
 	{
 	bool IsCmdSendOK,IsPoweredByVBUS;		
 	extern bool EnableDetailOutput;
+	bool Result;
 	IP2366InputDef ICFG;	
 	int retry=5,i;
 	char VendorString[5];
-	ShowPostInfo(78,"充电IC后配置\0","10",Msg_Statu);
+	ShowPostInfo(78,"充电IC后配置\0","28",Msg_Statu);
 	//检查系统是否由VBUS供电
 	for(i=0;i<20;i++)
 		{
@@ -330,99 +333,97 @@ void IP2366_PostInit(void)
 	else  //监测到电池异常，触发保护	
     {		
 		IsPoweredByVBUS=true;
-		ShowPostInfo(78,"电池电压异常\0","EB",Msg_Warning);
+		ShowPostInfo(78,"电池电压异常\0","W8",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"电池是否正确安装?","EB",Msg_Warning);
+		ShowPostInfo(78,"电池是否正确安装?","W8",Msg_Warning);
 		delay_Second(1);
 		}
 	//设置芯片睡眠功能
 	if(!IP2366_SetDeepSleepModeEnabled(CfgData.SleepCfg==System_Sleep_Deep?true:false))
 		{
-		ShowPostInfo(78,"设置系统模式失败\0","EF",Msg_Fault);
+		ShowPostInfo(78,"设置系统模式失败\0","F1",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	else if(CfgData.SleepCfg!=System_Sleep_Deep)
 		{
-		ShowPostInfo(78,"即插即用模式已开启\0","70",Msg_INFO);
+		ShowPostInfo(78,"即插即用模式已开启\0","29",Msg_INFO);
 		delay_ms(400);
-		ShowPostInfo(78,"待机功耗将增大\0","70",Msg_INFO);
+		ShowPostInfo(78,"待机功耗将增大\0","29",Msg_INFO);
 		delay_ms(400);
 		}
-	//检测固件版本
-	ShowPostInfo(79,"读取芯片版本\0","11",Msg_Statu);
+	//再次检测固件版本
+	ShowPostInfo(79,"二次读取芯片版本\0","2A",Msg_Statu);
   if(!IP2366_GetFirmwareTimeStamp(VendorString))		
 		{
-		ShowPostInfo(79,"读取芯片版本失败\0","DE",Msg_Fault);
+		ShowPostInfo(79,"读取芯片版本失败\0","E6",Msg_Fault);
 		SelfTestErrorHandler();
-		}
-	IsEnable17AMode=true;
-	for(i=0;i<5;i++)if(NonStdFwID[i]!=VendorString[i])
+		}		
+	if(strncmp(CurrentIP2366FW->FWID,VendorString,5))	
 		{
-		//时间戳不匹配，禁止野兽模式
-		IsEnable17AMode=false;	
-		break;
+		ShowPostInfo(79,"芯片版本数据错误\0","FB",Msg_Fault);
+		SelfTestErrorHandler();		
 		}
-	if(IsEnable17AMode)
+	//判断是否支持超充以及是否开启超充
+	if(CfgData.MaxVPD==PDMaxIN_28V)Result=true;
+	else if(CfgData.InputConfig.ChargeCurrent>CurrentIP2366FW->IP2366ICCMAX)Result=true;
+	else if(CfgData.InputConfig.ChargePower>CurrentIP2366FW->MaxCapableChgPower)Result=true;
+	else Result=false;
+	if(CurrentIP2366FW->IsHyperChargeCapable)
 		{
-		ShowPostInfo(79,"超充模式已启用\0","6F",Msg_Statu);
+		ShowPostInfo(79,"超充模式已启用\0","2B",Msg_Statu);
 		if(CfgData.IStop==IStop_100mA||CfgData.IStop==IStop_150mA)
 			{
-			ShowPostInfo(78,"停充电流非法\0","D3",Msg_Warning);
+			ShowPostInfo(78,"停充电流非法\0","W9",Msg_Warning);
 			delay_Second(1);
-			ShowPostInfo(78,"已自动修正\0","D3",Msg_Warning);
+			ShowPostInfo(78,"已自动修正\0","W9",Msg_Warning);
 			delay_Second(1);
 			CfgData.IStop=IStop_200mA;
 			if(!WriteConfiguration(&CfgUnion,true))
 				{
-				ShowPostInfo(30,"存储器写入异常\0","E6",Msg_Fault);
+				ShowPostInfo(30,"存储器写入异常\0","E9",Msg_Fault);
 				SelfTestErrorHandler();
 				}
 			}
 		if(EnableDetailOutput)delay_ms(300);
-		}	
-	if((CfgData.MaxVPD==PDMaxIN_28V||CfgData.InputConfig.ChargeCurrent>9700)&&!IsEnable17AMode)
+		}
+   else if(Result)
 		{
-		ShowPostInfo(78,"芯片为公版固件\0","D0",Msg_Warning);
+		ShowPostInfo(78,"芯片为公版固件\0","2C",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"超充模式已禁用\0","D0",Msg_Warning);
+		ShowPostInfo(78,"超充模式已禁用\0","2C",Msg_Warning);
 		delay_Second(1);
 		//将峰值限流调回去
 		CfgData.MaxVPD=PDMaxIN_20V;
-		CfgData.InputConfig.ChargeCurrent=9700;
+		CfgData.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
+		CfgData.InputConfig.ChargePower=CurrentIP2366FW->MaxCapableChgPower;
 		if(!WriteConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(80,"存储器写入异常\0","E6",Msg_Fault);
+			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
 			SelfTestErrorHandler();
 			}		
 		}
 	//检查50mA per LSB的PDO支持
-	IsSupportExterndPDO=true;
-	for(i=0;i<5;i++)if(VendorString[i]!=Extend20VPDOFwID[i])
+	if(!CurrentIP2366FW->IsExtendPDOCapable&&CfgData.FixedPDOCfg.PDO20VICCMAX>4000)
 		{
-		IsSupportExterndPDO=false;
-		break;
-		}
-	if(!IsSupportExterndPDO&&CfgData.FixedPDOCfg.PDO20VICCMAX>4000)
-		{
-		ShowPostInfo(78,"芯片为公版固件\0","D2",Msg_Warning);
+		ShowPostInfo(78,"芯片为公版固件\0","2D",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"20V高功率已禁用\0","D2",Msg_Warning);
+		ShowPostInfo(78,"20V高功率已禁用\0","2D",Msg_Warning);
 		delay_Second(1);
 		//关闭20V PDO的4A以上设置
 		CfgData.FixedPDOCfg.PDO20VICCMAX=4000;
 		CfgData.FixedPDOCfg.IsEnable20VPDOSet=false;
 		if(!WriteConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(80,"存储器写入异常\0","E6",Msg_Fault);
+			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
 			SelfTestErrorHandler();
 			}	
 		}
 	//检查
-	else if(IsSupportExterndPDO&&(CfgData.FixedPDOCfg.PDO20VICCMAX%50))
+	else if(!CurrentIP2366FW->IsExtendPDOCapable&&(CfgData.FixedPDOCfg.PDO20VICCMAX%50))
 		{
-		ShowPostInfo(78,"20V PDO电流值非法\0","D2",Msg_Warning);
+		ShowPostInfo(78,"20V PDO电流值非法\0","WA",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"已自动修正\0","D2",Msg_Warning);
+		ShowPostInfo(78,"已自动修正\0","WA",Msg_Warning);
 		delay_Second(1);
 		//修正PDO结果
 		i=CfgData.FixedPDOCfg.PDO20VICCMAX/50;
@@ -432,59 +433,52 @@ void IP2366_PostInit(void)
 		CfgData.FixedPDOCfg.PDO20VICCMAX=i;
 		if(!WriteConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(80,"存储器写入异常\0","E6",Msg_Fault);
+			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
 			SelfTestErrorHandler();
 			}				
 		}
-	//检查高压SCP支持
-	IsEnableHSCPMode=true;
-	for(i=0;i<5;i++)if(VendorString[i]!=HSCPFwID[i])
+	//检查高压SCP支持	
+	if(!!CurrentIP2366FW->IsHSCPCapable&&CfgData.OutputConfig.IsEnableHSCPOut)
 		{
-		//时间戳不匹配，关闭高功率SCP支持
-		IsEnableHSCPMode=false;
-		break;
-		}		
-	if(!IsEnableHSCPMode&&CfgData.OutputConfig.IsEnableHSCPOut)
-		{
-		ShowPostInfo(78,"芯片为公版固件\0","D2",Msg_Warning);
+		ShowPostInfo(78,"芯片为公版固件\0","2E",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"高功率SCP已禁用\0","D2",Msg_Warning);
+		ShowPostInfo(78,"高功率SCP已禁用\0","2E",Msg_Warning);
 		delay_Second(1);
 		//关闭高功率SCP功能
 		CfgData.OutputConfig.IsEnableHSCPOut=false;
 		if(!WriteConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(80,"存储器写入异常\0","E6",Msg_Fault);
+			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
 			SelfTestErrorHandler();
 			}		
 		}
 	//设置再充电参数
-	ShowPostInfo(80,"设置再充电参数\0","12",Msg_Statu);	
+	ShowPostInfo(80,"设置再充电参数\0","2F",Msg_Statu);	
 	if(!IP2366_SetReChargeParam(CfgData.VRecharge,CfgData.IStop))
 		{
-		ShowPostInfo(80,"再充参数设置失败\0","EC",Msg_Fault);
+		ShowPostInfo(80,"再充参数设置失败\0","F2",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	//设置低压保护参数
-	ShowPostInfo(82,"设置低压保护电压\0","13",Msg_Statu);	
+	ShowPostInfo(82,"设置低压保护电压\0","30",Msg_Statu);	
 	if(!IP2366_SetVLowVolt(CfgData.Vlow))	
 		{
-		ShowPostInfo(82,"低压保护设置失败\0","E8",Msg_Fault);
+		ShowPostInfo(82,"低压保护设置失败\0","F3",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	//开始写寄存器
 	CurrentStorDisState=IP2366_IsEnableDischarge(ADCO.Vbatt);	
 	if(!IsPoweredByVBUS)
 		{
-		ShowPostInfo(85,"设置放电系统\0","14",Msg_Statu);	
+		ShowPostInfo(85,"设置放电系统\0","31",Msg_Statu);	
 		if(!IP2366_InitOutputSystem(CurrentStorDisState))
 			{
-			ShowPostInfo(85,"放电系统设置失败\0","E6",Msg_Fault);
+			ShowPostInfo(85,"放电系统设置失败\0","F4",Msg_Fault);
 			SelfTestErrorHandler();
 			}
 		}
 	//设置输入
-	ShowPostInfo(88,"设置充电系统\0","15",Msg_Statu);
+	ShowPostInfo(88,"设置充电系统\0","32",Msg_Statu);
 	switch(StorageMode)
 		{
 		//根据存储模式配置输出
@@ -496,47 +490,49 @@ void IP2366_PostInit(void)
 	ICFG.ChargePower=CfgData.InputConfig.ChargePower;	
 	ICFG.PreChargeCurrent=CfgData.InputConfig.PreChargeCurrent; //其他参数照常填写
 	ICFG.IsEnableCharger=true; //充电器始终开启
-	ICFG.ChargeCurrent=DCDCOutputBit?IP2366_ICCMAX:CfgData.InputConfig.ChargeCurrent; //初始化时如果开启输出则填写9.7A	
+	ICFG.ChargeCurrent=DCDCOutputBit?CurrentIP2366FW->IP2366ICCMAX:CfgData.InputConfig.ChargeCurrent; //初始化时如果开启输出则填写9.7A	
   //设置PDO输入
 	if(!IP2366_SetInputState(&ICFG))
 		{
-		ShowPostInfo(88,"充电系统设置失败\0","E7",Msg_Fault);
+		ShowPostInfo(88,"充电系统设置失败\0","F5",Msg_Fault);
 		SelfTestErrorHandler();
 		}	
 	//设置PDO参数
-	ShowPostInfo(92,"设置PDO广播\0","16",Msg_Statu);
+	ShowPostInfo(92,"设置PDO广播\0","33",Msg_Statu);
 	IsCmdSendOK=IP2366_SetFixedPDO(&CfgData.FixedPDOCfg); //设置固定挡位的PDO参数
 	if(!IsCmdSendOK||!IP2366_SetPDOBroadCast(&CfgData.PDOCFG))
 		{
-		if(!IsCmdSendOK)ShowPostInfo(92,"PDO电流设置失败\0","4F",Msg_Fault);
-		else ShowPostInfo(92,"PDO广播设置失败\0","EA",Msg_Fault);
+		if(!IsCmdSendOK)ShowPostInfo(92,"PDO电流设置失败\0","F7",Msg_Fault);
+		else ShowPostInfo(92,"PDO广播设置失败\0","F6",Msg_Fault);
 		SelfTestErrorHandler();		
 		}
 	//设置PPS配置
-	ShowPostInfo(93,"设置PPS广播\0","3A",Msg_Statu);
-	if((CfgData.PPSConfig.PPS1Current>3000||CfgData.PPSConfig.PPS2Current>3000)&&!IsEnable17AMode)	
+	ShowPostInfo(93,"设置PPS广播\0","34",Msg_Statu);
+	if((CfgData.PPSConfig.PPS1Current>3000||CfgData.PPSConfig.PPS2Current>3000)&&!CurrentIP2366FW->IsExtendPDOCapable)	
 		{
-		ShowPostInfo(78,"芯片为公版固件\0","D3",Msg_Warning);
+		ShowPostInfo(78,"芯片为公版固件\0","35",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"PPS电流已重置\0","D3",Msg_Warning);
+		ShowPostInfo(78,"PPS电流已重置\0","35",Msg_Warning);
 		delay_Second(1);
 		//重置PPS电流为芯片默认值
 		CfgData.PPSConfig.PPS1Current=3000;
 		CfgData.PPSConfig.PPS2Current=3000;
+		CfgData.PPSConfig.IsEnablePPS1Set=false;
+		CfgData.PPSConfig.IsEnablePPS2Set=false;
 		if(!WriteConfiguration(&CfgUnion,true))
 			{
-			ShowPostInfo(80,"存储器写入异常\0","E6",Msg_Fault);
+			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
 			SelfTestErrorHandler();
 			}		
 		}		
 	//写入寄存器设置PPS
 	if(!IP2366_SetPPSCurrent(&CfgData.PPSConfig))
 		{
-		ShowPostInfo(93,"PPS广播设置失败\0","3E",Msg_Fault);
+		ShowPostInfo(93,"PPS广播设置失败\0","F8",Msg_Fault);
 		SelfTestErrorHandler();		
 		}	
 	//发送重新握手的指令
-	ShowPostInfo(94,"发送TypeC重连命令\0","17",Msg_Statu);
+	ShowPostInfo(94,"发送TypeC重连命令\0","36",Msg_Statu);
   if(!IsPoweredByVBUS)do
 		{
 		IsCmdSendOK=IP2366_SetTypeCRole(TypeC_Disconnect);
@@ -546,7 +542,7 @@ void IP2366_PostInit(void)
 		IsCmdSendOK&=IP2366_SetOTPSign();
 		if(IsCmdSendOK)break;
 		retry--;
-		ShowPostInfo(94,"重连命令重试中\0","16",Msg_Warning);
+		ShowPostInfo(94,"重连命令重试中\0","37",Msg_Warning);
 		}
 	while(retry>0);
 	//否则只执行设置OTP
@@ -556,18 +552,18 @@ void IP2366_PostInit(void)
 		if(IsCmdSendOK)break;
 		retry--;
 		delay_ms(10);
-		ShowPostInfo(94,"重连命令重试中\0","18",Msg_Warning);
+		ShowPostInfo(94,"重连命令重试中\0","37",Msg_Warning);
 		}
 	while(retry>0);
 	//尝试失败
 	if(!retry)
 		{
-		ShowPostInfo(94,"重连命令发送失败\0","D3",Msg_Fault);
+		ShowPostInfo(94,"重连命令发送失败\0","F9",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	IP2366_ClearOCFlag(); //移除OC Flag
 	//后处理完毕，此时如果是从VBUS启动的，则显示标记
 	if(!IsPoweredByVBUS)return;
 	IsBootFromVBUS=true;
-	WaitAfterTypeCRemoved=50;
+	WaitAfterTypeCRemoved=50;	
 	}

@@ -16,7 +16,7 @@ static bool IsEnable20VSet=false;
 void CheckIfPPS1And2CanAdjust(void)
 	{
 	//芯片为公版不允许调节
-	if(!IsEnable17AMode||!CfgData.OutputConfig.IsEnablePDOut)
+	if(!CurrentIP2366FW->IsExtendPDOCapable||!CfgData.OutputConfig.IsEnablePDOut)
 		{
 		IsEnablePPS1Set=false;
 		IsEnablePPS2Set=false;

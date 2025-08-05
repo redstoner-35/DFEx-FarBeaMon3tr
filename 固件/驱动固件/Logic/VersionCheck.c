@@ -6,7 +6,7 @@
 固件时间戳包含固件编译的年，月，日以
 及24小时制时间和分钟。
 **********************************/
-static code char TimeStamp[]={"25 07 23-14 08"};
+static code char TimeStamp[]={"25 07 30-18 07"};
 
 //变量
 extern xdata unsigned char CommonSysFSMTIM;

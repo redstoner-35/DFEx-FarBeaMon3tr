@@ -8,6 +8,7 @@
 #include "PCA9536.h"
 #include "LCD_Init.h"
 #include "BalanceMgmt.h"
+#include "AUXPSU.h"
 
 //电源管理引脚自动定义
 #define LDO_EN_IOB STRCAT2(GPIO_P,LDO_EN_IOBank)
@@ -98,9 +99,7 @@ void ShutSysOFF(void)
 	//关闭LCD
 	if(CfgData.SleepCfg!=System_Sleep_Deep)
 		{
-		PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_IN);  //把所有没用的IO设置为input tri-state
+		AUXPSU_SwitchToPassThrough(); //切换到直通模式
 		INA226_EnterPowerDownMode();
 		LCD_DisableBlackLight(); //关闭LCD背光开始休眠	
 		}	
@@ -116,7 +115,7 @@ void ShutSysOFF(void)
 void KickIP2366ToWakeUp(void)
 	{
 	int retry=3;
-	char WakeMsg[]={"唤醒重试次数:5"};
+	char WakeMsg[]={"唤醒重试次数:3"};
 	ShowPostInfo(12,"唤醒充电IC","05",Msg_Statu);
 	//如果INT=0说明2366在睡觉
 	if(GPIO_ReadInBit(IP2366_INT_IOG,IP2366_INT_IOP)==RESET)do
@@ -135,7 +134,7 @@ void KickIP2366ToWakeUp(void)
 		//尝试失败，提示唤醒剩余次数
 		retry--;
 		WakeMsg[13]=0x30+(3-retry);
-		ShowPostInfo(12,WakeMsg,"W0",Msg_Warning);		
+		ShowPostInfo(12,WakeMsg,"W1",Msg_Warning);		
     //延时2秒后重试			
     delay_Second(2);	
 		}	
@@ -143,7 +142,7 @@ void KickIP2366ToWakeUp(void)
 	//唤醒失败
 	if(!retry)
 		{
-		ShowPostInfo(12,"充电IC唤醒失败","E2",Msg_Fault);
+		ShowPostInfo(12,"充电IC唤醒失败","E4",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	GPIO_SetOutBits(IP2366_INT_IOG,IP2366_INT_IOP);
@@ -185,9 +184,7 @@ void PowermanagementSleepControl(void)
 		{
 		INA226_EnterPowerDownMode();
 		ClearScreen();
-		PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_IN);  //把所有没用的IO设置为input tri-state
+		AUXPSU_SwitchToPassThrough(); //切换到直通模式
 		LCD_DisableBlackLight(); //关闭LCD背光开始休眠
 		GPIO_ClearOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为0,关闭LDO电源强迫单片机掉电
 		while(1);		
