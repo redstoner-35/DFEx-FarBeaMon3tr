@@ -274,7 +274,7 @@ bit IsPowerModeEnabled; //0=ECO MODE 1=POWER MODE
 bit IsRampFault; //无极调光故障，当该bit置起后无极调光将会强制禁用	
 	
 //全局软件计时变量
-xdata unsigned char HoldChangeGearTIM=0; //挡位模式下长按换挡
+xdata unsigned char HoldChangeGearTIM; //挡位模式下长按换挡
 xdata unsigned char DisplayLockedTIM; //锁定和战术模式进入退出显示
 
 //内部变量和标志位
@@ -336,7 +336,11 @@ void ModeFSMInit(void)
 	//复位变量和一部分模块
 	IsSlowFading=0;
 	IsRampKeyPressed=0;
-	SetupFSMState=SetupMenu_InACT;
+	HoldChangeGearTIM=0;
+	DisplayLockedTIM=0;
+	IsSwitchingKeyStillHold=0;
+	IsNotifyMaxRampLimitReached=0;
+	SetupFSMState=SetupMenu_InACT;            //复位设置状态机
 	ResetStrobeModule(); 											//复位爆闪控制器
 	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器
 	//挡位模式配置
@@ -656,7 +660,7 @@ void ModeSwitchFSM(void)
 			 执行设置按键灯亮度一半的处理）
 		   ***********************************************/
 			 IsHalfBrightness=1; 
-		   if(Battery<2.4)ReturnToOFFState();   //单节电池电压小于2.4之后DCDC可能工作异常，强制断电
+		   if(CellVoltage<2400)ReturnToOFFState();   //单节电池电压小于2.4之后DCDC可能工作异常，强制断电
 			 break;				
     //无极调光状态				
     case Mode_Ramp:

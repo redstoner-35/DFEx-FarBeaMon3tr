@@ -87,7 +87,7 @@ int main(void)
  AUXPSU_DetectIfCPortTriggerPresent(); //检测C口诱骗硬件是否存在
  //自检完毕，进入系统
  ShowPostInfo(100,"系统初始化完成",(char *)QueryPostDoneID(),Msg_POSTOK);
- delay_ms(!CfgData.EnableFastBoot?400:150); //关闭快速启动则多延时一会让人可以看清
+ delay_ms(!CfgData.EnableFastBoot?400:200); //关闭快速启动则多延时一会让人可以看清
  ClearScreen();
  SensorRefreshFlag=false; //清除flag
  WatchDog_Init(); //启动看门狗

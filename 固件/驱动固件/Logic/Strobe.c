@@ -39,9 +39,12 @@ void RandStrobeHandler(void)
 		IdxCalc=Data.RandADResult^(int)StrobeCounter;
 		IdxCalc>>=(Data.RandADResult^StrobeSelIdx)&0x07;	
 		StrobeSelIdx=(unsigned char)(IdxCalc&0x7F);
-		//对爆闪flag进行处理
-		if(StrobeSelIdx&0x28)StrobeFlagSel=(Data.RandADResult>>StrobeFlagSel)&0x03;
-		else StrobeFlagSel++;
+		//对爆闪flag的数值进行赋值
+		if(StrobeSelIdx&0x28)
+	     StrobeFlagSel=Data.RandADResult>>StrobeFlagSel;  //使用随机结果作为Strbobe Result
+		else 
+	    StrobeFlagSel++;                                  //线性递增结果
+		//因为爆闪flag允许的范围是0-3，进行限幅
 		StrobeFlagSel&=0x03;
 		}
 	}

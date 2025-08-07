@@ -165,39 +165,51 @@ bit GetIfSystemInPOFFSeq(void)
 	return 0;
 	}	
 	
+//输出通道初始化之后，等待电池就绪的函数
+void OutputChannel_WaitVBattReady(void)
+	{
+	unsigned char retry=200;
+	do
+		{
+		//等待电池电压就绪
+		delay_ms(10);
+		SystemTelemHandler();
+		if(Data.RawBattVolt>7.20)return;	
+		}
+	while(--retry);
+	//等待2秒后电池电压仍然异常，系统无法工作，亮红灯锁死
+	LEDMode=LED_Red;
+	IsHalfBrightness=0;
+	while(1)LEDControlHandler();
+	}
+	
 //输出通道试运行
 void OutputChannel_TestRun(void)
 	{
-	char retry=100;
+	unsigned char retry=100;
 	//打开辅助电源和PWMDAC
 	AUXEN=1;
 	PWMDACEN=1;
 	PWM_ForceEnableOut(1);
-	//延时40mS后检测电压，如果电压大于8V则正常启动进行检测
-	delay_ms(40);
-	SystemTelemHandler();
-	//电池电压正常，令3787开始运行，进行输出检查
-	if(Data.RawBattVolt>8)
+	//延迟50mS后，令3787EN=1，启动输出
+	delay_ms(50);
+	BOOSTRUN=1; 
+	//启动输出后循环读取DCDC的输出电压检查DCDC模块，预充系统是否正常
+	do
 		{
-		//令3787EN=1，启动输出
-	  BOOSTRUN=1; 
-		//启动输出后循环读取DCDC的输出电压检查DCDC模块，预充系统是否正常
-		do
+		SystemTelemHandler();
+		//DCDC输出过压，立即关闭系统并报错
+		if(Data.OutputVoltage>15.0)
 			{
-			SystemTelemHandler();
-			//DCDC输出过压，立即关闭系统并报错
-			if(Data.OutputVoltage>16.5)
-				{
-				ReportError(Fault_DCDCPreChargeFailed);
-				break;
-				}
-			//DCDC输出正常建立，退出
-			else if(Data.OutputVoltage>14.0)break;
-			//检查失败，延时5mS后再试
-			delay_ms(5);
+			ReportError(Fault_DCDCPreChargeFailed);
+			break;
 			}
-		while(--retry);		
+		//DCDC输出正常建立，退出
+		else if(Data.OutputVoltage>14.0)break;
+		//检查失败，延时5mS后再试
+		delay_ms(5);
 		}
+	while(--retry);		
 	//检查结束，关闭DCDC并复位PWMDAC
 	PWM_ForceEnableOut(0);
 	OutputChannel_DeInit();
@@ -280,7 +292,7 @@ void OutputChannel_Calc(void)
 		   delay_ms(20); //延时20mS
 		   //启动辅助电源并跳转到下个状态
 			 AUXEN=1;
-		   PreChargeFSMTimer=16; //设置计时器最多等待2秒
+		   PreChargeFSMTimer=20; //设置计时器最多等待2.5秒
 		   OutputFSMState=OutCH_EnableBoost;
 		   break;
 		//启动步骤3，启动主DCDC并检查输出是否正常
@@ -294,7 +306,7 @@ void OutputChannel_Calc(void)
 				OutputFSMState=OutCH_PreChargeFailed;
 				}		
 			//等待输出电压建立
-			if(Data.OutputVoltage<14.0)break;
+			if(Data.OutputVoltage<13.9)break;
 			if(CurrentMode->ModeIdx==Mode_1Lumen)OutputFSMState=OutCH_1LumenOpenRun;
 			else OutputFSMState=OutCH_ReleasePreCharge;   //电压建立后如果是正常运行挡位，则跳转到正常运行阶段，否则跳转到1LM挡位
 			break;
@@ -305,34 +317,27 @@ void OutputChannel_Calc(void)
 			//开始逐步下调预充占空比把输出电压调到额定值
 		  if(!IsNeedToUploadPWM)
 				{
-				//预充PWMDAC输出=0，说明预充完成，此时先倒计时，计时结束后按照输出电流是否匹配跳转到目标状态
-				if(!PreChargeDACDuty)	
-					{
-					if(PreChargeFSMTimer&&!(PreChargeFSMTimer&0x80))PreChargeFSMTimer--;//倒计时
-					//倒计时结束，直接跳转到输出已启用状态（如果电流还需要往上跑则会自动进入提交在占空比的步骤）
-					else OutputFSMState=OutCH_OutputEnabled;	 
-					}
+				//预充PWMDAC输出=0，说明预充完成,此时跳转到正常输出状态
+				if(!PreChargeDACDuty)OutputFSMState=OutCH_OutputEnabled;	
 				//继续进行调整，下调占空比
 				else
 					{
-					//反复reset输出状态机计时器为待会结束的倒计时做准备
-					PreChargeFSMTimer=25;	
-					//根据输出电流值计算下调斜率
-					TargetCurrent=1+(TargetCurrent/20);
+					//根据输出电流值计算下调斜率（斜率等于1+(额定电流*1.5/8)*1.5mA per Cycle）
+					TargetCurrent=1+(TargetCurrent/8);
 					if(TargetCurrent>200)TargetCurrent=200; 
 					//根据指定的下调斜率值应用调整
 					if(PreChargeDACDuty<TargetCurrent)PreChargeDACDuty=0;
 					else PreChargeDACDuty-=TargetCurrent;	                 //PWMDAC在接近末尾的时候直接clear掉，否则进行逐次递减
-					//标记占空比已更新，需要上传最新值	
-					IsNeedToUploadPWM=1;
-					}
+					}					
+				//标记占空比已更新，需要上传最新值	
+				IsNeedToUploadPWM=1;
 				}	
 		  break;
 		//启动步骤5：应用整定PWMDAC占空比抬升输出电流到目标值
 		case OutCH_SubmitDuty:
 			if(IsNeedToUploadPWM)break; //PWM正在应用中，等待
 			//保护LED的电流斜率限制器
-			if(TargetCurrent-CurrentBuf>CalcIREFValue(6000))IsEnableSlowILEDRamp=1; //监测到非常大的电流瞬态，避免冲爆灯珠采用软起
+			if((TargetCurrent-CurrentBuf)>CalcIREFValue(5000))IsEnableSlowILEDRamp=1; //监测到非常大的电流瞬态，避免冲爆灯珠采用软起
 			if(!SysMode&&IsEnableSlowILEDRamp)
 				{
 				switch(CurrentMode->ModeIdx)
@@ -344,19 +349,20 @@ void OutputChannel_Calc(void)
 					  if(CurrentBuf<CalcIREFValue(18000))CurrentBuf+=TurboLowCurrentMPPTStep;
 					  else CurrentBuf+=TurboMPPTILEDStep;
 					  break;  
-					case Mode_Beacon:CurrentBuf+=5000;break;
-					case Mode_Strobe:CurrentBuf+=1500;break;
-					case Mode_SOS:CurrentBuf+=500;break;
+					case Mode_Beacon:
+					case Mode_Strobe:CurrentBuf+=4000;break;
+					case Mode_SOS:CurrentBuf+=800;break;
 					default:CurrentBuf+=15;
 					}
+				//电流已经抬升到大于目标值，进行限幅并标记电流抬升操作结束
 				if(CurrentBuf>=TargetCurrent)
 					{
 					IsEnableSlowILEDRamp=0;
-					CurrentBuf=TargetCurrent; //限幅，不允许目标电流大于允许值
+					CurrentBuf=TargetCurrent;
 					}
 				}
 			else CurrentBuf=TargetCurrent; //直接同步		
-		  //更新占空比
+			//更新占空比
 			IsNeedToUploadPWM=1;
 			PWMDuty=Duty_Calc(CurrentBuf);
 			//占空比已同步，跳转到正常运行阶段
@@ -364,7 +370,7 @@ void OutputChannel_Calc(void)
 				{
 				IsCurrentRampUp=1; //标记电流爬升结束
 				OutputFSMState=OutCH_OutputEnabled;
-				}
+				}		  
 	    break;
 		//正常运行，1流明开环运行挡位
 		case OutCH_1LumenOpenRun:			
@@ -395,20 +401,20 @@ void OutputChannel_Calc(void)
 			break;
 		//输出通道软关机控制
 		case OutCH_GracefulShut:
-			//先关闭DCDC，然后接通LED的MOS利用LED进行放电
+			//先关闭DCDC，延时5mS后接通LED的MOS利用LED进行放电
 			BOOSTRUN=0;
-		  _nop_();
+		  delay_ms(1);
 			LEDMOS=1; 
 			//复位PWMDAC
 			OutputChannel_ClearPWMDAC();
 		  //跳转到等待输出电压衰减的过程
-		  PreChargeFSMTimer=32; 										//等待输出电压衰减的过程最多等待4秒
+		  PreChargeFSMTimer=36; 										//等待输出电压衰减的过程最多等待4.5秒
 		  OutputFSMState=OutCH_WaitVOUTDecay;
 		  break;
 		//DCDC关闭，等待输出电压衰减
 		case OutCH_WaitVOUTDecay:
 		  //等待输出电压衰减
-		  if(Data.OutputVoltage>=15.0&&PreChargeFSMTimer)break;
+		  if(Data.OutputVoltage>GracefulShutThres&&PreChargeFSMTimer)break;
 			//输出电压衰减结束，执行DCDC复位函数关闭LEDMOS和辅助电源以及PWMDAC
 			OutputChannel_ClearPWMDAC();
 			OutputChannel_StopDCDC();

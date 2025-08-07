@@ -62,6 +62,9 @@ typedef enum
 	 #define OneLMDACVal OneLumenCVDACVal
 #endif
 
+//自动计算系统输出放电和启动模块的阈值(单位V)
+#define GracefulShutThres ((float)(1+OneLumenOut)/(float)10)
+
 #if (OneLumenCVDACVal < 0 | OneLumenCVDACVal > 2399)
    #error "Error 009: Invalid CV PWMDAC Output Config Value for One Lumen(Ultra Low mode)Output!"
 #endif
@@ -77,6 +80,7 @@ extern xdata int CurrentBuf; //当前已应用的电流值
 extern bit IsCurrentRampUp;  //电流正在上升过程中的标记位（用于和MPPT试探联动）
 	
 //函数
+void OutputChannel_WaitVBattReady(void); //等待电池电压就绪
 void OutputChannel_Init(void);
 void OutputChannel_Calc(void);
 void OCFSM_TIMHandler(void);

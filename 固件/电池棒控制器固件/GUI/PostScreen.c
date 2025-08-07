@@ -12,6 +12,13 @@ bool EnableDetailOutput=false;
 static bool IsWarningAsserted;
 static bool IsINFOAsserted;
 
+const char PostString[][3]=
+	{
+	"AA",
+	"AB",
+	"AC"
+	};
+
 //初步显示自检屏幕
 void PostScreenInit(void)
 	{
@@ -44,10 +51,10 @@ static u16 PickColorBasedOnType(MessageTypeDef Type)
 //根据自检结果返回对应的自检ID
 const char *QueryPostDoneID(void)
 	{
-	if(IsWarningAsserted)return "AC";
-	else if(IsINFOAsserted)return "AB";
+	if(IsWarningAsserted)return PostString[2];
+	else if(IsINFOAsserted)return PostString[1];
 	//系统自检正常通过，返回AA
-	return "AA";
+	return PostString[0];
 	}	
 //显示自检信息
 void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
@@ -61,8 +68,13 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 	if(Type==Msg_INFO)IsINFOAsserted=true;
 	Color=PickColorBasedOnType(Type);            //调用函数根据事件类型选择颜色
 	//根据百分比计算进度条要到达的长度
-	len=((float)Present)/(float)100*(float)143;
-	i=(int)len;
+	len=((float)Present/(float)100)*(float)144;
+	msglen=(int)(len*(float)10);
+	msglen%=10;
+	if(msglen>4)i=1;		 
+	else i=0;            //对长度数值进行四舍五入
+  i+=(int)len;
+	if(i>144)i=144;      //限制最大的长度数值不得大于144
   //实现进度条动画效果
 	do
 		{
@@ -72,8 +84,8 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 		if(Presentage<i)Presentage++;
 		if(Presentage>i)Presentage--;
 		//进度条动画延时
-		if(EnableDetailOutput)delay_ms(4);
-		else delay_ms(8);
+		if(EnableDetailOutput)delay_ms(3);
+		else delay_ms(5);
 		}
 	while(Presentage!=i);
 	//如果下一条自检信息不是异常，则进行消隐动画
@@ -92,7 +104,9 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 			LCD_Fill(5,46,i,58,BLACK);
 			LCD_DrawLine(i,46,i,58,i<LastMsgLen?WHITE:BLACK);
 			delay_ms(2);
-			}
+			}		
+		//显示自检ID
+		LCD_ShowString(137,46,ID,WHITE,BLACK,12,0);	
 		//显示新的文字
 		msglen=strlen(Msg);  //计算长度
 		for(i=1;i<=msglen;i++)
@@ -102,8 +116,6 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 			LCD_ShowHybridString(5,46,Msg,Color,BLACK,0);
 			delay_ms(30);
 			}
-		//显示自检ID
-		LCD_ShowString(137,46,ID,WHITE,BLACK,12,0);		
 		}
 	else LCD_ShowString(137,46,ID,WHITE,BLACK,12,0);	
 	//计算上一条消息的长度

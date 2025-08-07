@@ -44,11 +44,10 @@ typedef enum
 extern bit IsBatteryAlert; //电池低电警告发生
 extern bit IsBatteryFault; //电池低电量故障发生
 extern BattStatusDef BattState; //电池状态
-extern xdata float Battery; //滤波之后的电池电压
+extern xdata int CellVoltage; //滤波之后的电池组等效单节电压（不反应电池组在不平衡状态下的实际单节电压）
 extern xdata BattVshowFSMDef VshowFSMState; //状态机状态	
 	
 //函数
-void WaitBatteryVoltageReady(void); //等待电池电压就绪
 void TriggerTShowDisplay(void); //启动温度显示
 void BattDisplayTIM(void); //电池电量显示函数处理
 void TriggerVshowDisplay(void); //启动电池电压显示
