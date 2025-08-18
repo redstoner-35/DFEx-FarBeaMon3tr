@@ -62,7 +62,7 @@ static void BalanceEndGotoMainMenuProcess(bool IsNormalExit)
 //自动均衡FSM处理
 void AutoBalFSMHandler(void)
 	{
-	extern int SleepTimer;	
+	extern short SleepTimer;	
   //进行系统的配置		
 	Is2366Telem=true; 
 	SleepTimer=480; //均衡运行期间禁止系统复位，休眠时间复位为一分钟

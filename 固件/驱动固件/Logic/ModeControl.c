@@ -336,10 +336,8 @@ void ModeFSMInit(void)
 	//复位变量和一部分模块
 	IsSlowFading=0;
 	IsRampKeyPressed=0;
-	HoldChangeGearTIM=0;
 	DisplayLockedTIM=0;
 	IsSwitchingKeyStillHold=0;
-	IsNotifyMaxRampLimitReached=0;
 	SetupFSMState=SetupMenu_InACT;            //复位设置状态机
 	ResetStrobeModule(); 											//复位爆闪控制器
 	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器

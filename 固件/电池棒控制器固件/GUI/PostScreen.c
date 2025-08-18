@@ -113,8 +113,8 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type)
 			{
 			memset(MsgBuf,0,sizeof(MsgBuf));
 			memcpy(MsgBuf,Msg,i);
-			LCD_ShowHybridString(5,46,Msg,Color,BLACK,0);
-			delay_ms(30);
+			LCD_ShowHybridString(5,46,MsgBuf,Color,BLACK,0);
+			delay_ms(10);
 			}
 		}
 	else LCD_ShowString(137,46,ID,WHITE,BLACK,12,0);	

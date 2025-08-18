@@ -37,16 +37,19 @@ extern bool IsSystemOverheating;
 extern ChipStatDef CState;
 	
 //内部变量
+static bool IsErrorShown=false; //显示错误了没
 bool IsEnableAdapterEmu=false; //是否开启适配器模拟
 static AdapEmuErrorDef EmuErrorName;
 static AdapEmuFSMDef EmuState=AdapEmu_Initial;	
 static short EmuFSMTIM=0;		
+static short EmuAPortTimeOutTIM=0; //A口超时计时器
 bool IsEnabledFakeAToCMode=false; //标志位，是否开启假的A to C输出功能	
 	
 //状态机计时器
 void AdapEmuTIMHandler(void)
 	{
 	if(EmuFSMTIM>0)EmuFSMTIM--;
+	if(EmuAPortTimeOutTIM>0)EmuAPortTimeOutTIM--;
 	}
 	
 //内部函数，检查电池是否过低
@@ -85,6 +88,7 @@ void EnterAdapterEmulationPrePare(void)
 	{
 	BatteryStateDef BattState;
 	//获取芯片当前状态	
+	IsErrorShown=false;
 	IsEnabledFakeAToCMode=false;
 	if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt)
 		{
@@ -127,7 +131,7 @@ void ExitAdapterEmulation(void)
 static void AdapterInitFaultHandler(void)
 	{
 	Is2366Telem=true;
-	if(!IsResultUpdated)return;
+	if(IsErrorShown)return;
 	RenderMenuBG();
 	LCD_ShowChinese(14,22,"适配器模拟开启失败！",RED,LGRAY,0);
 	switch(EmuErrorName)
@@ -140,6 +144,8 @@ static void AdapterInitFaultHandler(void)
 	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
 	LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
 	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	//显示结束，标记结果已更新
+	IsErrorShown=true;
 	}	
 //适配器模拟进入时初始化状态机的处理	
 void AdapterEmuEnter(void)
@@ -154,7 +160,7 @@ static void AdapterEmuRunningHandler(void)
 	extern bool IsDispChargingINFO;
 	u16 Color;
 	int Temp;
-	float Power;			
+	float Power;		
 	//显示标题
 	if(IsSystemOverheating)LCD_ShowChinese(22,23,"系统过热，模拟暂停",ORANGE,LGRAY,0);
 	else 
@@ -272,9 +278,13 @@ void AdapterEmuRender(void)
 	  case AdapEmu_TryToUseFakeLoad:
 			RenderMenuBG();
 			LCD_ShowChinese(14,22,"适配器模拟开启中……",WHITE,LGRAY,0);
-			EmuFSMTIM=20;
+			EmuFSMTIM=32;
 		  //打开C口5.1K诱骗电路
-		  if(!AUXPSU_SetTypeCFVoutState(true))
+			InitState=AUXPSU_SetIPDState(false);
+		  delay_ms(10);
+		  InitState&=AUXPSU_ConnectTCtoIPD();
+		  InitState&=AUXPSU_SetTypeCFVoutState(true); //首先关闭C口强制取电的下拉，10mS后令磁保持继电器将2366的CC和C口断开，接着开启2366的取电下拉
+		  if(!InitState)
 				{
 			  EmuErrorName=Error_CommFault;
 			  EmuState=AdapEmu_InitFailed; //C口诱骗电路异常，无法成功答案开
@@ -294,6 +304,9 @@ void AdapterEmuRender(void)
 				//计时1秒后仍然没有成功切换到输出状态，说明是旧版硬件需要手动拿OTG骗一下，显示提示
 				EmuFSMTIM--;
 				AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路
+				delay_ms(5);
+				AUXPSU_ConnectTCtoIP2366(); 
+				AUXPSU_SetIPDState(true);    //延时5mS后将C口的CC线和IP2366重新连接，恢复C口
 				}
 		  else if(!EmuFSMTIM)LCD_ShowHybridString(17,37,"请将负载连接到USB",YELLOW,LGRAY,0);			
 		  //屏幕已刷新，标记结束模拟
@@ -325,13 +338,37 @@ void AdapterEmuRender(void)
 			//开启成功，进入运行模式   
 		  else
 				{	
-        AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路					
 				EmuState=AdapEmu_Running;
+				if(!IsCPortTriggerOK)break;	//如果系统不支持高级C口诱骗电路，则跳过诱骗关闭处理
+				AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路
+				delay_ms(5);
+				AUXPSU_ConnectTCtoIP2366(); 
+				AUXPSU_SetIPDState(true);    //延时5mS后将C口的CC线和IP2366重新连接，恢复C口			
 				}
 			break;
 		//适配器模拟运行中，正常显示
 		case AdapEmu_Running:
 			Is2366Telem=true;
+			//A口模拟超时处理
+		  if(IsEnabledFakeAToCMode)
+				{
+				if(!VBUS.IsTypeCConnected)
+					{
+					if(!EmuFSMTIM)EmuFSMTIM=16;   //反复尝试打开关闭
+					if(EmuFSMTIM==16)AUXPSU_SetTypeCFVoutState(false);
+					else if(EmuFSMTIM==10)AUXPSU_SetTypeCFVoutState(true); //反复尝试关闭重启C口诱骗器直到恢复
+					}
+				if(fabsf(ITypeC)>0.05&&VBUS.IsTypeCConnected)EmuAPortTimeOutTIM=80;
+				else if(!EmuAPortTimeOutTIM)
+					{
+					//A to C未链接设备足够长的时间，关闭模拟
+					IsEnabledFakeAToCMode=false;
+					AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路
+					delay_ms(5);
+					AUXPSU_ConnectTCtoIP2366(); 
+					AUXPSU_SetIPDState(true);    //延时5mS后将C口的CC线和IP2366重新连接，恢复C口
+					}
+				}
 			//进行故障判断
 		  if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt)EmuState=AdapEmu_StopDueToFault; //系统故障，跳转到模拟结束阶段
 		  if(CheckIfBattTooLow())EmuState=AdapEmu_StopDueToLowBatt; //电池电量过低，模拟结束
@@ -353,6 +390,15 @@ void AdapterEmuRender(void)
 			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
 			LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
 			LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);	
+	    //模拟异常停止后，复位CC口继电器
+			if(IsCPortTriggerOK&&IsEnabledFakeAToCMode)
+				{
+				AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路
+				delay_ms(5);
+				AUXPSU_ConnectTCtoIP2366(); 
+				AUXPSU_SetIPDState(true);    //延时5mS后将C口的CC线和IP2366重新连接，恢复C口
+				IsEnabledFakeAToCMode=false;
+				}
 		  //屏幕已刷新
 			IsResultUpdated=false;
 			break;
@@ -362,19 +408,41 @@ void AdapterEmuRender(void)
 void AdapterMenuKeyProc(void)
 	{
 	extern bool IsEnterDischargeMode;
+	bool State;
 	//C口诱骗硬件存在的情况下，按下Enter开启A to C输出模式
 	if(IsCPortTriggerOK&&KeyState.KeyEvent==KeyEvent_Enter&&EmuState==AdapEmu_Running)
 		{
 		//尝试激活A to C模拟
-		if(!IsEnabledFakeAToCMode)IsEnabledFakeAToCMode=AUXPSU_SetTypeCFVoutState(true); 
+		if(!IsEnabledFakeAToCMode&&!VBUS.IsTypeCConnected)
+			{
+			State=AUXPSU_SetIPDState(false);
+		  delay_ms(10);
+		  State&=AUXPSU_ConnectTCtoIPD();
+		  State&=AUXPSU_SetTypeCFVoutState(true); //首先关闭C口强制取电的下拉，10mS后令磁保持继电器将2366的CC和C口断开，接着开启2366的取电下拉
+			IsEnabledFakeAToCMode=State;
+			if(State)EmuAPortTimeOutTIM=160; //成功开启A to C模拟，160秒后再进行检测
+			}
 		//尝试关闭A to C模拟		
-		else if(AUXPSU_SetTypeCFVoutState(false))IsEnabledFakeAToCMode=false;
+		else if(IsEnabledFakeAToCMode)
+			{
+			State=AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路
+			delay_ms(5);
+			State&=AUXPSU_ConnectTCtoIP2366(); 
+			State&=AUXPSU_SetIPDState(true);    //延时5mS后将C口的CC线和IP2366重新连接，恢复C口	
+			if(State)IsEnabledFakeAToCMode=false;
+			}
 		}
   //按下esc返回菜单		
 	if(KeyState.KeyEvent==KeyEvent_ESC)
 		{
-		//退出时需要强制关闭C口对外诱骗电路
-		AUXPSU_SetTypeCFVoutState(false); 
+		//退出时如果非运行模式，或者是开启了A to C诱骗则需要强制关闭C口对外诱骗电路
+		if(IsEnabledFakeAToCMode||EmuState!=AdapEmu_Running)
+			{
+			AUXPSU_SetTypeCFVoutState(false); //关闭C口对外诱骗电路
+			delay_ms(5);
+			AUXPSU_ConnectTCtoIP2366(); 
+			AUXPSU_SetIPDState(true);    //延时5mS后将C口的CC线和IP2366重新连接，恢复C口
+			}
 		//从快捷菜单进来的，直接回主菜单
 		if(IsEnterDischargeMode)
 			{

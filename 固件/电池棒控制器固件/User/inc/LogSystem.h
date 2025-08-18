@@ -6,7 +6,7 @@
 #include "Config.h"
 
 //定义
-#define RunTimeLoggerDepth 550  //运行日志的深度
+#define RunTimeLoggerDepth 552  //运行日志的深度
 #define RunTimeLogKey "R@DB" //运行log的内容检查Key
 
 typedef struct
@@ -27,6 +27,7 @@ typedef struct
 	short SystemOCPCount;   //系统触发过流保护的次数
 	short VBUSOVPCount; //输入过压触发的次数
 	//是否触发保护系统
+	bool IsSystemBootFromSafeMode; //系统是否从安全模式启动
 	bool IsEnablePunish; //是否触发保护机制
 	}LogContentDef;
 	
@@ -91,6 +92,7 @@ char ByteBuf[sizeof(signed short)];
 //外部参考
 #define LogHeader RunLogEntry.Data.DataSec
 #define LogData RunLogEntry.Data.DataSec.Data.Content
+#define IsBootFromVBUS LogData.IsSystemBootFromSafeMode
 extern RunLogEntryStrDef RunLogEntry;
 
 //日志文件处理

@@ -9,7 +9,6 @@
 错信息会自行消失。
 *************************************************************/
 
-
 //使用自定义LED
 #ifdef Custom_LED_ICCMAX
 
@@ -37,14 +36,14 @@
 
 #elif defined(USING_LED_FL7018I_PRO9)
 	
-	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I with 0.9mR Shunt,Turbo ICC=36.5A."
-	#define TurboICCMAX 36500  
+	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I with 0.9mR Shunt,Turbo ICC=36.6A."
+	#define TurboICCMAX 36600  
 
 //FL7018I灯珠
 #elif defined(USING_LED_FL7018I)
 	
-	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35.4A."
-	#define TurboICCMAX 35400
+	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35.2A."
+	#define TurboICCMAX 35200
 
 //Luminus SFT-90X
 #elif defined(USING_LED_SFT90X)
@@ -82,13 +81,30 @@
 	
 	//爆闪电流定义
 	#ifdef FullPowerStrobe
-   //全功率爆闪，极亮电流等于爆闪电流
-	 #define StrobeICCMAX TurboICCMAX
+	    //全功率爆闪，极亮电流等于爆闪电流或者爆闪电流使用自定义
+	    #ifdef CustomStrobeCurrent
+				
+				#if(CustomStrobeCurrent > 40000 | CustomStrobeCurrent < TurboICCMAX)
+			  //非法的自定义爆闪电流
+				#error "Error 00D: Customized Strobe Current Must between Turbo Current and less than 40 Amps!"
+				
+				#else
+				
+				//合法的自定义爆闪电流，使用设置值
+				#define StrobeICCMAX CustomStrobeCurrent
+				#message "Customized Strobe Current has been set.System will use Customized Strobe Current instead of turbo current."
+				
+				#endif
+			#else
+			  //没有自定义爆闪电流，使用极亮电流
+				#define StrobeICCMAX TurboICCMAX
 	 
-			#if (TurboICCMAX < 22000UL)
-			#warning "Tips:Strobe Current has been limited due to Turbo ICCMAX is less than 22A."
-			#endif
-	 
+				#if (TurboICCMAX < 22000UL)
+				#warning "Tips:Strobe Current has been limited due to Turbo ICCMAX is less than 22A."
+				#endif
+			
+	   #endif
+		
 	#else
    //启用低功率爆闪
 	 #if (TurboICCMAX < 22000UL)

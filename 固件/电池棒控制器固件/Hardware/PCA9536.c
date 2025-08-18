@@ -3,6 +3,13 @@
 #include "I2CAddr.h"
 #include <stdlib.h>
 
+
+//获取当前的IO控制器是否是旧版的
+bool GetIfPCAIsOldOne(void)
+	{
+	return SMIOADDR==OLDSMIOADDR?true:false;
+	}
+
 //设置PCA9536芯片对应的IO方向
 bool PCA9536_SetIODirection(SMIOPinDef IOPINNum,SMIODirDef Direction)
 	{
@@ -19,6 +26,7 @@ bool PCA9536_SetIODirection(SMIOPinDef IOPINNum,SMIODirDef Direction)
 	buf=IIC_Read_Byte(0);
 	IIC_Stop();
 	//设置方向
+	if(SMIOADDR==OLDSMIOADDR)IOPINNum&=0x0F; //保护措施，如果是旧的SMBUS扩展器则mask掉上面的位
 	if(Direction==PCA9536_IODIR_IN)buf|=(char)IOPINNum;
 	else buf&=~(char)IOPINNum; //对应的bit如果是1表示输入，0表示输出
 	//回写寄存器
@@ -49,6 +57,7 @@ bool PCA9536_GetOutputState(SMIOPinDef IOPINNum,bool *PinState)
 	buf=IIC_Read_Byte(0);
 	IIC_Stop();
 	//对IO输入电平进行判断
+	if(SMIOADDR==OLDSMIOADDR)IOPINNum&=0x0F; //保护措施，如果是旧的SMBUS扩展器则mask掉上面的位
 	buf&=(char)IOPINNum;
 	if(PinState!=NULL)*PinState=buf?true:false;
 	//获取成功，返回true
@@ -71,6 +80,7 @@ bool PCA9536_SetIOState(SMIOPinDef IOPINNum,bool PinState)
 	buf=IIC_Read_Byte(0);
 	IIC_Stop();
 	//设置对应IO的输出电平
+	if(SMIOADDR==OLDSMIOADDR)IOPINNum&=0x0F; //保护措施，如果是旧的SMBUS扩展器则mask掉上面的位
 	if(PinState)buf|=(char)IOPINNum;
 	else buf&=~(char)IOPINNum; //设置对应的bit
 	//回写寄存器
@@ -102,6 +112,7 @@ bool PCA9536_ReadInputState(SMIOPinDef IOPINNum,bool *PinState)
 	buf=IIC_Read_Byte(0);
 	IIC_Stop();
 	//进行bit Mask
+	if(SMIOADDR==OLDSMIOADDR)IOPINNum&=0x0F; //保护措施，如果是旧的SMBUS扩展器则mask掉上面的位
 	buf&=IOPINNum;
 	if(PinState!=NULL)*PinState=buf?true:false;
 	//通信成功完成
@@ -124,6 +135,7 @@ bool PCA9536_SetIOPolarity(SMIOPinDef IOPINNum,SMIODirPolarDef Polarity)
 	buf=IIC_Read_Byte(0);
 	IIC_Stop();
 	//设置方向
+	if(SMIOADDR==OLDSMIOADDR)IOPINNum&=0x0F; //保护措施，如果是旧的SMBUS扩展器则mask掉上面的位
 	if(Polarity==PCA9536_IO_Inverted)buf|=(char)IOPINNum;
 	else buf&=~(char)IOPINNum; //对应的bit如果是1表示极性相反，0表示正极性
 	//回写寄存器

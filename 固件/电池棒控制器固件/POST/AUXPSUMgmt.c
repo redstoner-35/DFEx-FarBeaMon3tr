@@ -2,8 +2,10 @@
 #include "IP2366_REG.h"
 #include "ADC.h"
 #include "delay.h"
+#include "LogSystem.h"
 #include "AUXPSU.h"
 #include <math.h>
+#include "WatchDog.h"
 #include "GUI.h"
 
 //内部变量状态
@@ -18,9 +20,80 @@ static bool IsAdvancedPMOK=false; //标志位，高级电源控制模块是否OK
 #define EnableAUXBuck() PCA9536_SetIOState(PCA9536_IOPIN_3,true)	
 #define DisableAUXBuck() PCA9536_SetIOState(PCA9536_IOPIN_3,false)	
 
+//强制启用安全模式（进入安全模式用）
+void ForceEnableAdvPM(void)
+	{
+	IsAdvancedPMOK=true;
+	}
+
+//给磁保持继电器发送指令让CC线切换到IP2366
+bool AUXPSU_ConnectTCtoIP2366(void)
+	{
+	bool State;
+	//硬件不受支持返回true
+	if(!IsAdvancedPMOK)return true;
+	//打开磁保持继电器驱动电源
+	if(!PCA9536_SetIOState(PCA9536_IOPIN_7,true))return false;
+	delay_ms(10);
+	//令SET=0，Reset给高100mS，继电器变为复位状态
+	State=PCA9536_SetIOState(PCA9536_IOPIN_5,false);
+	delay_ms(10);
+	State&=PCA9536_SetIOState(PCA9536_IOPIN_6,true);
+	#ifndef EnableDebugMode
+	WatchDog_Feed(); //喂狗
+	#endif
+	delay_ms(100);
+	State&=PCA9536_SetIOState(PCA9536_IOPIN_6,false); //RESET生成100mS脉冲，继电器复位
+	//操作完毕，关闭磁保持继电器驱动电源
+	State&=PCA9536_SetIOState(PCA9536_IOPIN_7,false); 
+	#ifndef EnableDebugMode
+	WatchDog_Feed(); //喂狗
+	#endif
+	//返回操作结果
+	return State;
+	}
+	
+//给磁保持继电器发送指令让CC线切换到下拉强制取电
+bool AUXPSU_ConnectTCtoIPD(void)
+	{
+	bool State;
+	//硬件不受支持返回true
+	if(!IsAdvancedPMOK)return true;
+	//打开磁保持继电器驱动电源
+	if(!PCA9536_SetIOState(PCA9536_IOPIN_7,true))return false;
+	delay_ms(10);
+	//令RESET=0，SET给高100mS，继电器变为置位状态
+	State=PCA9536_SetIOState(PCA9536_IOPIN_6,false);
+	delay_ms(10);
+	State&=PCA9536_SetIOState(PCA9536_IOPIN_5,true);
+	#ifndef EnableDebugMode
+	WatchDog_Feed(); //喂狗
+	#endif
+	delay_ms(100);
+	State&=PCA9536_SetIOState(PCA9536_IOPIN_5,false); //SET生成100mS脉冲，继电器置位
+	//操作完毕，关闭磁保持继电器驱动电源
+	State&=PCA9536_SetIOState(PCA9536_IOPIN_7,false); 
+	#ifndef EnableDebugMode
+	WatchDog_Feed(); //喂狗
+	#endif
+	//返回操作结果
+	return State;
+	}
+	
+//设置强制下拉C口强迫适配器输出的取电电阻的状态
+bool AUXPSU_SetIPDState(bool State)
+	{
+	//硬件不受支持返回true
+	if(!IsAdvancedPMOK)return true;
+	//设置对应的IO
+	return PCA9536_SetIOState(PCA9536_IOPIN_4,State?false:true);
+	}
+
 //设置强制Type-C对外输出的5.1K CC电阻诱骗电路是否激活
 bool AUXPSU_SetTypeCFVoutState(bool State)
 	{
+	//硬件不受支持返回true
+	if(!IsCPortTriggerOK)return true;
 	//设置对应的IO
 	return PCA9536_SetIOState(PCA9536_IOPIN_1,State);
 	}
@@ -80,6 +153,10 @@ void AUXPSU_DetectIfCPortTriggerPresent(void)
 		ShowPostInfo(99,"APMM模块已禁用","48",Msg_INFO);	
 		delay_ms(200);	
 		}
+	//支持高级电源管理且电池电压足够的时候，启动时发指令同步继电器状态
+	if(!IsAdvancedPMOK||ADCO.Vbatt<(2.5*BattCellCount))return;
+	if(IsBootFromVBUS)AUXPSU_ConnectTCtoIPD();
+	else AUXPSU_ConnectTCtoIP2366();
 	}	
 	
 //准备进入待机状态时，关闭buck并且切换到直通通道
@@ -146,8 +223,8 @@ void AUXPSU_Mgmt(void)
 			 break;	
 		//直通模式（屏幕的供电由TYPE-C输入的电源直接进入LDO进行降压，发热极大）
 		case AUXPSU_Passthrough:
-			 //电池电量异常，禁止状态转移
-			 if(ADCO.Vbatt<2.5*BattCellCount)AUXPSUTIM=80;
+			 //电池电量异常或者系统仍然处于安全模式，禁止状态转移
+			 if(ADCO.Vbatt<2.5*BattCellCount||IsBootFromVBUS)AUXPSUTIM=80;
 		   else if(AUXPSUTIM>0)AUXPSUTIM--;
 		   //电池存在电压之后状态转移允许启动
 		   if(AUXPSUTIM>0)break;

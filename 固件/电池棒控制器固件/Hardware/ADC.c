@@ -14,6 +14,7 @@
 //变量
 static bool ADCEOCFlag=false;
 ADCOutTypeDef ADCO;
+float PORVBatVolt=0;
 static bool IsADCLoadCalibrationVal=false;
 static int VbattCal=1000;
 static int IbattCal=1000;
@@ -165,4 +166,6 @@ void InternalADC_Init(void)
 		ShowPostInfo(8,"热敏电阻故障","E3",Msg_Fault);
 		SelfTestErrorHandler();
 		}
+	 //完成测量，存下电池电压
+	 PORVBatVolt=ADCO.Vbatt;
 	}

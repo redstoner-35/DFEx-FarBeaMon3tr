@@ -103,7 +103,7 @@ void IP2366_Telem(void)
 			Result/=(float)1000;
 			if(fabsf(Result)<7.6)ITypeC=Result;
 			//进行电池端电压补偿计算	
-			if(VTypec<VBat)VBat+=0.033; //当前Type-C没有连接，系统靠电池供电需要补偿的VBat保险电阻的压降（33mA@1Ω=0.033V）
+			if(VTypec<VBat)VBat+=(0.033*0.05); //当前Type-C没有连接，系统靠电池供电需要补偿的VBat保险电阻的压降（0.033A*0.05R）
 			//读取结束，清除平均缓存结果	
 			for(i=0;i<4;i++)VBUSAvgBuf[i]=0;
 			}		

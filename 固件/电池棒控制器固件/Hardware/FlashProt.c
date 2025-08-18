@@ -93,6 +93,10 @@ static void MakeCRCVendorString(char Str[16],unsigned int CRCIN)
 //启用flash锁定
 void CheckForFlashLock(void)
  { 
+ #ifdef EnableDebugMode	 
+ ShowPostInfo(45,"完整性检查已禁用\0","4B",Msg_INFO);	 
+ delay_ms(300);
+ #else  
  int i=0;
  FLASH_OptionByte Option;
  char UIDBUF[16],OTPData[16];
@@ -161,4 +165,5 @@ void CheckForFlashLock(void)
  delay_Second(1);
  NVIC_SystemReset();  //刷完之后重启
  while(1);
+ #endif
  }

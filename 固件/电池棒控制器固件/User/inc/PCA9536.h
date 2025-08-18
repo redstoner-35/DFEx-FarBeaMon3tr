@@ -11,6 +11,10 @@ typedef enum
 	PCA9536_IOPIN_1=0x02,
 	PCA9536_IOPIN_2=0x04,
 	PCA9536_IOPIN_3=0x08,
+	PCA9536_IOPIN_4=0x10,
+	PCA9536_IOPIN_5=0x20,
+	PCA9536_IOPIN_6=0x40,
+	PCA9536_IOPIN_7=0x80
 	}SMIOPinDef;
 
 typedef enum
@@ -26,6 +30,7 @@ typedef enum
 	}SMIODirPolarDef;		
 	
 //函数
+bool GetIfPCAIsOldOne(void); //获取当前的IO控制器是否是旧版的
 bool PCA9536_GetOutputState(SMIOPinDef IOPINNum,bool *PinState);	//读取PCA9536芯片对应的IO所输出的电平	
 bool PCA9536_SetIODirection(SMIOPinDef IOPINNum,SMIODirDef Direction);	//设置PCA9536芯片对应的IO方向
 bool PCA9536_SetIOState(SMIOPinDef IOPINNum,bool PinState); //设置PCA9536芯片对应的IO所输出的电平

@@ -6,8 +6,8 @@
 #include "I2CAddr.h"
 
 //内部设备地址列表
-const char I2CSlaveADDR[]={IP2366ADDR,M24C512ADDR,M24C512SecuADDR,SMIOADDR};
-
+const char I2CSlaveADDR[]={IP2366ADDR,M24C512ADDR,M24C512SecuADDR};
+unsigned char SMIOADDR=0; //SMBUS IO扩展器的地址
 
 //I2C延时
 #define IIC_delay() delay_us(4)
@@ -18,11 +18,22 @@ const char I2CSlaveADDR[]={IP2366ADDR,M24C512ADDR,M24C512SecuADDR,SMIOADDR};
 //	while(--i);
 //	}
 
+//报告异常从机地址
+static void ReportFailedSlave(char Addr)
+	{
+	char FaultADDRINFO[32];
+	ShowPostInfo(16,"从机通信异常\0","W2",Msg_Warning);
+	delay_Second(1);
+	memset(FaultADDRINFO,0,sizeof(FaultADDRINFO));
+	snprintf(FaultADDRINFO,32,"异常地址:0x%02X",Addr);
+	ShowPostInfo(16,FaultADDRINFO,"W2",Msg_Warning);
+	}
+
 //SMBUS初始化
 void SMBUS_Init(void)
   {
 	 char i;
-	 char FaultADDRINFO[32];
+	 
 	 ShowPostInfo(16,"启动SMBUS控制器\0","06",Msg_Statu);
 	 //配置GPIO(SCL)
    AFIO_GPxConfig(IIC_SCL_IOB,IIC_SCL_IOP, AFIO_FUN_GPIO);//I2C SCL(用来做时钟)
@@ -39,19 +50,26 @@ void SMBUS_Init(void)
 			{
 			IIC_Start();
 			IIC_Send_Byte(I2CSlaveADDR[i]);
-			if(IIC_Wait_Ack())
-				{
-				ShowPostInfo(16,"从机通信异常\0","W2",Msg_Warning);
-				delay_Second(1);
-				memset(FaultADDRINFO,0,sizeof(FaultADDRINFO));
-				snprintf(FaultADDRINFO,32,"异常地址:0x%02X",I2CSlaveADDR[i]);
-				ShowPostInfo(16,FaultADDRINFO,"W2",Msg_Warning);
-				break;
-				}
+			if(IIC_Wait_Ack())ReportFailedSlave(I2CSlaveADDR[i]);
 			delay_us(60);
 			IIC_Stop();
 			delay_ms(1);
 			}
+	//尝试和8bit的GPIO扩展器进行握手
+	IIC_Start();
+	IIC_Send_Byte(ADVSMIOADDR);
+	if(!IIC_Wait_Ack())SMIOADDR=ADVSMIOADDR;
+	delay_us(60);
+	IIC_Stop();
+	if(SMIOADDR==ADVSMIOADDR)return; //高级扩展器存在且协商成功，进入处理		
+	//高级扩展器协商失败，检查4bit的扩展器是否存在
+	delay_ms(1);
+	SMIOADDR=OLDSMIOADDR; //设置IO扩展器的地址数据
+	IIC_Start();
+	IIC_Send_Byte(OLDSMIOADDR);	
+	if(!IIC_Wait_Ack())ReportFailedSlave(OLDSMIOADDR);	
+	delay_us(60);
+	IIC_Stop();
 	}
 
 //设置传输方向

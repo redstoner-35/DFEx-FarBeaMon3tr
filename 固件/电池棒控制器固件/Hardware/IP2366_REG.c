@@ -7,7 +7,7 @@
 #include <string.h>
 
 //固件ID和对应能力的Table
-#define FWTableSize 5	
+#define FWTableSize 6	
 	
 const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 	{
@@ -65,7 +65,18 @@ const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 	  4.00,            //4mR的shunt		
 		true,
 		false,		
-		}				
+		},		
+		{
+		//YHKKL 140W固件，2.5mR，支持高级PDO编辑(把外部Pin选电阻的功能改回去了，硬件默认30W)
+		"YHKKL",
+		16000,
+		false,
+		true,
+		Power_140W,
+	  2.50,            //2.5mR的shunt		
+		true,
+		false,
+		}		
 	};	
 
 //全局变量	
@@ -334,7 +345,7 @@ bool IP2366_UpdataChargePower(ChargePowerDef Power)
 	}	
 	
 //设置输入状态
-bool IP2366_SetInputState(IP2366InputDef * Cfg)
+bool IP2366_SetInputState(IP2366InputDef * Cfg,bool IsSetChargePower)
 	{
 	char buf;
 	int Current;
@@ -359,6 +370,7 @@ bool IP2366_SetInputState(IP2366InputDef * Cfg)
 	//设置最大充电电压
 	if(!IP2366_UpdateFullVoltage(Cfg->FullVoltage))return false;
 	//设置充电功率
+  if(!IsSetChargePower)return true; //特定场合要禁止设置充放电功率
 	if(!IP2366_UpdataChargePower(Cfg->ChargePower))return false;
 	//设置完毕
 	return true;
@@ -433,6 +445,17 @@ bool IP2366_EnableDCDC(bool IsEnableCharger,bool IsEnableDischarge)
 	return true;
 	}
 
+//禁止充电器
+bool IP2366_DisableCharger(void)	
+	{
+	char buf;
+	//设置充电器
+	if(!IP2366_ReadReg(&buf,REG_SYSCTL0))return false;		
+	buf&=0xFE; //设置En_Charger bit=0
+	if(!IP2366_WriteReg(buf,REG_SYSCTL0))return false;	
+	//成功，返回true
+	return true;
+	}
 //设置输出状态
 bool IP2366_SetOutputState(IP2366OutConfigDef * CFG)
 	{

@@ -8,16 +8,13 @@
 
 void EnteredInstantCapTest(void)
 	{
-	extern bool IsBootFromVBUS;
 	ShowPostInfo(97,"一次性测容初始化\0","40",Msg_Statu);		
 	//没有启动一次性测容
 	if(CfgData.InstantCTest!=InstantCTest_Armed)return;
 	//存储模式激活会导致结果不准确，不允许启动	
 	if(StorageMode!=StorageMode_OFF)return;
-	//电池电压大于13V不允许启动
-	if(ADCO.Vbatt>13.0)return; 
-	//如果本次启动时保护板有输出说明没有彻底放电结束
-	if(!IsBootFromVBUS)return;
+	//电池电压大于每节2.75V不允许启动
+	if(ADCO.Vbatt>(2.75*BattCellCount))return; 
 	//启动测容
 	if(CfgData.EnableAdvAccess)IsEnableAdvancedMode=true;  //如果是高级模式则使能该bit，否则退出测容会卡到普通菜单去
 	CfgData.InstantCTest=InstantCTest_EnteredOK; //标记成功进入

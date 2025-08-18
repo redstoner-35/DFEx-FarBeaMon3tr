@@ -136,6 +136,9 @@ static void ShowSystemEventCount(void)
 	LCD_ShowIntNum(87,35,LogData.SystemSCPCount,5,LogData.SystemSCPCount>10?YELLOW:WHITE,LGRAY,12);
 	LCD_ShowChinese(3,49,"过压保护次数",WHITE,LGRAY,0);
 	LCD_ShowIntNum(87,49,LogData.VBUSOVPCount,5,LogData.VBUSOVPCount>0?RED:WHITE,LGRAY,12);
+	LCD_ShowChinese(3,64,"安全启动模式",WHITE,LGRAY,0);
+	if(IsBootFromVBUS)LCD_ShowChinese(119,64,"已启用",YELLOW,LGRAY,0);
+	else LCD_ShowChinese(119,64,"未启用",WHITE,LGRAY,0);
 	}	
 	
 //容量显示的按键处理

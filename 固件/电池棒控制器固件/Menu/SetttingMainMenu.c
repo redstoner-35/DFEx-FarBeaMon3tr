@@ -29,8 +29,10 @@ void UpdateIfSysCanOFF(void)
 	//Type-C断开连接才允许关机
 	IP2366_GetChargerState(&State);
 	IsEnablePowerOFF=State==Batt_StandBy?true:false;
+	//设置适配器模拟功能是否使能
 	if(!DCDCOutputBit)IsEnableAdapEmu=false;
-	if(State==Batt_StandBy)IsEnableAdapEmu=true;
+	else if(IsBootFromVBUS)IsEnableAdapEmu=false;     //系统处于安全boot模式，禁止适配器模拟运行
+	else if(State==Batt_StandBy)IsEnableAdapEmu=true;
 	else if(State==Batt_discharging)IsEnableAdapEmu=true;
 	else IsEnableAdapEmu=false;
 	//检查PDO设置是否开启

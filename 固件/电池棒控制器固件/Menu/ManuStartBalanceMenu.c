@@ -27,7 +27,7 @@ bool IsTimeMet;
 //均衡菜单状态机状态机处理
 void BalMenuFSMProcess(void)
 	{
-	extern int SleepTimer;
+	extern short SleepTimer;
 	switch(BalState)
 		{
 		case BalMenu_SetTime:

@@ -401,7 +401,7 @@ void OutputChannel_Calc(void)
 			break;
 		//输出通道软关机控制
 		case OutCH_GracefulShut:
-			//先关闭DCDC，延时5mS后接通LED的MOS利用LED进行放电
+			//先关闭DCDC，延时1mS后接通LED的MOS利用LED进行放电
 			BOOSTRUN=0;
 		  delay_ms(1);
 			LEDMOS=1; 

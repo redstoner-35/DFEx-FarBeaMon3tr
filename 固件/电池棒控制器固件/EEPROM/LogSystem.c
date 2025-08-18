@@ -462,6 +462,7 @@ void LogDataSectionInit(RunLogDataUnionDef *DIN)
 	DIN->DataSec.LogIncrementCode=0;
 	strncpy(DIN->DataSec.LogKey,RunTimeLogKey,4);
 	//恢复基础设置
+	DIN->DataSec.Data.Content.IsSystemBootFromSafeMode=false; //并非从安全模式启动
 	DIN->DataSec.Data.Content.IsEnablePunish=false; //清除日志
 	DIN->DataSec.Data.Content.BalanceTime=0; //总计均衡时间
 	DIN->DataSec.Data.Content.ChargeTime=0; //总计充电时间

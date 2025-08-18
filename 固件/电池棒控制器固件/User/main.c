@@ -43,7 +43,6 @@ bool SensorRefreshFlag=false;
 
 int main(void)
  {
- unsigned char WDTResetDelay=4;
  //初始化系统时钟
  CKCU_PeripClockConfig_TypeDef CLKConfig={{0}};
  CLKConfig.Bit.PA=1;
@@ -58,7 +57,9 @@ int main(void)
  CLKConfig.Bit.BKP = 1;
  CKCU_PeripClockConfig(CLKConfig,ENABLE);
  //启动SYSTICK和电源锁定引脚
+ #ifndef EnableDebugMode
  SetDebugPortState(false);
+ #endif
  delay_init(); //对延时函数的运行环境进行初始化 
  PowerMgmtSetup(); //进行自举
  //底层外设初始化
@@ -87,10 +88,12 @@ int main(void)
  AUXPSU_DetectIfCPortTriggerPresent(); //检测C口诱骗硬件是否存在
  //自检完毕，进入系统
  ShowPostInfo(100,"系统初始化完成",(char *)QueryPostDoneID(),Msg_POSTOK);
- delay_ms(!CfgData.EnableFastBoot?400:200); //关闭快速启动则多延时一会让人可以看清
+ delay_ms(!CfgData.EnableFastBoot?400:150); //关闭快速启动则多延时一会让人可以看清
  ClearScreen();
  SensorRefreshFlag=false; //清除flag
+ #ifndef EnableDebugMode
  WatchDog_Init(); //启动看门狗
+ #endif
  //主循环
  while(1)
    {
@@ -103,8 +106,9 @@ int main(void)
 	 MenuRenderProcess(); //执行菜单渲染 
 	 //125ms定时处理的入口和喂狗检测
 	 if(!SensorRefreshFlag)continue;
-	 if(WDTResetDelay>0)WDTResetDelay--; //这里是为了确保系统已经在循环内工作稳定了。才开始喂狗，不然两次喂狗间隔太短会立即触发重启
-	 else WatchDog_Feed(); //喂狗
+	 #ifndef EnableDebugMode
+	 WatchDog_Feed(); //喂狗
+	 #endif
 	 //进行其余125ms定时处理
 	 AutoBalTIMHandler(); //自动均衡计时器
 	 Balance_IOMgmt(); //进行均衡器的控制

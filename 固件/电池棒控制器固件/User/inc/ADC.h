@@ -57,6 +57,7 @@ typedef struct
 
 //外部参考
 extern ADCOutTypeDef ADCO;
+extern float PORVBatVolt; //上电时测量的电池电压
 
 //函数
 void InternalADC_LoadCalibration(int Vcal,int Ical); //应用校准值

@@ -251,6 +251,8 @@ extern const IP2366FWCapDef *CurrentIP2366FW;
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
+bool IP2366_SetInputState(IP2366InputDef * Cfg,bool IsSetChargePower); //设置系统输入配置
+bool IP2366_DisableCharger(void); //禁止充电器
 bool IP2366_GetChipTemp(char *TempOut,bool *IsTempLimitTriggered); //获取芯片本身的温度数据
 IP2366HWRevDef IP2366_GetChipHWRev(void); //获取芯片的硬件版本号
 bool IP2366_UpdateChipCap(char VendorString[5]); //获取芯片能力
@@ -267,7 +269,6 @@ bool IP2366_SetOTPSign(void); //设置重载检测标记
 bool IP2366_DetectIfChipReset(bool *IsReset); //检查芯片是否复位
 bool IP2366_SetVLowVolt(VBatLowDef Vlow); //设置低压保护
 bool IP2366_GetFirmwareTimeStamp(char TimeStamp[5]);	//获取时间戳
-bool IP2366_SetInputState(IP2366InputDef * Cfg); //设置输入状态
 bool IP2366_SetOutputState(IP2366OutConfigDef * CFG); //设置输出状态	
 bool IP2366_GetRecvPDO(RecvPDODef *PDOResult);	//获取输入的PDO状态
 bool IP2366_GetVBUSState(IP2366VBUSStateDef * State); //获取VBUS状态
