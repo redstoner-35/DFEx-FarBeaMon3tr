@@ -24,6 +24,12 @@ char ShortPressEvent;
 HoldEventDef HoldStat;
 }KeyEventStrDef;
 
+typedef union
+{
+KeyEventStrDef EventStor;
+char Buf[sizeof(KeyEventStrDef)];
+}KeyEventUnionDef;
+
 //函数
 bit GetSideKeyRawGPIOState(void); //复位计时器
 void SideKey_SetIntOFF(void);		//关闭侧按的GPIO中断

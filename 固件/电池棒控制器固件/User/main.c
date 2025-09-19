@@ -37,6 +37,8 @@ void OverChargeDetectModule(void);
 void HPPowerGuage_Start(void);
 void AutoBalTIMHandler(void);
 void AdapEmuTIMHandler(void);
+void SysAutoSavePowerCfg(void);
+void DynamicUpdateSinkPower(void);
 
 //常量
 bool SensorRefreshFlag=false;
@@ -113,10 +115,12 @@ int main(void)
 	 AutoBalTIMHandler(); //自动均衡计时器
 	 Balance_IOMgmt(); //进行均衡器的控制
 	 SideKey_TIMCallback(); 
+	 DynamicUpdateSinkPower(); //动态更新输入功率
 	 UpdateIfSysCanOFF(); //更新系统是否可以关闭
 	 IP2366_Telem(); //每0.125秒获取一次2366的状态
 	 CTestAverageACC(); //测容系统遥测
 	 UpdataRunTimeLog(); //更新日志
+	 SysAutoSavePowerCfg(); //自动省电功能
 	 OverChargeDetectModule(); //过充检测
 	 DetectIfIP2366Reset(); //监测IP2366是否复位
 	 GUIDelayHandler(); //GUI延时处理

@@ -27,6 +27,7 @@ void EnterGUIPref(void);
 void ViewChipState(void);
 void EnterManuBal(void);
 void EnterStorageModePref(void);
+void EnterQueryPDOListMenu(void);
 
 //进入高级模式之前输密码
 void EnterAdvMode(void)
@@ -35,7 +36,7 @@ void EnterAdvMode(void)
 	}
 
 //菜单项参数
-const SetupMenuSelDef EasySetup[20]=
+const SetupMenuSelDef EasySetup[21]=
 	{	
 		{
 		"一键充电测容",
@@ -114,6 +115,12 @@ const SetupMenuSelDef EasySetup[20]=
 		false,
 		&AlwaysTrue,
 		&ViewChipState,
+		},
+		{
+		"Sink PDO列表查询",
+		false,
+		&AlwaysTrue,
+		&EnterQueryPDOListMenu
 		},
 		{
 		"关闭系统",

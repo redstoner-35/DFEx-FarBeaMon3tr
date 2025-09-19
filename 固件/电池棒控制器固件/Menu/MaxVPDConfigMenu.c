@@ -42,6 +42,7 @@ void FedMaxVPDEnumValue(int Input)
 		CfgData.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
 		CfgData.OverHeatLockTemp=90; //超充发热巨大需要调高温度
 		CfgData.InputConfig.ChargePower=Power_140W;
+		CfgData.MaxSnkPower=Power_140W;								
     CfgData.MaxVPD=PDMaxIN_28V;
 		WriteConfiguration(&CfgUnion,false);	
 		}

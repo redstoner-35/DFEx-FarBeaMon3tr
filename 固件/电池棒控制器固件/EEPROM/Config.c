@@ -44,8 +44,16 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	IN->ROMImage.Data.Data.FixedPDOCfg.PDO12VICCMAX=3000;
 	IN->ROMImage.Data.Data.FixedPDOCfg.PDO15VICCMAX=3000;
 	if(!CurrentIP2366FW->IsHyperChargeCapable)IN->ROMImage.Data.Data.FixedPDOCfg.PDO20VICCMAX=4000;
-	else IN->ROMImage.Data.Data.FixedPDOCfg.PDO20VICCMAX=CurrentIP2366FW->IsExtendPDOCapable?7000:4000;
+	else IN->ROMImage.Data.Data.FixedPDOCfg.PDO20VICCMAX=CurrentIP2366FW->IsExtendPDOCapable?7000:4000;	
+	//输入快充和自动省电配置
+	IN->ROMImage.Data.Data.EnableSmartSinkPower=CurrentIP2366FW->ExtendedTCSetting;
+	IN->ROMImage.Data.Data.MaxSnkPower=CurrentIP2366FW->MaxCapableChgPower;
+	IN->ROMImage.Data.Data.EnableAutoPowerSave=false;
+	IN->ROMImage.Data.Data.SinkConfig.EnableSinkDPDM=true;
+	IN->ROMImage.Data.Data.SinkConfig.EnableSinkPD=true;
+	IN->ROMImage.Data.Data.SinkConfig.EnableSinkSCP=true; //输入快充协议
 	//输入配置
+
 	IN->ROMImage.Data.Data.VRecharge=Recharge_0V1;
 	IN->ROMImage.Data.Data.IStop=IStop_200mA;
 	IN->ROMImage.Data.Data.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
@@ -100,7 +108,7 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	//最大PD输入配置
   IN->ROMImage.Data.Data.MaxVPD=CurrentIP2366FW->IsHyperChargeCapable?PDMaxIN_28V:PDMaxIN_20V;
   //均衡系统配置
-	IN->ROMImage.Data.Data.BalanceMode=Balance_ChgDisOnly; //均衡仅在充放电时启用
+	IN->ROMImage.Data.Data.BalanceMode=Balance_ChgOnly; //均衡仅在充电时启用
 	}
 
 //恢复默认设置(重置一切东西)
@@ -309,6 +317,21 @@ void LoadConfig(void)
 		delay_Second(1);
 		CfgData.InputConfig.ChargePower=CurrentIP2366FW->MaxCapableChgPower;	
 		IsNeedToUpgrade=true;	
+		}
+	//如果2366固件不支持高级Sink配置，则始终禁用超级省电和智能输入功率并且设置最大Sink功率
+	if(CfgData.EnableAutoPowerSave)result=true;
+	else if(CfgData.MaxSnkPower!=CurrentIP2366FW->MaxCapableChgPower)result=true;
+	else if(CfgData.EnableSmartSinkPower)result=true;
+	else result=false;
+		
+	if(!CurrentIP2366FW->ExtendedTCSetting&&result)
+		{
+		CfgData.EnableAutoPowerSave=false;
+		CfgData.MaxSnkPower=CurrentIP2366FW->MaxCapableChgPower;
+		CfgData.EnableSmartSinkPower=false;
+		ShowPostInfo(35,"Sink配置非法\0","WD",Msg_Warning);
+		delay_Second(1);
+		IsNeedToUpgrade=true;					
 		}
 	//需要更新配置
 	if(IsNeedToUpgrade)

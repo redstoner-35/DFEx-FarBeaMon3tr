@@ -6,6 +6,8 @@
 #include "FastOp.h"
 #include "OutputChannel.h"
 #include "ModeSel.h"
+#include "SysConfig.h"
+#include "SysReset.h"
 
 //内部flag
 bit IsBatteryAlert; //电池电压低于警告值	
@@ -42,7 +44,7 @@ void TriggerVshowDisplay(void)
 		LEDMode=LED_OFF;
 		}	
 	//进行电压取样(缩放为LSB=0.01V)
-	VbattSample=(int)(Data.BatteryVoltage*100); 		
+	VbattSample=(int)(Data.RawBattVolt*100); 		
 	}		
 
 //控制LED侧按产生闪烁指示电池电压的处理
@@ -157,26 +159,33 @@ static void BatVshowFSM(void)
 //电池电量状态机
 static void BatteryStateFSM(void)
 	{
+	xdata int Thres;
+	xdata float buf;
+	//计算转灯阈值
+	if(TargetfanSpeed<(float)20)buf=0;
+  buf=TargetfanSpeed-(float)20;                  //计算风扇速度和目标的Δ值		
+	buf=(float)3700-((float)300*(buf/(float)80));  //阈值变化数值=(风扇速度Δ值/风扇速度变化范围的总值)*电压变化的总阈值,并计算出最终转黄灯阈值（3700-Δ量）
+  Thres=(int)buf;
 	//状态机处理	
 	switch(BattState) 
 		 {
 		 //电池电量充足
 		 case Battery_Plenty: 
-				if(CellVoltage<3700)BattState=Battery_Mid; //电池电压小于3.7V，回到电量中等状态
+				if(CellVoltage<Thres)BattState=Battery_Mid; //电池电压小于3.7V，回到电量中等状态
 			  break;
 		 //电池电量较为充足
 		 case Battery_Mid:
-			  if(CellVoltage>4000)BattState=Battery_Plenty; //电池电压大于阈值，回到充足状态
-				if(CellVoltage<3300)BattState=Battery_Low; //电池电压低于3.3则切换到电量低的状态
+			  if(CellVoltage>(Thres+200))BattState=Battery_Plenty; //电池电压大于阈值，回到充足状态
+				if(CellVoltage<(Thres-200))BattState=Battery_Low; //电池电压低于阈值则切换到电量低的状态
 				break;
 		 //电池电量不足
 		 case Battery_Low:
-		    if(CellVoltage>3600)BattState=Battery_Mid; //电池电压高于3.6，切换到电量中等的状态
-			  if(CellVoltage<2950)BattState=Battery_VeryLow; //电池电压低于3.0，报告严重不足
+		    if(CellVoltage>Thres)BattState=Battery_Mid; //电池电压高于3.6，切换到电量中等的状态
+			  if(CellVoltage<2950)BattState=Battery_VeryLow; //电池电压低于2.95，报告严重不足
 		    break;
 		 //电池电量严重不足
 		 case Battery_VeryLow:
-			  if(CellVoltage>3300)BattState=Battery_Low; //电池电压回升到3.3，跳转到电量不足阶段
+			  if(CellVoltage>(Thres-200))BattState=Battery_Low; //电池电压回升到指定阈值，跳转到电量不足阶段
 		    break;
 		 }
 	}
@@ -207,7 +216,17 @@ void DisplayVBattAtStart(bit IsPOR)
 	while(--i);
 	//启动电池电量显示(仅系统使能的情况下)
 	if(!IsPOR)return;
-	BattShowTimer=18;
+	BattShowTimer=18; //使能电量提示计时器
+	if(IsEnable2SMode)	
+		{
+		//2S模式激活，令指示灯以黄色快闪两次指示开启2S模式
+		MakeFastStrobe(LED_Amber);
+		delay_ms(200);
+		MakeFastStrobe(LED_Amber);
+		//两次闪烁后延迟半秒再继续接下来的流程
+		for(i=48;i;i--)delay_ms(10); 
+		}
+	
 	}
 	
 //触发电池电量提示
@@ -255,7 +274,7 @@ void WaitBatteryVoltageOK(void)
 		delay_ms(10);
 		SystemTelemHandler();
 		//如果电池电压正常则退出
-		if(Data.BatteryVoltage>2.40)return;
+		if(Data.RawBattVolt>2.50)return;
 		}
 	while(--Wait);
 	//电池电压不正常，禁止固件启动并亮红灯
@@ -263,6 +282,75 @@ void WaitBatteryVoltageOK(void)
 	while(1)LEDControlHandler();
 	}	
 
+//没有配置锁的电池检测
+static void CellCountNoCfgLock(void)
+	{
+	unsigned char delay;
+	extern bit IsEnablePWMFan;
+	//2S模式开启但是非PWM模式，关闭2S模式并重启系统		
+	if(IsEnable2SMode&&!IsEnablePWMFan)
+		{
+		IsEnable2SMode=0;
+		SaveSysConfig(0); 
+		TriggerSoftwareReset();
+		}	
+	//检测输入的电池电压是否超过额定的满电值，超过则触发保护锁死
+	if(Data.RawBattVolt>(IsEnablePWMFan?8.60:4.35))while(1)	
+		{
+		//电池电压超过允许范围，则触发保护红绿快闪
+		delay_ms(50);
+		delay=delay?0:1;
+		LEDMode=delay?LED_Red:LED_Green;		
+		LEDControlHandler();
+		}
+	//2S模式关闭且电池电压大于4.35，打开2S模式
+	else if(!IsEnable2SMode&&Data.RawBattVolt>4.35)
+		{
+		//启用2S模式	并更新配置
+		IsEnable2SMode=1;
+		SaveSysConfig(0); 	
+		//制造绿色快闪表示更新到2S模式
+		delay=40;
+		do
+			{
+			LEDMode=delay&0x01?LED_Green:LED_OFF;
+			delay_ms(40);
+			LEDControlHandler();
+			}
+		while(--delay);
+		//快闪结束后重启系统
+		TriggerSoftwareReset();
+		}
+	}	
+	
+//检测电池电压并配置电池串数相关的保护逻辑
+void BattCellCountConfig(void)
+	{
+	bit Result=1;
+	//测量一次系统电压
+	SystemTelemHandler();
+	//系统未锁定，允许根据模式自动更改
+	if(!IsEnableBattCfgLock)CellCountNoCfgLock();
+	//系统已锁定，根据配置执行检查
+	else
+		{
+		//系统在非PWM调速模式下开启2S模式，配置不合法
+		if(!IsEnablePWMFan&&IsEnable2SMode)Result=0;
+		//系统在2S模式下输入超量电压，报异常
+		else if(IsEnable2SMode&&Data.RawBattVolt>8.60)Result=0;
+		//系统当前是1S，但是输入了2S的电压，判断为电池异常
+		else if(!IsEnable2SMode&&Data.RawBattVolt>4.35)Result=0;
+		}		
+	//检测到电池异常，锁死并且红绿快闪报错
+	if(!Result)while(1)	
+		{
+		delay_ms(15);
+		Result=Result?0:1;
+		LEDMode=Result?LED_Red:LED_Green;		
+		LEDControlHandler();
+		}	
+	}	
+	
 //电池参数测量和指示灯控制
 void BatteryTelemHandler(void)
 	{

@@ -42,8 +42,8 @@
 //FL7018Iµ∆÷È
 #elif defined(USING_LED_FL7018I)
 	
-	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35.2A."
-	#define TurboICCMAX 35200
+	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35A."
+	#define TurboICCMAX 35000
 
 //Luminus SFT-90X
 #elif defined(USING_LED_SFT90X)

@@ -1,5 +1,6 @@
 #include "GUI.h"
 #include "Config.h"
+#include "ADC.h"
 
 //回到设置菜单函数声明
 void ReturnToTCCalMenu(void);
@@ -40,6 +41,12 @@ void BattICALMenuDummy(void)
 	IntEditHandler(&BattCurrentCal);
 	}
 	
+void LoadBattCalibrationData(void)
+	{
+	//退出时加载ADC校准值使校准结果立即生效
+	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor);
+	}	
+	
 //菜单输入
 const MenuConfigDef BattICALMenu=
 	{
@@ -60,7 +67,7 @@ const MenuConfigDef BattICALMenu=
 	NULL,
 	//进入的时候初始化菜单编辑
 	&IntEditInitHandler,
-	NULL
+	&LoadBattCalibrationData
 	};
 	
 //菜单输入
@@ -83,5 +90,5 @@ const MenuConfigDef BattVCALMenu=
 	NULL,
 	//进入的时候初始化菜单编辑
 	&IntEditInitHandler,
-	NULL
+  &LoadBattCalibrationData
 	};

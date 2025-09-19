@@ -6,7 +6,8 @@
 //结构体
 typedef struct
 	{
-	float BatteryVoltage; //电池电压(V)
+	float RawBattVolt;   //未经过计算的原始值
+	float BatteryVoltage; //计算出来的等效电池电压(V)
 	float MCUVDD; //单片机的VDD
 	}ADCResultStrDef;
 

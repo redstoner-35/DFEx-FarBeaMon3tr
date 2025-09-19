@@ -7,6 +7,7 @@
 //判断是否大于某数的的快捷方式
 #define IsLargerThanThreeU16(x) (x&0xFFFC) //位操作判断16bit无符号整数是否大于3
 #define IsLargerThanThreeU8(x) (x&0xFC) //位操作判断8bit无符号整数是否大于3
+#define IsLargerThanOneU16(x) (x&0xFFFE) //位操作判断16bit无符号整数是否大于1
 #define IsLargerThanOneU8(x) (x&0xFE) //位操作判断8bit无符号整数是否大于1
 
 //判断是否小于0的快捷方式

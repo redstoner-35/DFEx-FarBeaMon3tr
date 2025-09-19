@@ -17,6 +17,7 @@ typedef enum
 	Fault_NTCFailed, //NTC故障 ID:5
 	Fault_OverHeat, //过热故障 ID:6
 	Fault_DCDCPreChargeFailed, //DCDC预充系统故障 ID:7
+	Fault_RampConfigError,     //系统无法找到无极调光配置 ID:8
 	}FaultCodeDef;	
 
 //外部引用

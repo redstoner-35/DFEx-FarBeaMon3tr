@@ -12,7 +12,10 @@ typedef enum
 HoldEvent_None=0,
 HoldEvent_H=1, //长按
 HoldEvent_1H=2, //单击+长按
-HoldEvent_2H //双击+长按
+HoldEvent_2H=3, //双击+长按
+HoldEvent_3H=4, //三击+长按
+HoldEvent_4H=5, //四击+长按
+HoldEvent_5H=6 //5击+长按
 }HoldEventDef;
 
 //按键事件结构体定义
@@ -25,6 +28,7 @@ HoldEventDef HoldStat;
 }KeyEventStrDef;
 
 //函数
+bit GetSideKeyRawGPIOState(void); //获取侧部按键的GPIO实时状态
 void SideKey_SetIntOFF(void);		//关闭侧按的GPIO中断
 void SideKeyInit(void);
 char getSideKeyShortPressCount(void);//获取侧按按键的单击和连击次数

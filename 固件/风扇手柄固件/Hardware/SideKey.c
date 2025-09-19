@@ -39,6 +39,12 @@ xdata unsigned char KeyState;
 	#error "Invalid GPIO Group Number for SideKey GPIO!"
 #endif
 
+//获取侧按实时GPIO状态
+bit GetSideKeyRawGPIOState(void)
+	{
+	return KeyPress;
+	}
+
 //获得侧按是否触发中断
 char GetIfSideKeyTriggerInt(void)
 	{

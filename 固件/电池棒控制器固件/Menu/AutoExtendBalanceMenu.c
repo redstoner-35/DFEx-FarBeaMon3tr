@@ -43,8 +43,8 @@ static void BreakCPortConnection(void)
 	SetSystemDischargeState();
 	delay_ms(10);
 	IsCPortBreaked=true;
-	//设置为DFP模式强制关闭Source
-	IP2366_SetTypeCRole(TypeC_DFP);
+	//强制关闭Source
+	IP2366_SetTypeCRole(TypeC_NoConnect);
 	}
 	
 //在自动均衡循环结束后退回到主界面的操作

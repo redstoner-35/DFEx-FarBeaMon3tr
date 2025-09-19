@@ -7,10 +7,22 @@
 #include <string.h>
 
 //固件ID和对应能力的Table
-#define FWTableSize 6	
+#define FWTableSize 7	
 	
 const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 	{
+		{
+		//YIQJS 140W固件，2.5mR，支持高级PDO编辑(把外部Pin选电阻的功能改回去了，硬件默认30W)以及全新的C口配置模块
+		"YIQJS",
+		16000,
+		false,
+		true,
+		Power_140W,
+	  2.50,           //2.5mR的shunt
+		true,
+		false,
+		true,
+		},
 		{
 		//YCNNH 140W固件，2.5mR，不支持高级PDO编辑
 		"YCNNH",
@@ -20,6 +32,7 @@ const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 		Power_140W,
 	  2.50,           //2.5mR的shunt
 		true,
+		false,
 		false,
 		},
 		{
@@ -32,6 +45,7 @@ const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 	  2.50,            //2.5mR的shunt		
 		true,
 		false,
+		false,
 		},
 		{
 		//XE2TC公版固件最大65W，5mR，不支持高级PDO编辑
@@ -41,6 +55,7 @@ const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 		false,
 		Power_65W,
 	  5.00,            //5mR的shunt		
+		false,
 		false,
 		false,
 		},
@@ -54,6 +69,7 @@ const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 	  5.00,            //5mR的shunt		
 		false,
 		true,
+		false,
 		},
 		{
 		//YBNIN，最早一批的2366定制固件，4mR检流电阻，不支持高级PDO编辑
@@ -64,7 +80,8 @@ const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 		Power_100W,
 	  4.00,            //4mR的shunt		
 		true,
-		false,		
+		false,
+		false,			
 		},		
 		{
 		//YHKKL 140W固件，2.5mR，支持高级PDO编辑(把外部Pin选电阻的功能改回去了，硬件默认30W)
@@ -76,6 +93,7 @@ const IP2366FWCapDef IP2366FWTable[FWTableSize]=
 	  2.50,            //2.5mR的shunt		
 		true,
 		false,
+	  false,
 		}		
 	};	
 
@@ -121,6 +139,27 @@ static bool IP2366_WriteReg(char Data,IP2366REGDef Reg)
 	if(IIC_Wait_Ack())return false; //发送寄存器码
 	//通信结束
 	IIC_Stop();
+	return true;
+	}
+
+//IP2366设置输入快充协议（不影响对外输出）
+bool IP2366_SetSinkProtocol(IP2366SinkProtocolDef *Cfg)
+	{
+	char buf;
+	//读取SYSCTL0
+	if(!IP2366_ReadReg(&buf,REG_SYSCTL0))return false;
+	//设置EN_VbusSinkDPDM
+	if(Cfg->EnableSinkDPDM)buf|=0x10;
+	else buf&=0xEF;	
+	//设置EN_VbusSinkPd
+	if(Cfg->EnableSinkPD)buf|=0x08;
+	else buf&=0xF7;
+	//设置EN_VbusSinkSCP
+	if(Cfg->EnableSinkSCP)buf|=0x04;
+	else buf&=0xFB;	
+	//把结果写回去
+	if(!IP2366_WriteReg(buf,REG_SYSCTL0))return false;
+  //成功完成设置
 	return true;
 	}
 
@@ -331,7 +370,23 @@ bool IP2366_UpdateFullVoltage(int Volt)
 	return true;
 	}	
 	
-//更新充电功率
+//更新系统的充电输入（Sink模式）的功率
+bool IP2366_UpdateSinkPower(ChargePowerDef Power)
+	{
+	char buf;
+	//当前固件版本不支持该操作，返回true
+	if(!CurrentIP2366FW->ExtendedTCSetting)return true;
+//设置充电功率
+	if(!IP2366_ReadReg(&buf,REG_SYSCTL12))return false;
+	buf&=0xF0;	//除了Vbus_Src_Power以外其他bit统一mask为0
+	buf|=0x08;  //令Chg_Power_En=1，单独设置充电功率
+	buf|=((char)Power)&0x07;
+	if(!IP2366_WriteReg(buf,REG_SYSCTL12))return false;
+	//设置完毕
+	return true;	
+	}
+	
+//更新充放电功率
 bool IP2366_UpdataChargePower(ChargePowerDef Power)
 	{
 	char buf;
@@ -481,6 +536,23 @@ bool IP2366_SetOutputState(IP2366OutConfigDef * CFG)
 	//所有东西设置完毕，返回1
 	return true;
 	}
+
+//获取输入广播的list状态
+bool IP2366_GetRecvPDOList(RecvPDOListDef *Result)
+	{
+	char buf;
+	//读取RECV PDO
+	if(!IP2366_ReadReg(&buf,REG_RECEIVED_PDO))return false;	
+	buf&=0x1F; //去除掉无效位
+	Result->PDO5VOK=buf&0x01?true:false;
+	Result->PDO9VOK=buf&0x02?true:false;
+	Result->PDO12VOK=buf&0x04?true:false;
+	Result->PDO15VOK=buf&0x08?true:false;
+	Result->PDO20VOK=buf&0x10?true:false;
+	//计算完毕返回true
+	return true;
+	}	
+	
 //获取输入的PDO状态
 bool IP2366_GetRecvPDO(RecvPDODef *PDOResult)
 	{
@@ -691,7 +763,8 @@ bool IP2366_SetTypeCRole(TypeCRoleDef Role)
 	//获取状态
 	if(!IP2366_ReadReg(&buf,REG_TYPEC_CTL8))return false;
 	buf&=0x3F;
-	buf|=((char)Role&0x03)<<6;
+	if(CurrentIP2366FW->ExtendedTCSetting&&Role==TypeC_NoConnect)buf|=0x80; //如果固件支持Type-C真断联模式，则直接映射Type-C No Connect到2'b10
+	else buf|=((char)Role&0x03)<<6;  //正常根据角色去设置bit
 	if(!IP2366_WriteReg(buf,REG_TYPEC_CTL8))return false;
 	//设置成功返回true
 	return true;
@@ -757,6 +830,7 @@ bool IP2366_GetVBUSState(IP2366VBUSStateDef * State)
 	char buf,buf2;
 	int ibuf;
 	bool STAT;
+	float PDVMax;
 	RecvPDODef PDO;	
 	//获取VBUS电压
 	if(!IP2366_ReadReg(&buf,REG_VSYS_LSB))return false;	
@@ -832,7 +906,24 @@ bool IP2366_GetVBUSState(IP2366VBUSStateDef * State)
 			if(PDO!=RecvPDO_None&&buf>0) //收到当前PDO并成功协商
 				{
 				State->PDState=(PDStateDef)buf;//填写enum值
-				State->QuickChargeState=QuickCharge_PD; //收到PDO报文且当前充电电压符合要求
+				if(!IP2366_ReadReg(&buf,REG_SYSCTL0))return false; //临时读一下SYSCTL0		
+				if(buf&0x08)
+					{
+					//固件支持Sink功率单独设置，根据当前设置的Sink功率判断是否为合法的PD电压
+					if(CurrentIP2366FW->ExtendedTCSetting)	
+						{
+						if(!IP2366_ReadReg(&buf,REG_SYSCTL12))return false; //临时读一下SYSCTL12	
+						//确定PDVmax
+					  if(((ChargePowerDef)buf&0x07)==Power_140W)PDVMax=28.50;
+						else PDVMax=20.50;
+						State->QuickChargeState=State->VBUSVolt<PDVMax?QuickCharge_PD:QuickCharge_HV;
+						}
+					//固件不支持Sink单独设置，只要系统使能PD Sink就判断为PD模式
+					else State->QuickChargeState=QuickCharge_PD;	
+					}
+				else if(State->VBUSVolt>6.0)State->QuickChargeState=QuickCharge_HV;  //VBUS电压高于6.0V，显示高压快充激活
+				else if(State->VBUSVolt<=6.0&&State->VBUSVolt>4.0&&fabsf(State->VBUSCurrent)>2.4)State->QuickChargeState=QuickCharge_HC;//VBUS在4.0-6之间，低压大电流快充
+				else State->QuickChargeState=QuickCharge_None; //其余状况均为未识别快充	
 				}
 			else if(State->VBUSVolt>6.0||buf>0)State->QuickChargeState=QuickCharge_HV;//没有PDO报文但是VBUS电压抬高，是高压快充
 			else State->QuickChargeState=QuickCharge_None; //其余状况均为未识别快充

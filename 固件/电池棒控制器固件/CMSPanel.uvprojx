@@ -1004,6 +1004,21 @@
               <FileType>1</FileType>
               <FilePath>.\Menu\DataBaseCheckMenu.c</FilePath>
             </File>
+            <File>
+              <FileName>SinkProtocolCfgMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\SinkProtocolCfgMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>MaxSinkPowerMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\MaxSinkPowerMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>QueryPDOBroadcastMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\QueryPDOBroadcastMenu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -9,7 +9,7 @@
 #include "OutputChannel.h"
 #include "ModeSel.h"
 #include "LowVoltProt.h"
-
+#include "SysReset.h"
 
 //函数声明
 void SleepMgmt(void);
@@ -21,6 +21,7 @@ void main()
 	bit TaskSel=0;
 	//启动系统定时器提供系统定时和延时函数
   StartSystemTimeBase(); 
+	ClearSoftwareResetFlag();
 	//初始化外设
   LED_Init(); //初始化侧按LED		
 	ADC_Init(); //初始化ADC
@@ -29,6 +30,7 @@ void main()
 	PWM_Init(); //启动PWM定时器
 	OutputChannel_Init(); //初始化输出通道
 	ModeFSMInit(); //初始化模式状态机
+	BattCellCountConfig(); //电池节数识别处理
 	MaskUnusedIO(); //屏蔽掉不用的IO
 	DisplayVBattAtStart(1); //上电时显示电池电压	
   //主循环
@@ -60,7 +62,8 @@ void main()
 			BattAlertTIMHandler(); //电池警报处理
 			HoldSwitchGearCmdHandler(); //长按换挡命令处理
 			BattDisplayTIM(); //电池电量显示TIM
-			
+			RampConfigAutoSaveHandler(); //无级调速自动保存处理
+				
 			//任务处理完毕，处理task 0
 			TaskSel=0;
 			}

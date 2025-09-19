@@ -122,6 +122,15 @@ typedef enum
  
 typedef struct
 	{
+	bool PDO5VOK;
+	bool PDO9VOK;
+	bool PDO12VOK;
+	bool PDO15VOK;
+	bool PDO20VOK;	
+	}RecvPDOListDef;	
+	
+typedef struct
+	{
 	bool EnablePPS2;
 	bool EnablePPS1;
 	bool Enable20V;
@@ -170,12 +179,19 @@ typedef struct
 	VSysStateDef VSysState;
 	}ChipStatDef;	
 	
+typedef struct
+	{
+	bool EnableSinkDPDM; 		//是否让IC尝试握手USB2.0DP DM协商的老协议(如SCP QC等)对电池进行充电
+	bool EnableSinkPD;   		//是否让IC尝试握手标准PD协议（包括PD2.0/3.0Fixed PD3.0 PPS）对电池进行充电
+	bool EnableSinkSCP;  		//是否让IC尝试握手华为协议（包括5A低压SCP 25W高压SCP和HSCP）对电池进行充电
+	}IP2366SinkProtocolDef;	
+	
 typedef enum
 	{
-	TypeC_Disconnect=0x00,	//Source Bit=0,Sink Bit=0 完全断开
-	TypeC_UFP=0x02,  				//Source Bit=1,Sink Bit=0 只能往外输出，用于模拟适配器
-	TypeC_DFP=0x01,		 			//Source Bit=0,Sink Bit=1 只能往里面输入，用于仅充电功能（好像有bug,所以说禁用了）
-	TypeC_DRP=0x03					//Source Bit=1,Sink Bit=1 输入输出都可以，正常模式（默认配备TrySRC，无法给支持TrySRC的设备充电）
+	TypeC_NoConnect=0x04,				
+	TypeC_SourceOnly=0x01,  		
+	TypeC_SinkOnly=0x00,		 	
+	TypeC_Bidir=0x03	
 	}TypeCRoleDef;	
 
 typedef enum
@@ -238,6 +254,7 @@ typedef struct
 	float ShuntValue; //检流电阻阻值
 	bool IsHyperChargeCapable; //是否支持超充
 	bool ExtendedROREGCapable; //是否支持额外的可读取寄存器（例如MFR_IC_VERSION和IC_TEMP）
+	bool ExtendedTCSetting;    //固件是否支持额外的Type-C设置（例如Sink Power Set和Type-C Disconnect）  
 	}IP2366FWCapDef;	
 	
 //电流回读参数配置
@@ -251,6 +268,10 @@ extern const IP2366FWCapDef *CurrentIP2366FW;
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
+
+bool IP2366_GetRecvPDOList(RecvPDOListDef *Result);	//获取输入广播的list状态
+bool IP2366_UpdateSinkPower(ChargePowerDef Power); //更新系统的充电输入（Sink模式）的功率
+bool IP2366_SetSinkProtocol(IP2366SinkProtocolDef *Cfg); //IP2366设置输入快充协议（不影响对外输出）
 bool IP2366_SetInputState(IP2366InputDef * Cfg,bool IsSetChargePower); //设置系统输入配置
 bool IP2366_DisableCharger(void); //禁止充电器
 bool IP2366_GetChipTemp(char *TempOut,bool *IsTempLimitTriggered); //获取芯片本身的温度数据

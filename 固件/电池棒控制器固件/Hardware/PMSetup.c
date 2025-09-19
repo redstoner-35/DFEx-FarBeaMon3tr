@@ -51,8 +51,8 @@ void PowerMgmtSetup(void)
    GPIO_ClearOutBits(IP2366_EN_IOG,IP2366_EN_IOP); //2366-EN=0
 	 delay_ms(100);
 	 GPIO_SetOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为1
-	 //配置启动计时器
-	 SleepTimer=480; //一分钟无操作自动休眠
+	 //配置自动休眠计时器
+	 SleepTimer=960; //2分钟无操作自动休眠
 	}
 	
 //Type-C连接失败时，进行重新握手的部分
@@ -105,6 +105,7 @@ void ShutSysOFF(void)
 	extern bool IsEnablePowerOFF;
 	if(!IsEnablePowerOFF)return; //不允许关机
 	//复位LCD
+	DoThingsBeforeOFF(); //执行退出构造函数
 	ClearScreen();
 	LCD_DeInit(); //除能LCD
 	Balance_ForceDiasble(); //发送命令关闭均衡系统
@@ -182,12 +183,13 @@ void PowermanagementSleepControl(void)
 	//当前未处于睡眠状态、均衡开启或者Type-C处于连接中，不执行
 	if(!IsEnablePowerOFF||BalanceForceEnableTIM)
 		{
-		SleepTimer=480;	
+		SleepTimer=960;	
 		return; //复位计时器
 		}
 	if(SleepTimer<8)Balance_ForceDiasble(); //强制关闭均衡器	
 	//时间未到继续计时
 	if(SleepTimer>0)return;
+	DoThingsBeforeOFF(); //执行退出构造函数
 	//掉电之前先进行存盘和重配置芯片处理（如果打开睡眠模式的话需要重配置否则芯片睡不醒）
   if(IsConfigSaved||!CheckIfConfigIsSame())
 		{

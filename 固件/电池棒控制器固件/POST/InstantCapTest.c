@@ -35,6 +35,7 @@ void PushDefaultResultToVBat(void)
 	IP2366VBUSStateDef VBUSState;
 	//读取ADC结果赋初值
 	ShowPostInfo(98,"测量系统初始化\0","43",Msg_Statu);
+	ADC_GetResult();
 	VBat=ADCO.Vbatt;
 	IBat=ADCO.Ibatt;
 	//IP2366初始化处理

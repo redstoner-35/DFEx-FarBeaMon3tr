@@ -6,9 +6,13 @@
 #include "BattDisplay.h"
 #include "LVDCtrl.h"
 
+//函数声明
+bit QueryIsSystemInBoostMode(void);
+
 //全局变量
 volatile LEDStateDef LEDMode; 
-static xdata char timer=0;
+static xdata char timer;
+static xdata char BoostModeInfoTIM;
 
 //内部sfr
 sbit RLED=RedLEDIOP^RedLEDIOx;
@@ -18,20 +22,23 @@ sbit GLED=GreenLEDIOP^GreenLEDIOx;
 void LED_DeInit(void)
 	{
 	GPIOCfgDef LEDInitCfg;
+	extern bit IsEnableIdleLED;
 	//令所有LED熄灭
 	RLED=0;
 	GLED=0;
+	//复位LED管理器的相关变量
 	LEDMode=LED_OFF;
 	timer=0;
-	//如果电池电压低于2.9V为了避免导致电池彻底饿死，禁止打开定位LED
-	if(CellVoltage<2900)return;
+	BoostModeInfoTIM=0;
+	//如果电池电压低于2.9V为了避免导致电池彻底饿死，禁止打开定位LED（当然的话还有就是用户主动关闭）
+	if(CellVoltage<2900||!IsEnableIdleLED)return;
 	//设置结构体
 	LEDInitCfg.Mode=GPIO_IPU;
   LEDInitCfg.Slew=GPIO_Slow_Slew;		
 	LEDInitCfg.DRVCurrent=GPIO_High_Current; //配置为弱上拉令红色灯珠发出微光
 	//配置GPIO并启动LVD
 	LVD_Start();
-	GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg);
+	GPIO_ConfigGPIOMode(GreenLEDIOG,GPIOMask(GreenLEDIOx),&LEDInitCfg);
 	}
 
 //LED配置函数
@@ -50,7 +57,9 @@ void LED_Init(void)
 	GPIO_SetMUXMode(GreenLEDIOG,GreenLEDIOx,GPIO_AF_GPIO);
 	GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg); //红色LED(推挽输出)
 	GPIO_ConfigGPIOMode(GreenLEDIOG,GPIOMask(GreenLEDIOx),&LEDInitCfg); //绿色LED(推挽输出)
-	//初始化模式设置
+	//初始化模式设置和变量
+	timer=0;
+	BoostModeInfoTIM=0;
 	LEDMode=LED_OFF;
 	}
 
@@ -58,6 +67,19 @@ void LED_Init(void)
 void LEDControlHandler(void)
 	{
 	char buf;
+	//进行狂暴模式工作指示
+	if(QueryIsSystemInBoostMode())
+		{
+		if(BoostModeInfoTIM<12)BoostModeInfoTIM++;
+		else
+			{
+			BoostModeInfoTIM=0;
+			RLED=0;
+			GLED=0;
+			return;            //清零定时器，让LED短暂熄灭并退出
+			}
+		}
+  else BoostModeInfoTIM=0;		
 	//据目标模式设置LED状态
 	switch(LEDMode)
 		{
@@ -65,6 +87,20 @@ void LEDControlHandler(void)
 		case LED_Green:RLED=0;GLED=1;break;//绿色LED
 		case LED_Red:RLED=1;GLED=0;break;//红色LED
 		case LED_Amber:RLED=1;GLED=1;break;//黄色LED
+		case LED_AmberBlinkFast:
+		  //黄色快闪
+			timer=timer&0x80?0x00:0x80; //翻转bit 7并重置定时器
+			if(!(timer&0x80))
+				{
+				RLED=0;
+				GLED=0;
+				}
+			else
+				{
+				RLED=1;
+				GLED=1;				
+				}
+			break;
 		case LED_RedBlink_Fast: //红色快闪	
 		case LED_RedBlink: //红色闪烁
 			GLED=0;

@@ -93,7 +93,6 @@ extern bit IsStrobePoweredFromOFF; //是否从关机状态直接一键爆闪
 extern bit IsMainMemEnabled; //是否开启主挡位记忆
 extern bit IsSpecMemEnabled; //是否开启特殊挡位记忆	
 extern bit IsPowerModeEnabled; //功率模式是否开启	
-extern bit IsRampFault; //无极调光故障，当该bit置起后无极调光将会强制禁用	
 	
 //特殊宏定义
 #define QueryCurrentGearILED() CurrentMode->Current //获取当前挡位的电流函数

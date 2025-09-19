@@ -102,10 +102,14 @@ float GetChannelVoltage(char Ch)
 void SystemTelemHandler(void)
 	{
 	float Buf;
+	extern bit IsEnable2SMode;
 	//获取电池电压
 	Buf=(float)VBattLowerResK/(float)(VBattLowerResK+VBattUpperResK);//计算出分压电阻的系数
-	Data.BatteryVoltage=GetChannelVoltage(VBATInputAIN)/Buf; //根据分压系数反推出电池电压
+	Data.RawBattVolt=GetChannelVoltage(VBATInputAIN)/Buf; //根据分压系数反推出电池电压
 
+	if(!IsEnable2SMode)Data.BatteryVoltage=Data.RawBattVolt; //非2S模式，直接使用目标值
+	else Data.BatteryVoltage=Data.RawBattVolt/2.0f;            //2S模式则换算为等效电池电压
+		
 	//配置ADC的VREF为VDD，通过内部1.2V基准获得MCU的供电电压	
 	ADCON1&=0x7F; //令ADEN=0		
 	ADCLDO=0x00; //禁止芯片内部ADC基准

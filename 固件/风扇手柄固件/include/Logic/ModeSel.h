@@ -22,15 +22,18 @@ typedef struct
 typedef enum
 	{
 	Mode_OFF=0, //关机
-  //常用四个循环挡位
+  //常用的5个循环挡位
 	Mode_UltraLow,
 	Mode_Low,
 	Mode_Mid,
+	Mode_MHigh,
 	Mode_High,
 	//全功率爆发	
 	Mode_Turbo,
 	//无级调节
-	Mode_Ramp
+	Mode_Ramp,
+	//全功率暴力模式
+	Mode_Boost
 	}ModeIdxDef;	
 
 typedef struct
@@ -51,7 +54,7 @@ typedef struct
 #define PWMHoldSwitchDelay 14 //PWM模式换挡延迟
 #define HoldSwitchDelay 6 // 长按换挡延迟	
 #define SleepTimeOut 5 //休眠状态延时	
-#define ModeTotalDepth 7 //系统一共有几个挡位		
+#define ModeTotalDepth 9 //系统一共有几个挡位		
 #define TurboMaintainTime 100 //极速挡位下维持全速的时间（单位	S）	
 #define MaxTurboRefreshCount 6  //极速最大允许的强制刷新降档次数
 #define TurboRefreshCountCD 100 //极速挡位强制刷新次数的补充时间（单位S）	
@@ -59,8 +62,15 @@ typedef struct
 //外部引用
 extern ModeStrDef *CurrentMode; //当前模式结构体
 extern xdata ModeIdxDef LastMode; //上一个挡位	
+extern xdata float RampVoltage; //无极调速目标电压
+extern xdata float RampDuty; //无极调速目标占空比
+extern bit IsSystemLocked;        //系统是否已经锁定	
+extern bit IsEnableIdleLED;       //是否开启有源夜光
+extern bit IsEnable2SMode;        //是否开启2S模式	
+extern bit IsEnableBattCfgLock;   //是否开启电池配置锁	
 	
 //函数
+void RampConfigAutoSaveHandler(void); //无极调速自动保存处理
 void AddTurboRefreshCountWhenSleep(void); //睡眠过程中定时唤醒补充极亮强制刷新次数
 void TurboTimedStepDownPROC(void); //极速挡位时控降档处理
 void HoldSwitchGearCmdHandler(void); //长按换挡处理

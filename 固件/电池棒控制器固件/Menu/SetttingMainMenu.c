@@ -17,6 +17,7 @@ bool EnableManuBal=false;
 static bool EnableAutoBal=false;
 
 //函数声明
+bool UpdateSinkPower(bool IsForceUpdate);
 void ShutSysOFF(void);
 void IP2366_ReInitBasedOnConfig(void);
 void IP2366_SetIBatLIMBaseOnSysCfg(void);
@@ -80,12 +81,14 @@ void ReturnToMainMenu(void)
 	{
 	bool IsConfigModified=false;
 	extern bool IsConfigSaved;
+	extern bool IsSinkPowerChanged;
 	extern bool IsCPortConnected;
 	//检查配置是否发生变化，如果发生变化，则重新初始化芯片应用设置
 	if(IsConfigSaved||!CheckIfConfigIsSame())
 		{
 		IsConfigModified=true;
 		IP2366_ReInitBasedOnConfig(); //设置芯片配置
+		if(IsSinkPowerChanged)UpdateSinkPower(true);           //退出菜单时强制更新Sink功率
 		IP2366_SetIBatLIMBaseOnSysCfg(); //设置动态限流
 		}
 	//回去之前首先保存配置，然后退出	
@@ -104,6 +107,7 @@ void ReturnToMainMenu(void)
 		SwitchingMenu(&MainMenu);
 		}
 	//清除flag
+	IsSinkPowerChanged=false;
 	IsConfigSaved=false;
 	}
 	
@@ -232,8 +236,13 @@ void EnterAutoExtBalMenu(void)
 	SwitchingMenu(&AutoBALMenu);
 	}	
 	
+void EnterQueryPDOListMenu(void)
+	{
+	SwitchingMenu(&QueryPDOListMenu);
+	}
+	
 //菜单项参数
-const SetupMenuSelDef MainSetup[26]=
+const SetupMenuSelDef MainSetup[27]=
 	{
 		{
 		"系统安全设置",
@@ -366,6 +375,12 @@ const SetupMenuSelDef MainSetup[26]=
 		false,
 		&AlwaysTrue,
 		&ViewChipState,
+		},
+		{
+		"Sink PDO列表查询",
+		false,
+		&AlwaysTrue,
+		&EnterQueryPDOListMenu
 		},
 		{
 		"配置文件管理",

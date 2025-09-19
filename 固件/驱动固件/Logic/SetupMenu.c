@@ -28,7 +28,6 @@ static void KeyAddFluxProcess(void)
 	else 
 		{
 		//Index进行自增，自增后立即使定时器变为0开始下一轮显示,显示最新的数值
-		if(IsRampFault&&SetupMenuIdx==1)SetupMenuIdx++; 										//无极调光故障，设置菜单在设置项1的时候额外加1调光无极调光设置
 		SetupMenuIdx++;
 		SetupMenuIdx%=TotalSetupNum;
 		CommonSysFSMTIM=0;
@@ -47,7 +46,7 @@ static void SetupMenuIdxAutoADD(void)
 		CommonSysFSMTIM=13;
 		}
 	//非正常退出处理
-  if(getSideKeyLongPressEvent())SetupTimedOutTIM=0;
+  else if(getSideKeyLongPressEvent())SetupTimedOutTIM=0;
 		
 	//进行菜单增减
   KeyAddFluxProcess();

@@ -45,6 +45,7 @@ extern xdata int CellVoltage; //滤波之后的电池电压
 extern xdata BattVshowFSMDef VshowFSMState; //状态机状态	
 	
 //函数
+void BattCellCountConfig(void); //进行电池节数识别和处理
 void WaitBatteryVoltageOK(void); //等待电池电压就绪（安全保护）
 void TriggerBattStatDisplay(void); //启动电池电量状态显示
 void BattDisplayTIM(void); //电池电量显示函数处理

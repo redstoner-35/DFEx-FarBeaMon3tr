@@ -13,6 +13,9 @@ typedef enum
 	TCResetFSM_Failed,
 	}TCFSMStateDef;
 
+//函数
+bool CalcIfDCDCOutEnabled(void);	
+	
 //内部变量
 TCFSMStateDef TCFSMState=TCResetFSM_Wait; //TypeC打断状态机
 static char TCFSMWait=0;
@@ -29,7 +32,7 @@ void TCResetFSM(void)
 		{
 		case TCResetFSM_Wait:break;
 	  case TCResetFSM_Break: //打断连接
-			 if(!IP2366_SetTypeCRole(TypeC_Disconnect))
+			 if(!IP2366_SetTypeCRole(TypeC_NoConnect))
 				 {
 				 TCFSMState=TCResetFSM_Failed;
 				 IsTCResetUpdated=false;
@@ -47,9 +50,10 @@ void TCResetFSM(void)
 		case TCResetFSM_MakeConnect:
 			//根据系统状态确定角色
 		  IP2366_ClearOCFlag();
-			if(IsSystemOverheating)Role=TypeC_Disconnect;	//系统过热，关闭充放电
-			else if(IsEnableAdapterEmu)Role=TypeC_UFP;	//开启适配器模拟，开启放电关闭充电
-			else Role=TypeC_DRP; //设置为DRP模式
+			if(IsSystemOverheating)Role=TypeC_NoConnect;	//系统过热，关闭充放电
+			else if(IsEnableAdapterEmu)Role=TypeC_SourceOnly;	//开启适配器模拟，开启放电关闭充电
+			else if(!CalcIfDCDCOutEnabled())Role=TypeC_SinkOnly; //开启仅充电模式
+			else Role=TypeC_Bidir; //设置为DRP模式
 		  //根据确定的角色决定Type-C模式
 		  if(!IP2366_SetTypeCRole(Role))
 					TCFSMState=TCResetFSM_Failed;

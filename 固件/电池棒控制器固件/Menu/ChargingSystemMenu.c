@@ -35,19 +35,34 @@ void EnterMaxVPDMenu(void)
 	SwitchingMenu(&MaxVPDMenu);
 	}	
 	
+void EnterSinkProtocolMenu(void)
+	{
+	if(!CurrentIP2366FW->ExtendedTCSetting)SwitchingMenu(&LegacySinkProtocolMenu);
+	else SwitchingMenu(&SinkProtocolMenu);
+	}	
+	
+void EnterSinkPowerMenu(void)
+	{
+	SwitchingMenu(&SinkPowerSetMenu);
+	}	
+	
 //菜单项参数
 static bool EnableMaxVPDConfig=false;
-
+static bool EnableSinkPwrConfig=false;
+	
 //进行VPD使能配置
 void SetEnableMaxVPDConfig(void)
 	{
+	//设置输入Sink配置
+	EnableSinkPwrConfig=CurrentIP2366FW->ExtendedTCSetting;
+	//设置VPD配置
 	if(!CurrentIP2366FW->IsHyperChargeCapable)EnableMaxVPDConfig=false;
 	else if(CurrentIP2366FW->MaxCapableChgPower!=Power_140W)EnableMaxVPDConfig=false;
 	else if(CurrentIP2366FW->IP2366ICCMAX>9700)EnableMaxVPDConfig=true;
 	else EnableMaxVPDConfig=false;
 	}	
-	
-const SetupMenuSelDef ChargeSystemSetup[7]=
+
+const SetupMenuSelDef ChargeSystemSetup[9]=
 	{
 		{
 		"电池峰值电流设置",
@@ -84,6 +99,18 @@ const SetupMenuSelDef ChargeSystemSetup[7]=
 		false,
 		&EnableMaxVPDConfig,		
 		&EnterMaxVPDMenu
+		},
+		{
+		"Sink系统高级设置",
+		false,
+		&AlwaysTrue,		
+		&EnterSinkProtocolMenu
+		},
+		{
+		"Sink最大功率设置",
+		false,
+	  &EnableSinkPwrConfig,		
+		&EnterSinkPowerMenu
 		},
 		{
 		"\0",

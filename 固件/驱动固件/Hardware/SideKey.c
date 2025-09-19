@@ -8,28 +8,35 @@
 //函数
 void LoadSleepTimer(void);
 
-//全局变量
-sbit KeyPress=SideKeyGPIOP^SideKeyGPIOx; //侧按按键输入
-static bit IsKeyPressed; //按键是否按下
-static unsigned char KeyTimer[2];//计时器0用于按键按下计时，计时器1用于连按检测计时
-static KeyEventStrDef Keyevent; //按键事件
+//内部SFR
+sbit KeyPress=SideKeyGPIOP^SideKeyGPIOx;
 
 //内部按键检测用的变量
-xdata unsigned char KeyState;
+static xdata unsigned char KeyState; //按键去抖缓存
+static bit IsKeyPressed; //按键是否按下
+static unsigned char KeyTimer[2];//计时器0用于按键按下计时，计时器1用于连按检测计时
+static KeyEventUnionDef KeyeventStor; //按键事件存储
+
+//内部按键事件结构体访问重定向
+#define Keyevent KeyeventStor.EventStor
 
 //侧按按键的中断向量和按键Flag清除自动定义，不得修改！
 #if (SideKeyGPIOG == 0)
 	#define SideKeyIRQ P0EI_VECTOR
 	#define ClearKeyIntFlag() P0EXTIF=0  
+	#define SideKeyPriorityMsk 0x01
 #elif (SideKeyGPIOG == 1)
 	#define SideKeyIRQ P1EI_VECTOR
 	#define ClearKeyIntFlag() P1EXTIF=0  
+	#define SideKeyPriorityMsk 0x02
 #elif (SideKeyGPIOG == 2)
 	#define SideKeyIRQ P2EI_VECTOR
 	#define ClearKeyIntFlag() P2EXTIF=0  
+	#define SideKeyPriorityMsk 0x04
 #elif (SideKeyGPIOG == 3)	
 	#define SideKeyIRQ P3EI_VECTOR	
-	#define ClearKeyIntFlag() P3EXTIF=0  
+	#define ClearKeyIntFlag() P3EXTIF=0 
+  #define SideKeyPriorityMsk 0x08	
 #else
 	#error "Invalid GPIO Group Number for SideKey GPIO!"
 #endif
@@ -47,6 +54,7 @@ void Key_IRQHandler(void) interrupt SideKeyIRQ
 void SideKeyInit(void)
   {
 	GPIOCfgDef KeyInitCfg;
+	unsigned char i;
 	//设置结构体
 	KeyInitCfg.Mode=GPIO_IPU;
   KeyInitCfg.Slew=GPIO_Slow_Slew;		
@@ -56,15 +64,15 @@ void SideKeyInit(void)
   GPIO_ConfigGPIOMode(SideKeyGPIOG,GPIOMask(SideKeyGPIOx),&KeyInitCfg);//按键输入
 	GPIO_EnableInt(SideKeyGPIOG,GPIOMask(SideKeyGPIOx)); //使能中断功能
 	GPIO_SetExtIntMode(SideKeyGPIOG,SideKeyGPIOx,GPIO_Int_Falling);//设置为下降沿触发
-	EIP1|=0x04; //将按键中断设置为高优先级
+	EIP1|=SideKeyPriorityMsk; //将按键中断设置为高优先级
 	//初始化结构体内容和定时器
 	LoadSleepTimer();
-	KeyState=0xFF;
-	KeyTimer[0]=0x00;
-	KeyTimer[1]=0x00;
-	Keyevent.ShortPressCount=0;
-	Keyevent.ShortPressEvent=0;
-	Keyevent.HoldStat=HoldEvent_None;
+  for(i=0;i<sizeof(KeyEventStrDef);i++)
+		{
+		KeyeventStor.Buf[i]=0;
+		if(!IsLargerThanOneU8(i))KeyTimer[i]=0;
+		}
+	KeyState=0xFF;  //默认按键是松开状态，去抖定时器=0xFF
 	}
 
 //获取没有进行去抖的侧按GPIO状态	
