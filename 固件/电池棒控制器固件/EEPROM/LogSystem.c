@@ -488,17 +488,28 @@ void LogDataSectionInit(RunLogDataUnionDef *DIN)
 bool ResetRunTimeLogArea(void)
  {
  int i;
+ IncCodeROMUnionDef CodeBuf;	
  //复位系统RAM中的数据区域和存储
  LogDataSectionInit(&RunLogEntry.Data);
  RunLogEntry.ProgrammedEntry=0;
  CalcLastLogCRCBeforePO();
  RunLogEntry.CurrentDataCRC=RunLogEntry.LastDataCRC;//计算CRC-32
- //重置RAM内的数据
+ //重置EEPROM内的数据
  for(i=0;i<RunTimeLoggerDepth;i++)
 	 {
-	 if(!SaveRunLogDataToROM(&RunLogEntry.Data,i))return false;
+	 if(!SaveRunLogDataToROM(&RunLogEntry.Data,i))return false; //写入空白日志
+	 if(!UpdateLogCache(RunLogEntry.Data.DataSec.LogIncrementCode,i))return false; //写入缓存区域
 	 WatchDog_Feed(); //喂狗
 	 }
+ //重建缓存key区域
+ if(!ReadEntireLogCache(&CodeBuf))return false;
+ for(i=0;i<sizeof(LogAreaFrontKey);i++)
+		{
+		if(CodeBuf.CodeData.CacheFrontKey[i]!=LogAreaFrontKey[i])break;
+		if(CodeBuf.CodeData.CacheRearKey[i]!=LogAreaRearKey[i])break;
+		WatchDog_Feed();
+		}	 
+ if(i<sizeof(LogAreaFrontKey))WriteLogCacheKeyArea();	  //检查到key区域损坏，进行修复
  //操作完毕，返回true
  return true;
  }

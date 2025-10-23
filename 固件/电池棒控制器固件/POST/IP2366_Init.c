@@ -329,13 +329,15 @@ static void StorageModeDischargeControl(void)
 	}	
 
 //在电池充满电后20秒自动关闭输入快充协议，使充电器进入低功耗待机的功能
+bool GetIfCapTestRunning(void);	
+	
 void SysAutoSavePowerCfg(void)
 	{
 	BatteryStateDef BattState;
 	IP2366SinkProtocolDef PROTBuf;
 	bool QCDISEnabled,ForceRefresh=false;
-	//开启省电模式且当前2366固件支持省电模式，自动读取充电状态
-	if(CfgData.EnableAutoPowerSave&&CurrentIP2366FW->ExtendedTCSetting)
+	//开启省电模式,未处于测容状态且当前2366固件支持省电模式，自动读取充电状态
+	if(!GetIfCapTestRunning()&&CfgData.EnableAutoPowerSave&&CurrentIP2366FW->ExtendedTCSetting)
 		{
 		if(!IP2366_GetChargerState(&BattState))return;
 		switch(BattState)

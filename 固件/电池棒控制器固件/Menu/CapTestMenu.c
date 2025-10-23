@@ -45,10 +45,18 @@ static char AverageCounter;
 static short ConfirmTimeCounter=0;
 static bool IsUpDateGUI;
 static char WaitBackToContinue=0;
+static bool IsCapTestRunning=false;	
+	
+//获取容量测试是否在执行
+bool GetIfCapTestRunning(void)
+	{
+	return IsCapTestRunning;
+	}	
 	
 //重置测容系统
 void ResetCapTestSystem(void)
 	{
+	IsCapTestRunning=false;
 	IsUpDateGUI=false;
 	CFSMState=CapTest_Initial;
 	VBattSumbuf=0;
@@ -142,6 +150,7 @@ void CTestKeyHandler(void)
 		case CapTest_Finish:
 		case CapTest_ErrorStorageModeEnabled:
 			if(KeyState.KeyEvent!=KeyEvent_ESC)break;
+		  IsCapTestRunning=false;                        //标记已经退出测容系统
 			if(!IsEnableAdvancedMode)SwitchingMenu(&EasySetMainMenu);
 			else SwitchingMenu(&SetMainMenu); //处于退出状态,按下ESC后回到主菜单
 		  break;	  
@@ -437,6 +446,7 @@ void CTestFSMHandler(void)
 					 VBattSumbuf=0;
 					 IBattsumbuf=0;
 					 AverageCounter=8; //复位结果
+				   IsCapTestRunning=true;
 				   CFSMState=CapTest_Running;
 					 break;
 				case Batt_ChgError:CFSMState=CapTest_ErrorChipHang;break; //芯片异常
@@ -476,6 +486,7 @@ void CTestFSMHandler(void)
 			 if(ConfirmTimeCounter>0)break;
 		   IsUpDateGUI=false; //发送指令重绘GUI
 			 CFSMState=CapTest_Finish;
+		   IsCapTestRunning=false;   //容量测试已经成功充满，可以开启省电模式了
 			 CurrentTestResult.Data.IsDataValid=true;
 			 CurrentTestResult.Data.MaxChargeRatio=(CurrentTestResult.Data.MaxChargeCurrent*1000)/CurrentTestResult.Data.TotalmAH; //最大C数等于最大电流/总容量
 			 memcpy(CTestData.ROMImage.Data.ByteBuf,CurrentTestResult.ByteBuf,sizeof(ChargeTestUnionDef)); //更新当前测容数据
