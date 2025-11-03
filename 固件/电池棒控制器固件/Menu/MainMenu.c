@@ -40,9 +40,9 @@ void IP2366_Telem(void)
 	//判断是否启用传输
 	if(!Is2366Telem)return;
 	IsTelemOK=IP2366_GetChargerState(&BATT);
-	IsTelemOK|=IP2366_GetVBUSState(&VBUS);
-	IsTelemOK|=IP2366_ReadChipState(&CState);
-	IsTelemOK|=IP2366_GetRecvPDO(&PDO);
+	IsTelemOK&=IP2366_GetVBUSState(&VBUS);
+	IsTelemOK&=IP2366_ReadChipState(&CState);
+	IsTelemOK&=IP2366_GetRecvPDO(&PDO);
 	
 	IsCPortConnected=IP2366_GetIfCPortConnected();
 	//开始进行INA226的测量	
@@ -89,7 +89,7 @@ void IP2366_Telem(void)
 			{
 			IsResultUpdated=true;
 			VBusAvgCount=0;
-			VBat=VBUSAvgBuf[2]/(float)SADCAvgCount;
+			VBat=VBUSAvgBuf[2]/(float)SADCAvgCount;				
 			IBat=VBUSAvgBuf[3]/(float)SADCAvgCount;
       //读取TypeC结果
 			Result=VBUSAvgBuf[0]/(float)SADCAvgCount;
@@ -102,6 +102,9 @@ void IP2366_Telem(void)
 			else Result*=(float)CfgData.TypeCAmpereCalCharge;
 			Result/=(float)1000;
 			if(fabsf(Result)<7.6)ITypeC=Result;
+			//进行电池端电压补偿计算	
+			if(VTypec<VBat)VBat+=(0.033*0.05); //当前Type-C没有连接，系统靠电池供电需要补偿的VBat保险电阻的压降（0.033A*0.05R）
+			//读取结束，清除平均缓存结果	
 			for(i=0;i<4;i++)VBUSAvgBuf[i]=0;
 			}		
 		if(VBUS.IsTypeCConnected)SleepTimer=480; //禁止睡眠
@@ -172,6 +175,7 @@ void MainMenuRenderProcess(void)
 	extern bool OCState;
 	extern bool IsEnableHPGauge;
 	extern bool IsEnableTempChargeOnly;
+	extern IP2366ResetCPortProcDef IPSinkState;
 	//判断是否启用老人模式	
 	if(CfgData.EnableLargeMenu)
 		{
@@ -306,26 +310,30 @@ void MainMenuRenderProcess(void)
 		LCD_ShowChinese(86,61,"故障\0",RED,BLACK,0);
   else if(OCState)
 		LCD_ShowChinese(86,61,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
-  else if(!ProcessStorageChgOnlyDisplay())switch(BATT)			//根据枚举状态显示
+  else if(!ProcessStorageChgOnlyDisplay())//根据枚举状态显示
 		{
-		case Batt_StandBy:
-      LCD_ShowChinese(86,61,"待机\0",WHITE,BLACK,0);	
-			break;
-		case Batt_PreChage:
-			LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"涓流\0",MAGENTA,BLACK,0);
-			break;
-		case Batt_CCCharge:
-			LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"恒流\0",YELLOW,BLACK,0);
-			break;
-		case Batt_CVCharge:
-			LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"恒压\0",GBLUE,BLACK,0);
-			break;
-		case Batt_ChgWait:
-			LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"暂停\0",YELLOW,BLACK,0);
-			break;
-		case Batt_ChgDone:LCD_ShowChinese(86,61,"充满\0",LIGHTGREEN,BLACK,0);break;
-		case Batt_ChgError:LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"超时\0",ORANGE,BLACK,0);break;
-		case Batt_discharging:LCD_ShowChinese(86,61,"放电\0",WHITE,BLACK,0);break;
+		if(IPSinkState!=IP2366_CPort_Reseted)LCD_ShowChinese(86,61,"充满\0",LIGHTGREEN,BLACK,0);
+		else switch(BATT)			
+			{
+			case Batt_StandBy:
+				LCD_ShowChinese(86,61,"待机\0",WHITE,BLACK,0);	
+				break;
+			case Batt_PreChage:
+				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"涓流\0",MAGENTA,BLACK,0);
+				break;
+			case Batt_CCCharge:
+				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"恒流\0",YELLOW,BLACK,0);
+				break;
+			case Batt_CVCharge:
+				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"恒压\0",GBLUE,BLACK,0);
+				break;
+			case Batt_ChgWait:
+				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"暂停\0",YELLOW,BLACK,0);
+				break;
+			case Batt_ChgDone:LCD_ShowChinese(86,61,"充满\0",LIGHTGREEN,BLACK,0);break;
+			case Batt_ChgError:LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"超时\0",ORANGE,BLACK,0);break;
+			case Batt_discharging:LCD_ShowChinese(86,61,"放电\0",WHITE,BLACK,0);break;
+			}
 		}
 	//温度显示
 	if(!ADCO.IsNTCOK||ADCO.Systemp<-9)LCD_ShowString(117,61,"--",WHITE,BLACK,12,0);

@@ -34,6 +34,8 @@ typedef enum
 	REG_STATE_CTL3=0x38,
   REG_TYPEC_STATE=0x34,
 	REG_RECEIVED_PDO=0x35,
+	REG_MFR_ICREV=0x39,
+  REG_IC_TEMP=0x3A,
 	REG_VBAT_LSB=0x50,
 	REG_VBAT_MSB=0x51,
   REG_VSYS_LSB=0X52,
@@ -48,12 +50,12 @@ typedef enum
 
 typedef enum
 	{
-	Power_30W,
-	Power_45W,
-	Power_60W,
-	Power_65W,
-	Power_100W,
-	Power_140W
+	Power_30W=0,
+	Power_45W=1,
+	Power_60W=2,
+	Power_65W=3,
+	Power_100W=4,
+	Power_140W=5
 	}ChargePowerDef;
 
 typedef enum
@@ -89,6 +91,14 @@ typedef enum
  }QuickChargeStateDef;	
  
 typedef enum
+{
+Hardware_Ver_Unknown=0, //未知版本或者没有该寄存器
+Hardware_Ver_B=1,
+Hardware_Ver_C=2,
+Hardware_Ver_D=3,       //对应芯片硬件版本BCD
+}IP2366HWRevDef;
+ 
+typedef enum
  {
  Batt_StandBy,
  Batt_PreChage,
@@ -110,6 +120,15 @@ typedef enum
 	RecvPDO_20V, //20V
 	}RecvPDODef;	
  
+typedef struct
+	{
+	bool PDO5VOK;
+	bool PDO9VOK;
+	bool PDO12VOK;
+	bool PDO15VOK;
+	bool PDO20VOK;	
+	}RecvPDOListDef;	
+	
 typedef struct
 	{
 	bool EnablePPS2;
@@ -160,12 +179,19 @@ typedef struct
 	VSysStateDef VSysState;
 	}ChipStatDef;	
 	
+typedef struct
+	{
+	bool EnableSinkDPDM; 		//是否让IC尝试握手USB2.0DP DM协商的老协议(如SCP QC等)对电池进行充电
+	bool EnableSinkPD;   		//是否让IC尝试握手标准PD协议（包括PD2.0/3.0Fixed PD3.0 PPS）对电池进行充电
+	bool EnableSinkSCP;  		//是否让IC尝试握手华为协议（包括5A低压SCP 25W高压SCP和HSCP）对电池进行充电
+	}IP2366SinkProtocolDef;	
+	
 typedef enum
 	{
-	TypeC_Disconnect=0x00,	//Source Bit=0,Sink Bit=0 完全断开
-	TypeC_UFP=0x02,  				//Source Bit=1,Sink Bit=0 只能往外输出，用于模拟适配器
-	TypeC_DFP=0x01,		 			//Source Bit=0,Sink Bit=1 只能往里面输入，用于仅充电功能（好像有bug,所以说禁用了）
-	TypeC_DRP=0x03					//Source Bit=1,Sink Bit=1 输入输出都可以，正常模式（默认配备TrySRC，无法给支持TrySRC的设备充电）
+	TypeC_NoConnect=0x04,				
+	TypeC_SourceOnly=0x01,  		
+	TypeC_SinkOnly=0x00,		 	
+	TypeC_Bidir=0x03	
 	}TypeCRoleDef;	
 
 typedef enum
@@ -218,29 +244,39 @@ typedef struct
 	bool IsEnableHSCPOut; //开启高压SCP
 	}IP2366OutConfigDef;
 
+typedef struct
+	{
+	char FWID[5];
+	int IP2366ICCMAX; //支持的最大电池端电流
+	bool IsHSCPCapable; //是否支持HSCP对外Source
+	bool IsExtendPDOCapable; //是否支持额外的PDO编辑
+	ChargePowerDef MaxCapableChgPower; //最大支持的充电功率
+	float ShuntValue; //检流电阻阻值
+	bool IsHyperChargeCapable; //是否支持超充
+	bool ExtendedROREGCapable; //是否支持额外的可读取寄存器（例如MFR_IC_VERSION和IC_TEMP）
+	bool ExtendedTCSetting;    //固件是否支持额外的Type-C设置（例如Sink Power Set和Type-C Disconnect）  
+	}IP2366FWCapDef;	
+	
 //电流回读参数配置
 #define BusCurrentCalFactor 0.985	//IP2366读回来的电流修正值
-	
-//峰值电流参数配置
-#if (BATTCOUNT == 4)	
 
-#define IP2366_ICCMAX 13000 //四串版本是13000mA
 	
-#elif (BATTCOUNT == 3 || BATTCOUNT == 2)
-	
-#define IP2366_ICCMAX 16000 //2-3串版本是16000mA
-	
-#else
-	
-#error "Invaild Battery Count Settings!"	
-	
-#endif
+//外部参考
+extern const IP2366FWCapDef *CurrentIP2366FW;	
 	
 //特殊数值运算函数
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
 
+bool IP2366_GetRecvPDOList(RecvPDOListDef *Result);	//获取输入广播的list状态
+bool IP2366_UpdateSinkPower(ChargePowerDef Power); //更新系统的充电输入（Sink模式）的功率
+bool IP2366_SetSinkProtocol(IP2366SinkProtocolDef *Cfg); //IP2366设置输入快充协议（不影响对外输出）
+bool IP2366_SetInputState(IP2366InputDef * Cfg,bool IsSetChargePower); //设置系统输入配置
+bool IP2366_DisableCharger(void); //禁止充电器
+bool IP2366_GetChipTemp(char *TempOut,bool *IsTempLimitTriggered); //获取芯片本身的温度数据
+IP2366HWRevDef IP2366_GetChipHWRev(void); //获取芯片的硬件版本号
+bool IP2366_UpdateChipCap(char VendorString[5]); //获取芯片能力
 bool IP2366_ForceEnterDeepSleep(void);		//IP2366强制进入低功耗睡眠模式
 bool IP2366_SetDeepSleepModeEnabled(bool IsEnableSleep); //IP2366设置低功耗睡眠模式是否使能	
 bool IP2366_GetIfCPortConnected(void);   //获取IP2366的C口是否已连接
@@ -254,10 +290,10 @@ bool IP2366_SetOTPSign(void); //设置重载检测标记
 bool IP2366_DetectIfChipReset(bool *IsReset); //检查芯片是否复位
 bool IP2366_SetVLowVolt(VBatLowDef Vlow); //设置低压保护
 bool IP2366_GetFirmwareTimeStamp(char TimeStamp[5]);	//获取时间戳
-bool IP2366_SetInputState(IP2366InputDef * Cfg); //设置输入状态
 bool IP2366_SetOutputState(IP2366OutConfigDef * CFG); //设置输出状态	
 bool IP2366_GetRecvPDO(RecvPDODef *PDOResult);	//获取输入的PDO状态
 bool IP2366_GetVBUSState(IP2366VBUSStateDef * State); //获取VBUS状态
+bool IP2366_GetVBUSVoltage(float *VBUS);//获取C口VBUS的电压
 bool IP2366_GetChargerState(BatteryStateDef *State);	//获取充电状态
 bool IP2366_DetectIfPresent(void);	//监测IP2366是否存在
 bool IP2366_SetTypeCRole(TypeCRoleDef Role); //设置TypeC的模式

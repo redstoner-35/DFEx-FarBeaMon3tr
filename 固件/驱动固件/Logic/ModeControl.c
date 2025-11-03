@@ -270,11 +270,10 @@ bit IsRampEnabled; //是否开启无极调光
 bit IsMainMemEnabled; //是否开启主挡位记忆
 bit IsSpecMemEnabled; //是否开启特殊挡位记忆
 bit IsStrobePoweredFromOFF; //是否为关机模式下进入到一键爆闪
-bit IsPowerModeEnabled; //0=ECO MODE 1=POWER MODE	
-bit IsRampFault; //无极调光故障，当该bit置起后无极调光将会强制禁用	
+bit IsPowerModeEnabled; //0=ECO MODE 1=POWER MODE		
 	
 //全局软件计时变量
-xdata unsigned char HoldChangeGearTIM=0; //挡位模式下长按换挡
+xdata unsigned char HoldChangeGearTIM; //挡位模式下长按换挡
 xdata unsigned char DisplayLockedTIM; //锁定和战术模式进入退出显示
 
 //内部变量和标志位
@@ -310,8 +309,13 @@ ModeStrDef *FindTargetMode(ModeIdxDef Mode,bool *IsResultOK)
 	
 //初始化模式状态机
 void ModeFSMInit(void)
-{
+	{
 	bool Result;
+  //复位故障码和挡位模式配置系统
+  ResetSOSModule(); 							//复位SOS模块
+	LastMode=Mode_ExtremelyLow;
+	LastSpecialMode=Mode_Strobe;
+	ErrCode=Fault_None; 					//没有故障
 	//初始化无极调光
 	SysCfg.RampLimitReachDisplayTIM=0;
   ReadSysConfig(); //从EEPROM内读取无极调光配置
@@ -323,29 +327,17 @@ void ModeFSMInit(void)
 		SysCfg.RampCurrentLimit=CurrentMode->Current; //找到挡位数据中无极调光的挡位，电流上限恢复
 		if(SysCfg.RampCurrent<CurrentMode->MinCurrent)SysCfg.RampCurrent=CurrentMode->MinCurrent;
 		if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;		//读取数据结束后，检查读入的数据是否合法，不合法就直接修正
-		//无级调光挡位正常
-		IsRampFault=0;	
+		CurrentMode=&ModeSettings[0]; 					//记忆重置为第一个档
 		}
-	//无法找到无极调光数值，禁止无极调光功能
-	else 
-		{
-		IsRampEnabled=0;
-		IsRampFault=1;	
-		LEDMode=LED_RedBlinkFifth; //触发LED提示
-		}
+	//无法找到无极调光数值，挡位数据损毁，报错
+  else ReportError(Fault_RampConfigError);
 	//复位变量和一部分模块
+	DisplayLockedTIM=0;
 	IsSlowFading=0;
-	IsRampKeyPressed=0;
-	SetupFSMState=SetupMenu_InACT;
+	SetupFSMState=SetupMenu_InACT;            //复位设置状态机
 	ResetStrobeModule(); 											//复位爆闪控制器
-	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器
-	//挡位模式配置
-	ResetSOSModule(); //复位SOS模块
-	LastMode=Mode_ExtremelyLow;
-	LastSpecialMode=Mode_Strobe;
-	ErrCode=Fault_None; //没有故障
-	CurrentMode=&ModeSettings[0]; //记忆重置为第一个档
-}	
+	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器	
+	}	
 
 //挡位状态机所需的软件定时器处理
 void ModeFSMTIMHandler(void)
@@ -367,7 +359,6 @@ void SwitchToGear(ModeIdxDef TargetMode)
 	bool IsLastModeNeedStepDown,Result;
 	ModeStrDef *ModeBuf;
 	//当前挡位已经是目标值，不执行
-	if(IsRampFault&&TargetMode==Mode_Ramp)return;  //无极调光异常，禁止换到无极调光模式
 	if(TargetMode==CurrentMode->ModeIdx)return;
 	//记录换档前的结果	
 	IsLastModeNeedStepDown=CurrentMode->IsNeedStepDown; //存下是否需要降档
@@ -586,7 +577,6 @@ void ModeSwitchFSM(void)
 	ClickCount=getSideKeyShortPressCount();	//读取按键处理函数传过来的参数
 		
 	//挡位记忆参数检查
-	if(IsRampFault)IsRampEnabled=0;  //无极调光数据故障，禁止无极调光功能
 	if(LastSpecialMode<11||LastSpecialMode>13)LastSpecialMode=Mode_Strobe;        //特殊功能
 	if(LastMode<2||LastMode>13)LastMode=Mode_ExtremelyLow;									//全局常规记忆
 		
@@ -656,7 +646,7 @@ void ModeSwitchFSM(void)
 			 执行设置按键灯亮度一半的处理）
 		   ***********************************************/
 			 IsHalfBrightness=1; 
-		   if(Battery<2.4)ReturnToOFFState();   //单节电池电压小于2.4之后DCDC可能工作异常，强制断电
+		   if(CellVoltage<2400)ReturnToOFFState();   //单节电池电压小于2.4之后DCDC可能工作异常，强制断电
 			 break;				
     //无极调光状态				
     case Mode_Ramp:

@@ -33,7 +33,7 @@ void main()
 	ADC_Init(); //初始化ADC
 	PWM_Init(); //启动PWM定时器
 	LED_Init(); //初始化侧按LED
-	WaitBatteryVoltageReady(); //等待电池电压就绪
+	OutputChannel_WaitVBattReady(); //输出通道和配置通道初始化之前，需要等待电池就绪
 	ModeFSMInit(); //初始化挡位状态机
   SideKeyInit(); //侧按初始化	
 	OutputChannel_TestRun(); //进行输出通道试运行
@@ -52,7 +52,6 @@ void main()
 		PWM_OutputCtrlHandler(); //处理PWM输出事务	
 		//8Hz定时处理
 		if(!SysHFBitFlag)continue; //时间没到，跳过处理
-		SysHFBitFlag=0;	
 		//Task0，处理计算量比较大的任务
     if(!TaskSel)
 			{
@@ -80,5 +79,7 @@ void main()
 			//处理结束，对任务选择进行翻转处理下一组
 			TaskSel=0;
 			}
+		//处理完毕，令flag清零
+		SysHFBitFlag=0;	
 		}
 	}

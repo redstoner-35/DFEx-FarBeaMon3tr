@@ -32,17 +32,17 @@ int ReadMaxVPDEnumValue(void)
 	
 void FedMaxVPDEnumValue(int Input)
 	{
-	extern bool IsEnable17AMode;
 	MaximumPDVoltageDef buf;
 	//收取结果	
-	if(IsEnable17AMode)buf=(MaximumPDVoltageDef)Input;
+	if(CurrentIP2366FW->IsHyperChargeCapable)buf=(MaximumPDVoltageDef)Input;
 	else buf=PDMaxIN_20V; //普通固件禁止超充
 	//启用超充模式	
 	if(CfgData.MaxVPD!=buf&&buf==PDMaxIN_28V)
 		{
-		CfgData.InputConfig.ChargeCurrent=IP2366_ICCMAX;
-		CfgData.OverHeatLockTemp=100; //超充发热巨大需要调高温度
+		CfgData.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
+		CfgData.OverHeatLockTemp=90; //超充发热巨大需要调高温度
 		CfgData.InputConfig.ChargePower=Power_140W;
+		CfgData.MaxSnkPower=Power_140W;								
     CfgData.MaxVPD=PDMaxIN_28V;
 		WriteConfiguration(&CfgUnion,false);	
 		}
@@ -53,7 +53,7 @@ void FedMaxVPDEnumValue(int Input)
 		{
 		CfgData.OverHeatLockTemp=90; //普通模式调低温度
 		if(CfgData.InputConfig.ChargeCurrent>9700)CfgData.InputConfig.ChargeCurrent=9700;
-		CfgData.InputConfig.ChargePower=Power_100W;
+		CfgData.InputConfig.ChargePower=CurrentIP2366FW->MaxCapableChgPower;
 		WriteConfiguration(&CfgUnion,false);
 		}		
 	SwitchingMenu(&ChgSysSetMenu);

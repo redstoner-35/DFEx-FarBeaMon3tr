@@ -9,6 +9,13 @@
 
 typedef enum
 	{
+	IP2366_CPort_Reseted,
+	IP2366_CPort_WaitNextFullCharge, //等待下一次充满
+	IP2366_CPort_NextChargeDone,	//下次已充满，复位
+	}IP2366ResetCPortProcDef;
+
+typedef enum
+	{
 	Msg_Statu, //状态信息
 	Msg_Warning, //警告
 	Msg_POSTOK, //自检结束
@@ -94,6 +101,10 @@ typedef struct
 	}MenuConfigDef;	
 	
 //菜单entry
+extern const MenuConfigDef QueryPDOListMenu;
+extern const MenuConfigDef SinkPowerSetMenu;
+extern const MenuConfigDef LegacySinkProtocolMenu;
+extern const MenuConfigDef SinkProtocolMenu;
 extern const MenuConfigDef AutoSaveCfgMenu;
 extern const MenuConfigDef TypeCChgICALMenu;
 extern const MenuConfigDef InfoUserRemoveCCableMenu;
@@ -178,13 +189,15 @@ void IntEditInitHandler(void);	//整数编辑进入时的处理
 extern bool AlwaysTrue;
 extern bool AlwaysFalse;	
 	
-//自检错误处理
+//自检错误处理和ID查询
 void SelfTestErrorHandler(void);
+const char *QueryPostDoneID(void);	
 	
 //内部变量
 extern bool IsEnableAdvancedMode; //是否开启高级模式
 	
 //外部调用的显示函数
+void DoThingsBeforeOFF(void); //系统关机前执行菜单的善后函数
 void ClearMenuIndex(void);  //清除菜单index
 void ShowTimeCode(u16 y,long Time);  //根据传入的秒数显示时间
 void RenderMenuBG(void);	//菜单背景渲染

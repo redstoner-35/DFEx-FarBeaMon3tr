@@ -70,6 +70,13 @@ void ClearMenuIndex(void)
 	SetupMenuIdx=0;
 	}	
 	
+
+//在关机前执行退出构造函数
+void DoThingsBeforeOFF(void)
+	{
+	if(MenuIdx->ThingsToDoBeforeLeave!=NULL)MenuIdx->ThingsToDoBeforeLeave();
+	}
+	
 //切换菜单
 void SwitchingMenu(const MenuConfigDef *TargetMenuIdx)
 	{

@@ -43,8 +43,8 @@ static void BreakCPortConnection(void)
 	SetSystemDischargeState();
 	delay_ms(10);
 	IsCPortBreaked=true;
-	//设置为DFP模式强制关闭Source
-	IP2366_SetTypeCRole(TypeC_DFP);
+	//强制关闭Source
+	IP2366_SetTypeCRole(TypeC_NoConnect);
 	}
 	
 //在自动均衡循环结束后退回到主界面的操作
@@ -62,7 +62,7 @@ static void BalanceEndGotoMainMenuProcess(bool IsNormalExit)
 //自动均衡FSM处理
 void AutoBalFSMHandler(void)
 	{
-	extern int SleepTimer;	
+	extern short SleepTimer;	
   //进行系统的配置		
 	Is2366Telem=true; 
 	SleepTimer=480; //均衡运行期间禁止系统复位，休眠时间复位为一分钟

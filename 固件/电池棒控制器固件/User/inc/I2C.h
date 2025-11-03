@@ -35,6 +35,7 @@ void IIC_NAck(void);
 void IIC_Send_Byte(unsigned char txd);
 unsigned char IIC_Read_Byte(unsigned char ack);
 
-
+//外部参考
+extern unsigned char SMIOADDR;
 
 #endif

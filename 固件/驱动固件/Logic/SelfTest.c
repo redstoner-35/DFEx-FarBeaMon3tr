@@ -105,7 +105,7 @@ void OutputFaultDetect(void)
 		//输入过压保护
 		if(Data.BatteryVoltage>4.4)ReportError(Fault_InputOVP); 
 		//短路检测	
-		if(Data.OutputVoltage<14.6&&Data.FBInjectVolt>4.8) //输出短路
+		if(Data.OutputVoltage<15&&Data.FBInjectVolt>4.8) //输出短路
 			{
 			buf=ErrTIMCounter(buf,2); //计时器累计
 			OErrID=0;

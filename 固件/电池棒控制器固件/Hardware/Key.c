@@ -1,5 +1,6 @@
 #include "ht32.h"
 #include "Key.h"
+#include "GUI.h"
 #include "Pindefs.h"
 #include "delay.h"
 
@@ -110,6 +111,7 @@ void SideKey_Init(void)
 	{
 	EXTI_InitTypeDef EXTI_InitStruct;
 	char i;
+	ShowPostInfo(3,"启动按键控制器","01",Msg_Statu);
 	//配置外部中断系统基本参数
 	EXTI_InitStruct.EXTI_Debounce = EXTI_DEBOUNCE_ENABLE; 
   EXTI_InitStruct.EXTI_DebounceCnt = 5;  //启用去抖

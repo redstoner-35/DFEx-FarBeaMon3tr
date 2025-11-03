@@ -13,7 +13,8 @@ MSB  [A7 A6 A5 ... A3 A2 A1 R/W(=0)]  LSB
 #define IP2366ADDR 0xEA //IP2366的地址
 #define M24C512ADDR 0xA0  //64K EEPROM负责存储系统的配置参数
 #define M24C512SecuADDR 0xB0 //FM24C512独有的安全sector的地址
-#define SMIOADDR 0x82 //SMBUS GPIO的地址
+#define OLDSMIOADDR 0x82 //SMBUS GPIO的地址
+#define ADVSMIOADDR 0xE0 //1.3A充电板的GPIO地址
 #define INA226ADDR 0x80 //负责Type-C功率测量的INA226的地址
 
 #endif

@@ -97,7 +97,7 @@ USE_HT32_CHIP       EQU     USE_HT32_CHIP_SET
 ; Amount of memory (in bytes) allocated for Stack and Heap
 ; Tailor those values to your application needs
 ;//   <o> Stack Size (in Bytes, must 8 byte aligned) <0-16384:8>
-Stack_Size          EQU     3072
+Stack_Size          EQU     4096
 
                     AREA    STACK, NOINIT, READWRITE, ALIGN = 3
 __HT_check_sp
@@ -105,7 +105,7 @@ Stack_Mem           SPACE   Stack_Size
 __initial_sp
 
 ;//   <o>  Heap Size (in Bytes) <0-16384:8>
-Heap_Size           EQU     0
+Heap_Size           EQU     64
 
                     AREA    HEAP, NOINIT, READWRITE, ALIGN = 3
 __HT_check_heap

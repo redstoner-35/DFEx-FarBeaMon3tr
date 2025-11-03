@@ -191,10 +191,15 @@ void ThermalPILoopCalc(void)
 		//温度小于恒温值（温度误差为负）
 		else if(Data.Systemp<ProtFact)
 			{
-			//判断电流是否进入积分缓调区域
-			IsSwitchToITGTrack=CurrentBuf>(ConstantILED-CalcIREFValue(800))?true:false; 
+			//计算误差并判断电流是否进入积分缓调区域
+			Err=ProtFact-Data.Systemp;								//误差等于目标温度值减去系统温度
+			if(Err>4)
+				IsSwitchToITGTrack=true; 	 //温度存在4度以上的负误差说明系统使用暴力风扇快速冷却，允许积分器快速积分，迅速提升常亮
+			else if(CurrentBuf>(ConstantILED-CalcIREFValue(600)))
+				IsSwitchToITGTrack=false;  //当前系统电流已经回升到接近常亮水平，使用积分器每次+1缓慢跟踪
+			else
+				IsSwitchToITGTrack=true; 	 //当前系统电流距离标定的常亮还很远，允许积分器快速提升到常亮电流
 			//比例项(P)
-			Err=ProtFact-Data.Systemp;	 //误差等于目标温度值减去系统温度
 			if(StepUpLockTIM)StepUpLockTIM--; //当前触发降档还没达到快速升档的时间
 			else
 				{
@@ -203,7 +208,7 @@ void ThermalPILoopCalc(void)
 				//执行比例升温
 				else
 					{
-					if(IsLargerThanOneU8(Err))TempProtBuf-=Err; //进行升档
+					if(IsLargerThanOneU16(Err))TempProtBuf-=Err; //进行升档
 					if(IsNegative16(TempProtBuf))TempProtBuf=0;
 					}			
 				//温度下来了很多，系统已经令电流回升到强制降额前的常亮电流，则复位标记位
@@ -266,25 +271,25 @@ static bit TempSchmittTrigger(bit ValueIN,char HighThreshold,char LowThreshold)
 void ThermalMgmtProcess(void)
 	{
 	bit ThermalStatus;
-	//温度传感器错误
-	if(!Data.IsNTCOK)
+	//温度传感器正常，执行温度控制
+	if(Data.IsNTCOK)
 		{
-		ReportError(Fault_NTCFailed);
-		return;
+		//手电温度过高时对极亮进行限制
+		IsForceLeaveTurbo=TempSchmittTrigger(IsForceLeaveTurbo,LeaveTurboTemperature,ForceDisableTurboTemp-10);	//温度距离关机保护的间距不到10度，立即退出极亮
+		IsDisableTurbo=TempSchmittTrigger(IsDisableTurbo,ForceDisableTurboTemp,ForceDisableTurboTemp-10); //温度达到关闭极亮档的阈值，关闭极亮
+		//过热关机保护
+		IsSystemShutDown=TempSchmittTrigger(IsSystemShutDown,ForceOffTemp,ConstantTemperature-10);
+		if(IsSystemShutDown)ReportError(Fault_OverHeat); //报故障
+		else if(ErrCode==Fault_OverHeat)ClearError(); //消除掉当前错误
+		//PI环使能控制
+		if(!CurrentMode->IsNeedStepDown)IsTempLIMActive=0; //当前挡位不需要降档
+		else //使用施密特函数决定温控是否激活
+			{
+			ThermalStatus=TempSchmittTrigger(IsTempLIMActive,QueryConstantTemp(),ReleaseTemperature); //获取施密特触发器的结果
+			if(ThermalStatus)IsTempLIMActive=1;//施密特函数要求激活温控，立即激活
+			else if(!ThermalStatus&&!TempProtBuf&&IsNegative16(TempIntegral))IsTempLIMActive=0; //施密特函数要求关闭温控，等待比例缓存为0解除限流后关闭
+			}
 		}
-	//手电温度过高时对极亮进行限制
-	IsForceLeaveTurbo=TempSchmittTrigger(IsForceLeaveTurbo,LeaveTurboTemperature,ForceDisableTurboTemp-10);	//温度距离关机保护的间距不到10度，立即退出极亮
-	IsDisableTurbo=TempSchmittTrigger(IsDisableTurbo,ForceDisableTurboTemp,ForceDisableTurboTemp-10); //温度达到关闭极亮档的阈值，关闭极亮
-	//过热关机保护
-	IsSystemShutDown=TempSchmittTrigger(IsSystemShutDown,ForceOffTemp,ConstantTemperature-10);
-  if(IsSystemShutDown)ReportError(Fault_OverHeat); //报故障
-	else if(ErrCode==Fault_OverHeat)ClearError(); //消除掉当前错误
-	//PI环使能控制
-	if(!CurrentMode->IsNeedStepDown)IsTempLIMActive=0; //当前挡位不需要降档
-	else //使用施密特函数决定温控是否激活
-		{
-		ThermalStatus=TempSchmittTrigger(IsTempLIMActive,QueryConstantTemp(),ReleaseTemperature); //获取施密特触发器的结果
-		if(ThermalStatus)IsTempLIMActive=1;//施密特函数要求激活温控，立即激活
-		else if(!ThermalStatus&&!TempProtBuf&&IsNegative16(TempIntegral))IsTempLIMActive=0; //施密特函数要求关闭温控，等待比例缓存为0解除限流后关闭
-		}
+	//温度传感器故障，返回错误
+	else ReportError(Fault_NTCFailed);
 	}	

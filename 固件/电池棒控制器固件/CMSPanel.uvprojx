@@ -699,6 +699,11 @@
               <FileType>5</FileType>
               <FilePath>.\User\inc\lcdfont.h</FilePath>
             </File>
+            <File>
+              <FileName>ErrorCode.txt</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\GUI\ErrorCode.txt</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -738,6 +743,11 @@
               <FileName>HPTypeCGauge.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\POST\HPTypeCGauge.c</FilePath>
+            </File>
+            <File>
+              <FileName>AUXPSUMgmt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\POST\AUXPSUMgmt.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -895,11 +905,6 @@
               <FilePath>.\Menu\MaxVPDConfigMenu.c</FilePath>
             </File>
             <File>
-              <FileName>ChgPowerWithOutEPR.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Menu\ChgPowerWithOutEPR.c</FilePath>
-            </File>
-            <File>
               <FileName>LargeMainMenu.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Menu\LargeMainMenu.c</FilePath>
@@ -998,6 +1003,21 @@
               <FileName>DataBaseCheckMenu.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Menu\DataBaseCheckMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>SinkProtocolCfgMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\SinkProtocolCfgMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>MaxSinkPowerMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\MaxSinkPowerMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>QueryPDOBroadcastMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\QueryPDOBroadcastMenu.c</FilePath>
             </File>
           </Files>
         </Group>

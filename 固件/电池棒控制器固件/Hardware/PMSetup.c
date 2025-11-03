@@ -8,6 +8,8 @@
 #include "PCA9536.h"
 #include "LCD_Init.h"
 #include "BalanceMgmt.h"
+#include "AUXPSU.h"
+#include "LogSystem.h"
 
 //电源管理引脚自动定义
 #define LDO_EN_IOB STRCAT2(GPIO_P,LDO_EN_IOBank)
@@ -49,8 +51,8 @@ void PowerMgmtSetup(void)
    GPIO_ClearOutBits(IP2366_EN_IOG,IP2366_EN_IOP); //2366-EN=0
 	 delay_ms(100);
 	 GPIO_SetOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为1
-	 //配置启动计时器
-	 SleepTimer=480; //一分钟无操作自动休眠
+	 //配置自动休眠计时器
+	 SleepTimer=960; //2分钟无操作自动休眠
 	}
 	
 //Type-C连接失败时，进行重新握手的部分
@@ -87,24 +89,42 @@ void IP2366StallRestore(void)
     }
 	}		
 	
+//强制2366断电
+void Force2366ToRestart(void)
+	{
+	//设置为高阻输入使2366休眠
+	GPIO_InputConfig(IP2366_INT_IOG,IP2366_INT_IOP,ENABLE); 
+	GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_IN);
+	IP2366_SetDeepSleepModeEnabled(true);
+	IP2366_ForceEnterDeepSleep(); //给IP2366强制放发送指令
+	}
+	
 //强制关机
 void ShutSysOFF(void)
 	{
 	extern bool IsEnablePowerOFF;
 	if(!IsEnablePowerOFF)return; //不允许关机
+	//复位LCD
+	DoThingsBeforeOFF(); //执行退出构造函数
 	ClearScreen();
 	LCD_DeInit(); //除能LCD
 	Balance_ForceDiasble(); //发送命令关闭均衡系统
-	//关闭LCD
+	//如果是非完全睡眠模式则进行对应的处理
 	if(CfgData.SleepCfg!=System_Sleep_Deep)
 		{
-		PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_IN);  //把所有没用的IO设置为input tri-state
+		AUXPSU_ConnectTCtoIP2366(); //将Type-C的CC连接到IP2366
+		AUXPSU_SwitchToPassThrough(); //切换到直通模式
 		INA226_EnterPowerDownMode();
 		LCD_DisableBlackLight(); //关闭LCD背光开始休眠	
 		}	
-	else IP2366_ForceEnterDeepSleep(); //给IP2366强制放发送指令
+	//完全睡眠模式，根据系统是否处于安全模式进行切换继电器
+	else 
+		{
+		AUXPSU_SetIPDState(true);
+		if(!IsBootFromVBUS)AUXPSU_ConnectTCtoIP2366();		//系统关机前不在安全模式，令继电器将CC切换到2366
+		else AUXPSU_ConnectTCtoIPD();                     //系统关机前位于安全模式，切换到内置下拉
+		IP2366_ForceEnterDeepSleep(); 										//给IP2366发送强制睡眠指令
+		}
 	//使系统掉电
 	GPIO_ClearOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为0,关闭LDO电源强迫单片机掉电
 	delay_ms(300);
@@ -116,7 +136,7 @@ void ShutSysOFF(void)
 void KickIP2366ToWakeUp(void)
 	{
 	int retry=3;
-	char WakeMsg[]={"唤醒重试次数:5"};
+	char WakeMsg[]={"唤醒重试次数:3"};
 	ShowPostInfo(12,"唤醒充电IC","05",Msg_Statu);
 	//如果INT=0说明2366在睡觉
 	if(GPIO_ReadInBit(IP2366_INT_IOG,IP2366_INT_IOP)==RESET)do
@@ -135,7 +155,7 @@ void KickIP2366ToWakeUp(void)
 		//尝试失败，提示唤醒剩余次数
 		retry--;
 		WakeMsg[13]=0x30+(3-retry);
-		ShowPostInfo(12,WakeMsg,"W0",Msg_Warning);		
+		ShowPostInfo(12,WakeMsg,"W1",Msg_Warning);		
     //延时2秒后重试			
     delay_Second(2);	
 		}	
@@ -143,7 +163,7 @@ void KickIP2366ToWakeUp(void)
 	//唤醒失败
 	if(!retry)
 		{
-		ShowPostInfo(12,"充电IC唤醒失败","E2",Msg_Fault);
+		ShowPostInfo(12,"充电IC唤醒失败","E4",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	GPIO_SetOutBits(IP2366_INT_IOG,IP2366_INT_IOP);
@@ -163,15 +183,13 @@ void PowermanagementSleepControl(void)
 	//当前未处于睡眠状态、均衡开启或者Type-C处于连接中，不执行
 	if(!IsEnablePowerOFF||BalanceForceEnableTIM)
 		{
-		SleepTimer=480;	
+		SleepTimer=960;	
 		return; //复位计时器
 		}
 	if(SleepTimer<8)Balance_ForceDiasble(); //强制关闭均衡器	
 	//时间未到继续计时
 	if(SleepTimer>0)return;
-	//开始检测
-	GPIO_InputConfig(IP2366_INT_IOG,IP2366_INT_IOP,ENABLE); 
-	GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_IN);//设置为高阻输入使2366休眠
+	DoThingsBeforeOFF(); //执行退出构造函数
 	//掉电之前先进行存盘和重配置芯片处理（如果打开睡眠模式的话需要重配置否则芯片睡不醒）
   if(IsConfigSaved||!CheckIfConfigIsSame())
 		{
@@ -183,19 +201,32 @@ void PowermanagementSleepControl(void)
 	//非完全掉电睡眠模式，系统关闭INA226和PCA9536降低VCCIO功耗，令系统进入睡眠
 	if(CfgData.SleepCfg!=System_Sleep_Deep)
 		{
+		AUXPSU_ConnectTCtoIP2366(); //将Type-C的CC连接到IP2366确保可以瞬间唤醒
 		INA226_EnterPowerDownMode();
 		ClearScreen();
-		PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_IN);
-		PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_IN);  //把所有没用的IO设置为input tri-state
+		AUXPSU_SwitchToPassThrough(); //切换到直通模式
 		LCD_DisableBlackLight(); //关闭LCD背光开始休眠
+		//令IP2366进入睡眠后使系统掉电
+		GPIO_InputConfig(IP2366_INT_IOG,IP2366_INT_IOP,ENABLE); 
+		GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_IN);//设置为高阻输入使2366休眠		
+		IP2366_ForceEnterDeepSleep(); //给IP2366强制放发送指令
 		GPIO_ClearOutBits(LDO_EN_IOG,LDO_EN_IOP);//输出设置为0,关闭LDO电源强迫单片机掉电
 		while(1);		
 		}
+	//完全睡眠模式，根据系统是否处于安全模式进行切换继电器
+	else 
+		{
+		AUXPSU_SetIPDState(true);
+		if(!IsBootFromVBUS)AUXPSU_ConnectTCtoIP2366();		//系统关机前不在安全模式，令继电器将CC切换到2366
+		else AUXPSU_ConnectTCtoIPD();                     //系统关机前位于安全模式，切换到内置下拉
+		}
+	//所有操作完毕，开始检测
+	GPIO_InputConfig(IP2366_INT_IOG,IP2366_INT_IOP,ENABLE); 
+	GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_IN);//设置为高阻输入使2366休眠	
 	if(GPIO_ReadInBit(IP2366_INT_IOG,IP2366_INT_IOP)==SET)
 		{
 		SleepTimer=4;
-		if(CfgData.SleepCfg==System_Sleep_Deep)IP2366_ForceEnterDeepSleep(); //给IP2366强制放发送指令
+		IP2366_ForceEnterDeepSleep(); //给IP2366强制放发送指令
 		return; //如果IP2366未进入睡眠则继续等待
 		}
 	//立即释放IO

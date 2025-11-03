@@ -2,9 +2,6 @@
 #include "IP2366_REG.h"
 #include "Config.h"
 
-//外部变量声明
-extern bool IsEnable17AMode;
-
 //进入恒流充电电流设置
 void EnterIChargeSet(void)
 	{
@@ -28,9 +25,8 @@ void EnterRechargeSetMenu(void)
 	
 void EnterIstopMenu(void)
 	{
-	extern bool IsEnable17AMode;
   //根据固件模式进行配置选择对应的处理
-	if(IsEnable17AMode)SwitchingMenu(&IstopSetMenu);
+	if(CurrentIP2366FW->IsHyperChargeCapable)SwitchingMenu(&IstopSetMenu);
 	else SwitchingMenu(&IstopStdSetMenu);
 	}
 
@@ -39,8 +35,34 @@ void EnterMaxVPDMenu(void)
 	SwitchingMenu(&MaxVPDMenu);
 	}	
 	
+void EnterSinkProtocolMenu(void)
+	{
+	if(!CurrentIP2366FW->ExtendedTCSetting)SwitchingMenu(&LegacySinkProtocolMenu);
+	else SwitchingMenu(&SinkProtocolMenu);
+	}	
+	
+void EnterSinkPowerMenu(void)
+	{
+	SwitchingMenu(&SinkPowerSetMenu);
+	}	
+	
 //菜单项参数
-const SetupMenuSelDef ChargeSystemSetup[7]=
+static bool EnableMaxVPDConfig=false;
+static bool EnableSinkPwrConfig=false;
+	
+//进行VPD使能配置
+void SetEnableMaxVPDConfig(void)
+	{
+	//设置输入Sink配置
+	EnableSinkPwrConfig=CurrentIP2366FW->ExtendedTCSetting;
+	//设置VPD配置
+	if(!CurrentIP2366FW->IsHyperChargeCapable)EnableMaxVPDConfig=false;
+	else if(CurrentIP2366FW->MaxCapableChgPower!=Power_140W)EnableMaxVPDConfig=false;
+	else if(CurrentIP2366FW->IP2366ICCMAX>9700)EnableMaxVPDConfig=true;
+	else EnableMaxVPDConfig=false;
+	}	
+
+const SetupMenuSelDef ChargeSystemSetup[9]=
 	{
 		{
 		"电池峰值电流设置",
@@ -75,8 +97,20 @@ const SetupMenuSelDef ChargeSystemSetup[7]=
 		{
 		"最高充放电压设置",
 		false,
-		&IsEnable17AMode,		
+		&EnableMaxVPDConfig,		
 		&EnterMaxVPDMenu
+		},
+		{
+		"Sink系统高级设置",
+		false,
+		&AlwaysTrue,		
+		&EnterSinkProtocolMenu
+		},
+		{
+		"Sink最大功率设置",
+		false,
+	  &EnableSinkPwrConfig,		
+		&EnterSinkPowerMenu
 		},
 		{
 		"\0",
@@ -109,6 +143,6 @@ const MenuConfigDef ChgSysSetMenu=
 	NULL,
 	&ReturnToMainSetMenu, 
 	//进入和退出构造函数没有事情要做
-	NULL,
+	SetEnableMaxVPDConfig,
 	NULL
 	};	

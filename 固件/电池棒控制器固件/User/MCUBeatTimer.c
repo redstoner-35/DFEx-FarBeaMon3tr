@@ -7,7 +7,7 @@ void EnableHBTimer(void)
  {
  CKCU_PeripClockConfig_TypeDef CKCUClock = {{ 0 }};  
  TM_TimeBaseInitTypeDef TimeBaseInit;
- ShowPostInfo(3,"Starting HBTIM","01",Msg_Statu);
+ ShowPostInfo(3,"启动心跳定时器","00",Msg_Statu);
  //重新配置定时器用于产生0.125秒的定时中断
  CKCUClock.Bit.GPTM0 = 1;
  CKCU_PeripClockConfig(CKCUClock, ENABLE);
@@ -28,11 +28,11 @@ void CheckIfHBTIMStart(void)
 {
 int retry=300;
 extern bool SensorRefreshFlag;
-ShowPostInfo(40,"测试心跳定时器\0","7A",Msg_Statu);
+ShowPostInfo(40,"测试心跳定时器\0","02",Msg_Statu);
 //检测是否有WDT Reset
 if(RSTCU_GetResetFlagStatus(RSTCU_FLAG_WDTRST))
 	{
-	ShowPostInfo(40,"检测到系统卡死\0","7B",Msg_Warning);
+	ShowPostInfo(40,"检测到系统卡死\0","W0",Msg_Warning);
 	delay_Second(2);
 	}
 //开始测试定时器
@@ -45,7 +45,7 @@ do
 	}
 while(retry>0);
 //检测不通过
-ShowPostInfo(40,"心跳定时器异常\0","7E",Msg_Fault);	
+ShowPostInfo(40,"心跳定时器异常\0","E0",Msg_Fault);	
 SelfTestErrorHandler();	
 }	
  

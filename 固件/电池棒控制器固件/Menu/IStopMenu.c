@@ -62,9 +62,8 @@ int ReadIStopEnumValue(void)
 	
 void FedIStopEnumValue(int Input)
 	{	
-	extern bool IsEnable17AMode;
 	CfgData.IStop=(IStopConfig)Input;
-	if(IsEnable17AMode)
+	if(CurrentIP2366FW->IsHyperChargeCapable)
 		{
 		//2.5mR爆充固件因为停充电流机制导致100和150mA充不满，需要强制设置到200mA
 		if(CfgData.IStop==IStop_100mA||CfgData.IStop==IStop_150mA)CfgData.IStop=IStop_200mA;

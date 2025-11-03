@@ -16,31 +16,33 @@ bool BalanceState=false;
 int BalanceDisableTIM=0; //暂时关闭均衡的计时器
 int ChargeFullTIM=0; //充电满充计时器
 
-//内部全局
+//内部全局和常亮
 static bool BalTypeCConnectedState=false; //均衡连接状态
 
 //配置均衡控制器
 void BalanceMgmt_Init(void)
 	{
 	bool State;
-	ShowPostInfo(52,"均衡控制器配置","30",Msg_Statu);
-	State=PCA9536_SetIOState(PCA9536_IOPIN_0,false); //将对应IO设置为0
-	State&=PCA9536_SetIOPolarity(PCA9536_IOPIN_0,PCA9536_IO_Normal); //正常极性
-	State&=PCA9536_SetIODirection(PCA9536_IOPIN_0,PCA9536_IODIR_OUT); //输出模式
-	PCA9536_SetIODirection(PCA9536_IOPIN_1,PCA9536_IODIR_OUT);
-	PCA9536_SetIOState(PCA9536_IOPIN_1,false);
-	PCA9536_SetIODirection(PCA9536_IOPIN_2,PCA9536_IODIR_OUT);
-	PCA9536_SetIOState(PCA9536_IOPIN_2,false);
-	PCA9536_SetIODirection(PCA9536_IOPIN_3,PCA9536_IODIR_OUT);  
-	PCA9536_SetIOState(PCA9536_IOPIN_3,false);									//其余没用的IO输出低电平
+	char i,buf;
+	ShowPostInfo(52,"均衡控制器配置","12",Msg_Statu);
+	buf=0x01;
+	for(i=0;i<8;i++)
+		{
+		//按顺序循环配置所有的GPIO
+		State=PCA9536_SetIOState((SMIOPinDef)buf,false); //将对应IO设置为0
+		State&=PCA9536_SetIOPolarity((SMIOPinDef)buf,PCA9536_IO_Normal); //正常极性
+		State&=PCA9536_SetIODirection((SMIOPinDef)buf,PCA9536_IODIR_OUT); //输出模式
+		if((SMIOPinDef)buf==PCA9536_IOPIN_3&&GetIfPCAIsOldOne())break;    //非新的IO则跳过额外IO的初始化
+		buf<<=1;
+		}		
 	//检查设置状态
 	if(!State)
 		{
-		ShowPostInfo(52,"均衡控制器异常","3E",Msg_Fault);
+		ShowPostInfo(52,"均衡控制器异常","ED",Msg_Fault);
 		SelfTestErrorHandler();
 		}
 	//应用校准数据
-	ShowPostInfo(53,"应用ADC校准数据","31",Msg_Statu);
+	ShowPostInfo(53,"应用ADC校准数据","13",Msg_Statu);
 	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor);
 	}
 	
@@ -91,7 +93,7 @@ static void Balance_ChargeDertect(void)
 void Balance_IOMgmt(void)
 	{
 	bool IsBalanceEnable; 
-	extern int SleepTimer;
+	extern short SleepTimer;
 	extern AutoBalanFSMDef AutoBalState;
 	BatteryStateDef SysState=Batt_StandBy;
 	//运行增强自动均衡以及临时禁用均衡允许芯片充满的判断
@@ -115,8 +117,10 @@ void Balance_IOMgmt(void)
 		}
 	//当前系统处于自动均衡的补电阶段，需要强制打开均衡	
 	else if(AutoBalState==AutoBalance_ReCharging)IsBalanceEnable=true;
+	//系统在待机状态且即将进入睡眠，关闭均衡	
+	else if(SysState==Batt_StandBy&&SleepTimer<8)IsBalanceEnable=false;
 	//根据配置状态进行启用
-	else if(SysState!=Batt_StandBy||SleepTimer>8)switch(CfgData.BalanceMode)
+	else switch(CfgData.BalanceMode)
 		{
 		case Balance_Diasbled:IsBalanceEnable=false;break; //永久关闭主动均衡
 		case Balance_ChgOnly: //仅充电时启用
@@ -136,8 +140,6 @@ void Balance_IOMgmt(void)
 		  break;
 		case Balance_AlwaysEnabled:IsBalanceEnable=true;break; //均衡永远开启
 		}
-	//系统即将进入睡眠，关闭均衡
-	else IsBalanceEnable=false;
 	//设置IO状态
 	if(BalanceState==IsBalanceEnable)return;
 	if(PCA9536_SetIOState(PCA9536_IOPIN_0,IsBalanceEnable))BalanceState=IsBalanceEnable; //设置均衡状态

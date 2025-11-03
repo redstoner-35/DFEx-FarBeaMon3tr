@@ -6,6 +6,7 @@
 #include <math.h>
 #include <string.h>
 #include "Key.h"
+#include <stdio.h>
 
 //测容系统状态机的enum
 typedef enum
@@ -16,6 +17,7 @@ typedef enum
 	CapTest_Finish, //运行中和正常结束
 	CapTest_ConfirmFull, //确认是否充满
 	CapTest_OverCharge, //检测到过充
+  CapTest_WaitSwitchingSafeMode, //系统正在退出安全模式
 	CapTest_EndERROR, //测容未成功完成
 	//强制终止测容	
 	CapTest_ConfirmForceStopTest, //让用户确认是否强制终止
@@ -35,6 +37,7 @@ extern bool IsTelemOK;
 extern const unsigned char TellUserToInsertTypeC[3158];
 	
 //内部变量
+short VBUSReConnectTimeCounter=0;
 static CapTestFSMDef CFSMState;
 static float VBattSumbuf;
 static float IBattsumbuf;
@@ -42,16 +45,25 @@ static char AverageCounter;
 static short ConfirmTimeCounter=0;
 static bool IsUpDateGUI;
 static char WaitBackToContinue=0;
+static bool IsCapTestRunning=false;	
+	
+//获取容量测试是否在执行
+bool GetIfCapTestRunning(void)
+	{
+	return IsCapTestRunning;
+	}	
 	
 //重置测容系统
 void ResetCapTestSystem(void)
 	{
+	IsCapTestRunning=false;
 	IsUpDateGUI=false;
 	CFSMState=CapTest_Initial;
 	VBattSumbuf=0;
 	IBattsumbuf=0;
 	WaitBackToContinue=0;
 	AverageCounter=8;
+	VBUSReConnectTimeCounter=0;
 	//重置当前的测容结果
 	CurrentTestResult.Data.ChargeTime=0;
 	CurrentTestResult.Data.IsDataValid=false;
@@ -70,6 +82,7 @@ void CTestAverageACC(void)
 	extern bool OCState;
 	//判断测容完毕计时器累减	
 	if(ConfirmTimeCounter>0)ConfirmTimeCounter--;	
+	if(VBUSReConnectTimeCounter>0)VBUSReConnectTimeCounter--;
 	//测容系统没有激活，禁止遥测
 	if(CFSMState!=CapTest_WaitTypeCInsert&&CFSMState!=CapTest_Running&&CFSMState!=CapTest_ConfirmForceStopTest)return;
 	Is2366Telem=true;
@@ -124,6 +137,7 @@ void CTestKeyHandler(void)
 	  case CapTest_ConfirmFull:
 		case CapTest_Running: 
 		case CapTest_OverCharge:
+		case CapTest_WaitSwitchingSafeMode:
 			if(KeyState.KeyEvent!=KeyEvent_ESC)break; //按下退出
 		  WaitBackToContinue=80; //延迟80秒后无操作则继续
 			CFSMState=CapTest_ConfirmForceStopTest; 
@@ -136,6 +150,7 @@ void CTestKeyHandler(void)
 		case CapTest_Finish:
 		case CapTest_ErrorStorageModeEnabled:
 			if(KeyState.KeyEvent!=KeyEvent_ESC)break;
+		  IsCapTestRunning=false;                        //标记已经退出测容系统
 			if(!IsEnableAdvancedMode)SwitchingMenu(&EasySetMainMenu);
 			else SwitchingMenu(&SetMainMenu); //处于退出状态,按下ESC后回到主菜单
 		  break;	  
@@ -148,6 +163,15 @@ void CTestKeyHandler(void)
 	KeyState.KeyEvent=KeyEvent_None;
 	}	
 
+//显示电池电压
+static void ShowVBatStartVoltage(void)
+	{
+	char Str[64];
+	memset(Str,0,sizeof(Str));
+	snprintf(Str,sizeof(Str),"请将电池放电至%4.1fV以内",(BattCellCount*2.75));
+	LCD_ShowHybridString(4,41,Str,RED,LGRAY,0);
+	}	
+	
 //GUI处理
 void CTestGUIHandler(void)
 	{
@@ -346,6 +370,11 @@ void CTestGUIHandler(void)
 		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
 		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
 		  break;
+		case CapTest_WaitSwitchingSafeMode:	
+			LCD_ShowChinese(20,19,"充电测容进行中",CYAN,LGRAY,0);
+		  LCD_ShowChinese(21,42,"正在切换到全速充电",WHITE,LGRAY,0);
+	    LCD_ShowChinese(46,54,"请稍后……",WHITE,LGRAY,0);
+			break;
 		//存储模式开启
 		case CapTest_ErrorStorageModeEnabled:
 			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
@@ -363,9 +392,7 @@ void CTestGUIHandler(void)
 		  break;
 		case CapTest_ErrorBattToHigh:
 			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
-		  LCD_ShowChinese(4,41,"请将电池放电至",RED,LGRAY,0);
-		  LCD_ShowString(94,41,"12.3V",RED,LGRAY,12,0);
-		  LCD_ShowChinese(133,41,"以内",RED,LGRAY,0);
+      ShowVBatStartVoltage();
 			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
 		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
 		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
@@ -401,7 +428,7 @@ void CTestFSMHandler(void)
 	    else if(BATT==Batt_discharging)CFSMState=CapTest_ErrorDischarging;
 	    else if(BATT==Batt_ChgError)CFSMState=CapTest_ErrorChipHang;
 		  else if(BATT!=Batt_StandBy||VBUS.IsTypeCConnected)CFSMState=CapTest_ErrorAlreadyCharging;
-		  else if(ADCO.Vbatt>12.3)CFSMState=CapTest_ErrorBattToHigh;
+		  else if(ADCO.Vbatt>(BattCellCount*2.75))CFSMState=CapTest_ErrorBattToHigh;
 		  else CFSMState=CapTest_WaitTypeCInsert; //等待Type-C插入
 			IsUpDateGUI=false; //发送指令重绘GUI
 		  break;
@@ -419,6 +446,7 @@ void CTestFSMHandler(void)
 					 VBattSumbuf=0;
 					 IBattsumbuf=0;
 					 AverageCounter=8; //复位结果
+				   IsCapTestRunning=true;
 				   CFSMState=CapTest_Running;
 					 break;
 				case Batt_ChgError:CFSMState=CapTest_ErrorChipHang;break; //芯片异常
@@ -429,17 +457,25 @@ void CTestFSMHandler(void)
 		//过充事件
 		case CapTest_OverCharge:		
        //条件跳转			
-			 if(!VBUS.IsTypeCConnected)CFSMState=CapTest_EndERROR;
+			 if(!VBUS.IsTypeCConnected&&!VBUSReConnectTimeCounter)CFSMState=CapTest_EndERROR;
 			 else if(BATT==Batt_discharging)CFSMState=CapTest_ErrorDischarging;
 			 else if(BATT==Batt_ChgError)CFSMState=CapTest_ErrorChipHang;
 			 else if(!OCState)CFSMState=CapTest_Running; //过充事件解除，继续充电
 		 //重绘GUI检测
 			 if(CFSMState!=CapTest_OverCharge)IsUpDateGUI=false; //发送指令重绘GUI
 		   break;
+		//系统从安全模式启动，正在切换至正常充电模式
+	  case CapTest_WaitSwitchingSafeMode:	
+			 if(VBUSReConnectTimeCounter)break;
+		   //系统已经从安全模式退出，正常返回充电阶段
+			 CFSMState=CapTest_Running;
+			 IsUpDateGUI=false; //发送指令重绘GUI
+			 break;
 		//测容等待中
 		case CapTest_ConfirmFull:
 			 //条件跳转
-			 if(!VBUS.IsTypeCConnected)CFSMState=CapTest_EndERROR;
+	     if(VBUSReConnectTimeCounter)CFSMState=CapTest_WaitSwitchingSafeMode;
+			 else if(!VBUS.IsTypeCConnected)CFSMState=CapTest_EndERROR;
 			 else if(BATT==Batt_discharging)CFSMState=CapTest_ErrorDischarging;
 			 else if(BATT==Batt_ChgError)CFSMState=CapTest_ErrorChipHang;
 		   else if(OCState)CFSMState=CapTest_OverCharge; //过充事件bit置起，标记过充发生
@@ -450,6 +486,7 @@ void CTestFSMHandler(void)
 			 if(ConfirmTimeCounter>0)break;
 		   IsUpDateGUI=false; //发送指令重绘GUI
 			 CFSMState=CapTest_Finish;
+		   IsCapTestRunning=false;   //容量测试已经成功充满，可以开启省电模式了
 			 CurrentTestResult.Data.IsDataValid=true;
 			 CurrentTestResult.Data.MaxChargeRatio=(CurrentTestResult.Data.MaxChargeCurrent*1000)/CurrentTestResult.Data.TotalmAH; //最大C数等于最大电流/总容量
 			 memcpy(CTestData.ROMImage.Data.ByteBuf,CurrentTestResult.ByteBuf,sizeof(ChargeTestUnionDef)); //更新当前测容数据
@@ -457,7 +494,8 @@ void CTestFSMHandler(void)
 		   break;
 		//测容运行中
 		case CapTest_Running:	
-			if(!VBUS.IsTypeCConnected)CFSMState=CapTest_EndERROR;
+			if(VBUSReConnectTimeCounter)CFSMState=CapTest_WaitSwitchingSafeMode;
+			else if(!VBUS.IsTypeCConnected)CFSMState=CapTest_EndERROR;
 		  else if(BATT==Batt_discharging)CFSMState=CapTest_ErrorDischarging;
 	    else if(BATT==Batt_ChgError)CFSMState=CapTest_ErrorChipHang;
 		  else if(OCState)CFSMState=CapTest_OverCharge; //过充事件bit置起，标记过充发生

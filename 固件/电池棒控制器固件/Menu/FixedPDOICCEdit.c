@@ -45,7 +45,7 @@ const intEditMenuCfg PDO20VCurrentEdit=
 	{
 	&CfgData.FixedPDOCfg.PDO20VICCMAX, //数据源
 	1000,
-	4000, //1到5A
+	4000, //1到4A
 	10, //LSB=10mA
 	"mA", //毫安
 	"",
@@ -152,9 +152,8 @@ const MenuConfigDef PDO15VIsetMenu=
 //20V PDO电流设置菜单	
 void FPDO20VIsetDummy(void)
 	{
-	extern bool IsSupportExterndPDO;
 	//根据固件配置使用不同的PDO设置
-	if(IsSupportExterndPDO)IntEditHandler(&ExtendedPDO20VCurrentEdit);
+	if(CurrentIP2366FW->IsExtendPDOCapable)IntEditHandler(&ExtendedPDO20VCurrentEdit);
 	else IntEditHandler(&PDO20VCurrentEdit);
 	}	
 	
@@ -163,7 +162,7 @@ void FPDO20VExitCheck(void)
 	extern bool IsSupportExterndPDO;
 	int buf,LSBCount;
 	//公版固件检查数值限制PDO在1000-4000mA
-	if(!IsSupportExterndPDO)
+	if(!CurrentIP2366FW->IsExtendPDOCapable)
 		{
 		buf=CfgData.FixedPDOCfg.PDO20VICCMAX;
 		if(buf<1000)buf=1000;
@@ -187,7 +186,7 @@ void FPDO20VEnterCheck(void)
 	extern bool IsSupportExterndPDO;
 	int buf,LSBCount;
 	//开启50mA per LSB模式后，强制20V PDO电流设置为50mA的倍数
-	if(IsSupportExterndPDO)
+	if(CurrentIP2366FW->IsExtendPDOCapable)
 		{
 		//限制数值
 		buf=CfgData.FixedPDOCfg.PDO20VICCMAX;

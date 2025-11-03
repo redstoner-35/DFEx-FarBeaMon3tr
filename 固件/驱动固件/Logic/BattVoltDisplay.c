@@ -2,6 +2,7 @@
 #include "LEDMgmt.h"
 #include "delay.h"
 #include "ModeControl.h"
+#include "OutputChannel.h"
 #include "SideKey.h"
 #include "BattDisplay.h"
 #include "SelfTest.h"
@@ -17,15 +18,15 @@ bit IsBatteryFault; //电池电压低于保护值
 static unsigned char BattShowTimer; //电池电量显示计时
 static unsigned char OneLMShowBattStateTimer=0; //1LM模式下显示电池状态的计时器
 static xdata AverageCalcDef BattVolt;	
-static unsigned char LowVoltStrobeTIM;
+static xdata unsigned char LowVoltStrobeTIM;
 static xdata int VbattSample; //取样的电池电压
 
 //外部全局变量
 BattStatusDef BattState; //电池电量标记位
-xdata float Battery; //等效单节电池电压
+xdata int CellVoltage; //等效单节电池电压
 xdata unsigned char CommonSysFSMTIM;  //电压显示计时器
 xdata BattVshowFSMDef VshowFSMState; //电池电压显示所需的计时器和状态机转移
-static bit IsReportingTemperature; //报告温度
+static bit IsReportingTemperature=0; //报告温度
 
 //内部使用的先导显示表
 static code LEDStateDef VShowIndexCode[]=
@@ -71,8 +72,10 @@ void TriggerVshowDisplay(void)
 //生成低电量提示报警
 bit LowPowerStrobe(void)
 	{
+	//月光挡位下计时也停止	
+	if(CurrentMode->ModeIdx==Mode_Moon)LowVoltStrobeTIM=0;
 	//电量正常,或者是1LM模式，不启动计时
-	if(CurrentMode->ModeIdx==Mode_1Lumen||CurrentMode->ModeIdx==Mode_Moon||BattState!=Battery_VeryLow)LowVoltStrobeTIM=0;
+	else if(CurrentMode->ModeIdx==Mode_1Lumen||BattState!=Battery_VeryLow)LowVoltStrobeTIM=0;
 	//电量异常开始计时
 	else if(!LowVoltStrobeTIM)LowVoltStrobeTIM=1; //启动计时器
 	else if(LowVoltStrobeTIM>((LowVoltStrobeGap*8)-4))return 1; //触发闪烁标记电流为0
@@ -171,8 +174,21 @@ static void BatVshowFSM(void)
 			//头部显示结束后开始正式显示电压
 			LEDMode=VshowEnter_ShowIndex();
 		  if(CommonSysFSMTIM)break;
-			//电池电压超过显示范围，进行限幅
-		  if(VbattSample>999)VbattSample/=10;
+			//电池电压为大于10V的数，进行四舍五入处理保留小数点后一位的结果
+		  if(VbattSample>999)
+			   {
+				 /********************************************************
+				 这里四舍五入的原理是电池电压会被采样为整数，1LSB=0.01V。例如
+				 电池电压为12.59V采样之后就会变成1259。那么此时我们需要对小数
+				 点后两位进行四舍五入判断，得到一位小数的结果。由于整数结果的
+				 个位实际上等于浮点的电池电压中的小数点后两位，因此我们只需要
+				 通过和10求余数就可以取出小数点后结果的2位，然后如果结果大于4
+				 则进行进位，令小数点后一位+1就实现了四舍五入了。对整个采样结
+				 果除以10之后就会自动去掉小数点后两位的值保留1位小数。
+				 *********************************************************/					 
+				 if((VbattSample%10)>4)VbattSample+=10;
+				 VbattSample/=10;
+				 }
 			//配置计时器显示第一组电压
 			VshowFSMGenTIMValue(VbattSample/100,BattVdis_Show10V);
 		  break;
@@ -220,10 +236,8 @@ static void BatVshowFSM(void)
 				}
 			//显示结束，LED熄灭一段时间
 			else LEDMode=LED_OFF;
-			//等待显示时间到
-			if(CommonSysFSMTIM)break;
-			IsReportingTemperature=0;  //clear标志位
-			if(!getSideKeyNClickAndHoldEvent())VshowFSMState=BattVdis_Waiting; //用户仍然按下按键，等待用户松开,松开后回到等待阶段
+			//等待温度状态显示时间到，到了之后跳转到等待用户松开按键的处理
+			if(!CommonSysFSMTIM)VshowFSMState=BattVdis_ShowChargeLvl;
 			break;		  
 		//等待一段时间后显示当前电量
 		case BattVdis_WaitShowChargeLvl:
@@ -234,8 +248,9 @@ static void BatVshowFSM(void)
       break;
 	  //等待总体电量显示结束
 		case BattVdis_ShowChargeLvl:
-		  
-		  if(BattShowTimer)SetPowerLEDBasedOnVbatt(); //显示电量
+			IsReportingTemperature=0;  									//clear掉温度显示标志位
+			VbattSample=0;                              //电压显示每次结束后，clear掉电压缓存数据
+		  if(BattShowTimer)SetPowerLEDBasedOnVbatt();//显示电量
 			else if(!getSideKeyNClickAndHoldEvent())VshowFSMState=BattVdis_Waiting; //用户仍然按下按键，等待用户松开,松开后回到等待阶段
       break;
 		}
@@ -243,30 +258,31 @@ static void BatVshowFSM(void)
 //电池电量状态机
 static void BatteryStateFSM(void)
 	{
-	float Thres;
-	//进行极亮阈值计算
-	if(CurrentMode->ModeIdx!=Mode_Turbo)Thres=3.7;
-	else Thres=3.5;
+	int thres;
+	//计算阈值
+  if(!CurrentMode->ModeIdx==Mode_Turbo)thres=3650;
+  else thres=3550;
+	if(CurrentBuf>CalcIREFValue(19000))thres-=100;  //输出电流大于19000mA时减少100mA阈值避免错误黄灯
 	//状态机处理	
 	switch(BattState) 
 		 {
 		 //电池电量充足
 		 case Battery_Plenty: 
-				if(Battery<Thres)BattState=Battery_Mid; //电池电压小于3.7，回到电量较低状态
+				if(CellVoltage<thres)BattState=Battery_Mid; //电池电压小于指定阈值，回到电量中等状态
 			  break;
 		 //电池电量较为充足
 		 case Battery_Mid:
-			  if(Battery>(Thres+0.3))BattState=Battery_Plenty; //电池电压大于3.8，回到充足状态
-				if(Battery<3.0)BattState=Battery_Low; //电池电压低于3.2则切换到电量低的状态
+			  if(CellVoltage>(thres+250))BattState=Battery_Plenty; //电池电压大于阈值，回到充足状态
+				if(CellVoltage<(thres-200))BattState=Battery_Low; //电池电压低于3.3则切换到电量低的状态
 				break;
 		 //电池电量不足
 		 case Battery_Low:
-		    if(Battery>3.4)BattState=Battery_Mid; //电池电压高于3.5，切换到电量中等的状态
-			  if(Battery<2.9)BattState=Battery_VeryLow; //电池电压低于2.8，报告严重不足
+		    if(CellVoltage>(thres+50))BattState=Battery_Mid; //电池电压高于3.6，切换到电量中等的状态
+			  if(CellVoltage<2950)BattState=Battery_VeryLow; //电池电压低于3.0，报告严重不足
 		    break;
 		 //电池电量严重不足
 		 case Battery_VeryLow:
-			  if(Battery>3.2)BattState=Battery_Low; //电池电压回升到3.0，跳转到电量不足阶段
+			  if(CellVoltage>3300)BattState=Battery_Low; //电池电压回升到3.3，跳转到电量不足阶段
 		    break;
 		 }
 	}
@@ -291,7 +307,7 @@ void DisplayVBattAtStart(bit IsPOR)
 	do
 		{
 		SystemTelemHandler();
-		Battery=Data.BatteryVoltage; //获取并更新电池电压
+		CellVoltage=(int)(Data.BatteryVoltage*1000); //获取并更新电池电压
 		BatteryStateFSM(); //反复循环执行状态机更新到最终的电池状态
 		}
 	while(--i);
@@ -299,24 +315,6 @@ void DisplayVBattAtStart(bit IsPOR)
 	if(!IsPOR||CurrentMode->ModeIdx!=Mode_OFF)return;
 	BattShowTimer=18;
 	}
-
-//等待电池电压就绪的循环（这个循环目的是使驱动只有在接电池的时候才能正常启动）
-void WaitBatteryVoltageReady(void)
-	{
-	unsigned char i=255;
-	do
-		{
-		//10mS测量一次电池电压，当电池电压大于7.2V时退出并继续启动
-		delay_ms(10);
-		SystemTelemHandler();
-    if(Data.RawBattVolt>7.20)return;
-		}
-	while(--i);
-	//等待超时，亮红灯，锁死
-	IsHalfBrightness=0;
-	LEDMode=LED_Red; //LED模式配置为红色常亮
-	while(1)LEDControlHandler();
-	}	
 
 //电池电量显示延时的处理
 void BattDisplayTIM(void)
@@ -335,7 +333,7 @@ void BattDisplayTIM(void)
 		{
 		BattVolt.AvgBuf-=(long)BattVolt.Min+(long)BattVolt.Max; //去掉最高最低
 		BattVolt.AvgBuf/=(long)(BattVolt.Count-2); //求平均值
-		Battery=(float)BattVolt.AvgBuf/(float)1000; //得到最终的电池电压
+		CellVoltage=(int)BattVolt.AvgBuf;	//得到最终的电池电压(单位mV)
 		ResetBattAvg(); //复位缓存
 		}
 	//低电压提示闪烁计时器
@@ -352,15 +350,14 @@ void BattDisplayTIM(void)
 //电池参数测量和指示灯控制
 void BatteryTelemHandler(void)
 	{
-	int AlertThr,VBatt;
+	int AlertThr;
 	extern bit IsDisplayLocked;
 	//根据电池电压控制flag实现低电压降档和关机保护
 	if(CurrentMode->ModeIdx==Mode_Ramp)AlertThr=SysCfg.RampBattThres; //无极调光模式下，使用结构体内的动态阈值
 	else AlertThr=CurrentMode->LowVoltThres; //从当前目标挡位读取模式值  
-	VBatt=(int)(Battery*1000); //得到电池电压(mV)
-  if(VBatt>2650)		
+  if(CellVoltage>2650)		
 		{
-		IsBatteryAlert=VBatt>AlertThr?0:1; //警报bit根据各个挡位的阈值进行判断
+		IsBatteryAlert=CellVoltage>AlertThr?0:1; //警报bit根据各个挡位的阈值进行判断
 		IsBatteryFault=0; //电池电压没有低于危险值，fault=0
 		}
 	else

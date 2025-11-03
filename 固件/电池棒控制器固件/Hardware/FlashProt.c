@@ -93,24 +93,28 @@ static void MakeCRCVendorString(char Str[16],unsigned int CRCIN)
 //启用flash锁定
 void CheckForFlashLock(void)
  { 
+ #ifdef EnableDebugMode	 
+ ShowPostInfo(45,"完整性检查已禁用\0","4B",Msg_INFO);	 
+ delay_ms(300);
+ #else  
  int i=0;
  FLASH_OptionByte Option;
  char UIDBUF[16],OTPData[16];
  unsigned int ProgramAreaCRC; 
- ShowPostInfo(45,"固件完整性检查\0","5A",Msg_Statu);
+ ShowPostInfo(45,"固件完整性检查\0","0E",Msg_Statu);
  //检查option byte是否开启
  FLASH_GetOptionByteStatus(&Option);
- if(Option.MainSecurity != 0)
+ if(Option.MainSecurity != 0||*(u32 *)CRCWordAddress!=0xFFFFFFFF)
     { 
 		//读取UID
 		if(M24C512_ReadUID(UIDBUF,15))	 
 			{
-			ShowPostInfo(45,"存储器读取异常\0","E5",Msg_Fault);
+			ShowPostInfo(45,"存储器读取异常\0","E8",Msg_Fault);
 			SelfTestErrorHandler();
 			} 
 		if(M24C512_ReadSecuSct(OTPData,0x00,16))
 			{
-			ShowPostInfo(45,"安全密钥读取异常\0","EF",Msg_Fault);
+			ShowPostInfo(45,"安全密钥读取异常\0","EA",Msg_Fault);
 			SelfTestErrorHandler();
 			} 
 		//准备计算和检查CRC
@@ -118,7 +122,7 @@ void CheckForFlashLock(void)
     MakeCRCVendorString(UIDBUF,ProgramAreaCRC);
 		for(i=0;i<16;i++)if(*(u32 *)CRCWordAddress!=ProgramAreaCRC||UIDBUF[i]!=OTPData[i]) //进行UID字符检查，如果检查不通过则直接锁死
 			{
-			ShowPostInfo(45,"固件已被篡改!","EC",Msg_Fault);
+			ShowPostInfo(45,"固件已被篡改!","EB",Msg_Fault);
 			SelfTestErrorHandler();
 			}
     return;
@@ -135,7 +139,7 @@ void CheckForFlashLock(void)
  //编程程序的CRC32值
  if(M24C512_ReadUID(UIDBUF,15))	 
 	 {
-	 ShowPostInfo(45,"存储器读取异常\0","E5",Msg_Fault);
+	 ShowPostInfo(45,"存储器读取异常\0","E8",Msg_Fault);
 	 SelfTestErrorHandler();
 	 } 
  ProgramAreaCRC=MainProgramRegionCRC(UIDBUF);
@@ -146,7 +150,7 @@ void CheckForFlashLock(void)
  MakeCRCVendorString(UIDBUF,ProgramAreaCRC);	 
  if(M24C512_WriteSecuSct(UIDBUF,0x00,16))
 	 	{
-		ShowPostInfo(45,"安全密钥写入失败\0","EE",Msg_Fault);
+		ShowPostInfo(45,"安全密钥写入失败\0","EC",Msg_Fault);
 		SelfTestErrorHandler();
 		} 
  //打开主安全功能
@@ -155,10 +159,11 @@ void CheckForFlashLock(void)
  for(i=0;i<4;i++)Option.WriteProtect[i]=0xFFFFFFFF;//所有ROM上锁
  FLASH_EraseOptionByte();
  if(FLASH_ProgramOptionByte(&Option)!=FLASH_COMPLETE)return;
- ShowPostInfo(45,"检测到首次启动\0","5B",Msg_Warning); 		
+ ShowPostInfo(45,"检测到首次启动\0","0F",Msg_INFO); 		
  delay_Second(1);
- ShowPostInfo(45,"系统固件已锁定\0","5C",Msg_Warning);	
+ ShowPostInfo(45,"系统固件已锁定\0","0F",Msg_INFO);	
  delay_Second(1);
  NVIC_SystemReset();  //刷完之后重启
  while(1);
+ #endif
  }

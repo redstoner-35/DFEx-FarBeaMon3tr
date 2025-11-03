@@ -1,6 +1,7 @@
 #include "GUI.h"
 #include "Config.h"
 #include "delay.h"
+#include "LogSystem.h"
 #include "ADC.h"
 #include "IP2366_REG.h"
 
@@ -151,7 +152,8 @@ void QuickAccesSelProc(void)
 	if(TempChargeConfig&&IsEnterDischargeMode)IsEnterDischargeMode=false;
 	//配置系统内关闭存储模式后存储模式开关不允许打开
 	if(CfgData.StorageModeINROM==StorageMode_OFF&&IsTempEnableStorageMode)IsTempEnableStorageMode=false;
-	//开启存储模式且电池电压过低时禁止开启仅放电
+	//系统当前处于安全充电模式，或者开启存储模式且电池电压过低时禁止开启仅放电
+	if(IsBootFromVBUS)IsEnterDischargeMode=false;
 	if(IsTempEnableStorageMode&&!IP2366_IsEnableDischarge(ADCO.Vbatt))IsEnterDischargeMode=false;
 	}
 

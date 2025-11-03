@@ -52,6 +52,11 @@ typedef struct
 	IP2366OutConfigDef OutputConfig;
 	VBatLowDef Vlow;
 	PDOBroadcastDef PDOCFG;
+	//输入系统配置
+	bool EnableSmartSinkPower;          //智能自充功率功能（开启后系统将根据开启充电时的系统温度自动配置合适的自充功率）
+  bool EnableAutoPowerSave;           //自动省电模式，在充满电20秒后让适配器关闭快充，进入5V模式		
+	ChargePowerDef MaxSnkPower;         //最大的输入sink功率
+	IP2366SinkProtocolDef SinkConfig;
 	//安全设置
 	bool EnableHPGauge; //开启高精度GTypeC输入计量
   bool EnableAdvAccess; //开启开发者菜单的一键访问		
@@ -122,7 +127,6 @@ extern StorageModeDef StorageMode; //存储模式缓存
 #define CfgChecksum CfgUnion.ROMImage.CRCResult
 
 //函数
-
 bool CheckIfConfigOK(bool IsBackup);  //检查指定的配置文件状态
 void SyncUnResetThings(CfgUnionDef *IN);  //检测出厂设置时同步不需要更改的内容
 bool CheckIfConfigIsSame(void); //配置相同

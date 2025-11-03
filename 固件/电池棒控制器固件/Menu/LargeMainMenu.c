@@ -152,6 +152,7 @@ static void RenderBattState(void)
 	bool IsShowBatt;
 	extern bool IsSystemOverheating;
 	extern bool OCState;
+	extern IP2366ResetCPortProcDef IPSinkState;
 	extern bool IsDispChargingINFO;
 	extern bool IsEnableTempChargeOnly;
 	//检测UI是否结束渲染
@@ -171,7 +172,7 @@ static void RenderBattState(void)
 	else if(IsEnableTempChargeOnly||!DCDCOutputBit)Color=LIGHTBLUE; //非存储模式下开启仅充电，电池电压为淡蓝色
 	else Color=LIGHTGREEN; //都没有开启则绿色
 	//显示电池电压
-	LCD_ShowFloatNum1(3,3,VBat,2,Color,BLACK,24);
+	LCD_ShowFloatNum1(3,3,VBat,VBat<10?3:2,Color,BLACK,24);
 	LCD_ShowChar(73,3,'V',Color,BLACK,24,0);
 	//电流
 	LCD_Fill(3,28,84,76,BLACK);
@@ -237,6 +238,8 @@ static void RenderBattState(void)
 			LCD_ShowChinese(132,64,"故障\0",RED,BLACK,0);
 		else if(OCState)
 			LCD_ShowChinese(132,64,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
+		
+	  else if(IPSinkState!=IP2366_CPort_Reseted)LCD_ShowChinese(132,64,"充满\0",LIGHTGREEN,BLACK,0);
 		else switch(BATT)			//根据枚举状态显示
 			{
 			case Batt_StandBy:LCD_ShowChinese(132,64,"待机\0",WHITE,BLACK,0);break;
