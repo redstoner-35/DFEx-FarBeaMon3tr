@@ -47,6 +47,9 @@ static bool IsUpDateGUI;
 static char WaitBackToContinue=0;
 static bool IsCapTestRunning=false;	
 	
+//外部函数
+void PreChargeCurrentAutoUpdate(void);	
+	
 //获取容量测试是否在执行
 bool GetIfCapTestRunning(void)
 	{
@@ -334,9 +337,7 @@ void CTestGUIHandler(void)
 		  else if(Power<1000)LCD_ShowFloatNum1(67,41,Power,1,WHITE,LGRAY,12);
 		  else LCD_ShowIntNum(67,41,iroundf(Power),4,WHITE,LGRAY,12);
 		  LCD_ShowString(112,41,"Ah",WHITE,LGRAY,12,0);
-		  LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			ShowPressExitToLeave();
 		  break;
 	  //确认退出
 		case CapTest_ConfirmForceStopTest:
@@ -352,9 +353,7 @@ void CTestGUIHandler(void)
 		//异常退出
 		case CapTest_EndERROR:
 			LCD_ShowChinese(28,22,"容量测试异常结束",RED,LGRAY,0);
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			ShowPressExitToLeave();
 		  break;
 	  //正在充放电
 	  case CapTest_ErrorDischarging:
@@ -366,9 +365,7 @@ void CTestGUIHandler(void)
 		  LCD_ShowChinese(50,41,"电中",RED,LGRAY,0);
  		  LCD_ShowChar(74,41,',',RED,LGRAY,12,0);  
 			LCD_ShowChinese(83,41,"请移除线材",RED,LGRAY,0);
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			ShowPressExitToLeave();
 		  break;
 		case CapTest_WaitSwitchingSafeMode:	
 			LCD_ShowChinese(20,19,"充电测容进行中",CYAN,LGRAY,0);
@@ -379,23 +376,17 @@ void CTestGUIHandler(void)
 		case CapTest_ErrorStorageModeEnabled:
 			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
 		  LCD_ShowChinese(21,41,"长期存储模式已激活",YELLOW,LGRAY,0);
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			ShowPressExitToLeave();
 		  break;		
 		case CapTest_ErrorChipHang:
 			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
 		  LCD_ShowChinese(21,41,"充放电管理芯片异常",RED,LGRAY,0);
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			ShowPressExitToLeave();
 		  break;
 		case CapTest_ErrorBattToHigh:
 			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
       ShowVBatStartVoltage();
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		  LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			ShowPressExitToLeave();
 		  break;
 		}
 	//渲染完毕
@@ -406,6 +397,7 @@ void CTestGUIHandler(void)
 void CTestFSMHandler(void)
 	{
 	extern bool OCState;
+	bool LastCTestState;
 	//状态机	
 	switch(CFSMState)
 		{
@@ -487,11 +479,16 @@ void CTestFSMHandler(void)
 		   IsUpDateGUI=false; //发送指令重绘GUI
 			 CFSMState=CapTest_Finish;
 		   IsCapTestRunning=false;   //容量测试已经成功充满，可以开启省电模式了
-			 CurrentTestResult.Data.IsDataValid=true;
+		   LastCTestState=CurrentTestResult.Data.IsDataValid;
+			 CurrentTestResult.Data.IsDataValid=true;             //记录下之前容量测试的结果并设置为结果有效可以查看
 			 CurrentTestResult.Data.MaxChargeRatio=(CurrentTestResult.Data.MaxChargeCurrent*1000)/CurrentTestResult.Data.TotalmAH; //最大C数等于最大电流/总容量
 			 memcpy(CTestData.ROMImage.Data.ByteBuf,CurrentTestResult.ByteBuf,sizeof(ChargeTestUnionDef)); //更新当前测容数据
 			 WriteCapData(&CurrentTestResult,false);
-		   break;
+		   //如果本次容量测试进行之前，没有完成过首次测试，则在测试结束后，自动的根据电池容量设置预充电流
+		   if(LastCTestState)break;
+		   PreChargeCurrentAutoUpdate();              
+			 WriteConfiguration(&CfgUnion,false);       //容量测试完毕后自动更新预充电流并保存结果
+			 break;
 		//测容运行中
 		case CapTest_Running:	
 			if(VBUSReConnectTimeCounter)CFSMState=CapTest_WaitSwitchingSafeMode;

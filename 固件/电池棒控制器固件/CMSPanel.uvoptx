@@ -153,24 +153,7 @@
           <Name>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC1000 -FN2 -FF0HT32F -FS00 -FL0100000 -FF1HT32F_OPT -FS11FF00000 -FL11000 -FP0($$Device:HT32F52352_33QFN$ARM\Flash\HT32F.FLM) -FP1($$Device:HT32F52352_33QFN$ARM\Flash\HT32F_OPT.FLM))</Name>
         </SetRegEntry>
       </TargetDriverDllRegistry>
-      <Breakpoint>
-        <Bp>
-          <Number>0</Number>
-          <Type>0</Type>
-          <LineNumber>309</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>13530</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>D:\Projects\Union-Projects\DFEx-FarBeaMon3tr\鍥轰欢\鐢垫睜妫掓帶鍒跺櫒鍥轰欢\Menu\AdapterEmulationMenu.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\CMSPanel\Menu/AdapterEmulationMenu.c\309</Expression>
-        </Bp>
-      </Breakpoint>
+      <Breakpoint/>
       <WatchWindow1>
         <Ww>
           <count>0</count>
@@ -1731,6 +1714,30 @@
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
+    <File>
+      <GroupNumber>9</GroupNumber>
+      <FileNumber>120</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\Menu\PreChargeEndVoltSetMenu.c</PathWithFileName>
+      <FilenameWithoutPath>PreChargeEndVoltSetMenu.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>9</GroupNumber>
+      <FileNumber>121</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\Menu\PreChargeCurrentAutoSet.c</PathWithFileName>
+      <FilenameWithoutPath>PreChargeCurrentAutoSet.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
   </Group>
 
   <Group>
@@ -1741,7 +1748,7 @@
     <RteFlg>0</RteFlg>
     <File>
       <GroupNumber>10</GroupNumber>
-      <FileNumber>120</FileNumber>
+      <FileNumber>122</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -1753,7 +1760,7 @@
     </File>
     <File>
       <GroupNumber>10</GroupNumber>
-      <FileNumber>121</FileNumber>
+      <FileNumber>123</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -1765,7 +1772,7 @@
     </File>
     <File>
       <GroupNumber>10</GroupNumber>
-      <FileNumber>122</FileNumber>
+      <FileNumber>124</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>

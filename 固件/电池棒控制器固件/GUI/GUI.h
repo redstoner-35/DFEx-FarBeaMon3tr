@@ -101,6 +101,8 @@ typedef struct
 	}MenuConfigDef;	
 	
 //菜单entry
+extern const MenuConfigDef PreChargeAutoSetMenu;
+extern const MenuConfigDef PreChargeEndSetMenu;
 extern const MenuConfigDef QueryPDOListMenu;
 extern const MenuConfigDef SinkPowerSetMenu;
 extern const MenuConfigDef LegacySinkProtocolMenu;
@@ -197,6 +199,7 @@ const char *QueryPostDoneID(void);
 extern bool IsEnableAdvancedMode; //是否开启高级模式
 	
 //外部调用的显示函数
+void ShowPressExitToLeave(void);  //显示按下ESC退出
 void DoThingsBeforeOFF(void); //系统关机前执行菜单的善后函数
 void ClearMenuIndex(void);  //清除菜单index
 void ShowTimeCode(u16 y,long Time);  //根据传入的秒数显示时间

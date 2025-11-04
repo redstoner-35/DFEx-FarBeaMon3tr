@@ -53,9 +53,7 @@ void DisplayResetOK(void)
 		case Reset_ColumbGauge:LCD_ShowChinese(28,23,"已将库仑计恢复为",WHITE,LGRAY,0);break;
 		}
 	LCD_ShowChinese(47,37,"出厂默认值",WHITE,LGRAY,0);
-	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	ShowPressExitToLeave();
 	//已恢复出厂设置
 	IsResetRendered=true;
 	}

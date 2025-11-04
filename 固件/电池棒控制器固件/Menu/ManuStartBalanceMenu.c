@@ -146,9 +146,7 @@ void BalMenuGUIHandler(void)
 			LCD_ShowChinese(28,35,"手动均衡异常结束",RED,LGRAY,0);
 		  break;
 		}
-	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-	LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	ShowPressExitToLeave();
 	IsUpdateBalUI=false;
 	}
 	

@@ -430,6 +430,19 @@ bool IP2366_SetInputState(IP2366InputDef * Cfg,bool IsSetChargePower)
 	//设置完毕
 	return true;
 	}	
+
+//根据系统充放电状态智能更新涓流电压的函数
+void IP2366_DynamicUpdateVlow(VBatLowDef Vlow)
+	{
+	char buf;
+	VBatLowDef CurrentVlow;
+	//获取当前电流参数
+	if(!IP2366_ReadReg(&buf,REG_SYSCTL10))return;
+	buf&=0x0E;
+	CurrentVlow=(VBatLowDef)(buf>>5)&0x07;
+  //当前系统电流参数和预期值不一致，更新Vlow
+  if(CurrentVlow!=Vlow)IP2366_SetVLowVolt(Vlow);
+	}	
 	
 //内置非阻塞轮询功能的电流设置函数
 void IP2366_SetICCMax(int TargetCurrent)	

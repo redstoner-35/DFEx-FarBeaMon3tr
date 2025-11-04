@@ -268,7 +268,7 @@ extern const IP2366FWCapDef *CurrentIP2366FW;
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
-
+void IP2366_DynamicUpdateVlow(VBatLowDef Vlow);	//根据系统充放电状态智能更新涓流电压的函数
 bool IP2366_GetRecvPDOList(RecvPDOListDef *Result);	//获取输入广播的list状态
 bool IP2366_UpdateSinkPower(ChargePowerDef Power); //更新系统的充电输入（Sink模式）的功率
 bool IP2366_SetSinkProtocol(IP2366SinkProtocolDef *Cfg); //IP2366设置输入快充协议（不影响对外输出）

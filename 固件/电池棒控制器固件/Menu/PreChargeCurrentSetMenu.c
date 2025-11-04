@@ -12,7 +12,7 @@ const intEditMenuCfg PreChargeCurrentEdit=
 	{
 	&CfgData.InputConfig.PreChargeCurrent, //数据源
 	100,
-	2000, //100-2000mA
+	1500, //100-1500mA
 	50, //LSB=50mA
 	"mA", //毫安
 	"寿命",

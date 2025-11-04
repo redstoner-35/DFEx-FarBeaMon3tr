@@ -33,7 +33,8 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 		}
 	//存储模式和低压保护配置
 	IN->ROMImage.Data.Data.StorageModeINROM=StorageMode_OFF;	
-	IN->ROMImage.Data.Data.Vlow=VLow_2V8;
+	IN->ROMImage.Data.Data.Vlow=VLow_2V5;
+	IN->ROMImage.Data.Data.PreChargeEndVoltage=VLow_3V0;   //预充截止电压设置为3V
 	//固定挡位PDO配置	
 	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable12VPDOSet=false;
 	IN->ROMImage.Data.Data.FixedPDOCfg.IsEnable15VPDOSet=false;
@@ -333,6 +334,15 @@ void LoadConfig(void)
 		delay_Second(1);
 		IsNeedToUpgrade=true;					
 		}
+		
+	if(CfgData.PreChargeEndVoltage<VLow_2V8)
+		{
+		CfgData.PreChargeEndVoltage=VLow_2V8;
+		ShowPostInfo(35,"涓流电压配置非法\0","WE",Msg_Warning);
+		delay_Second(1);
+		IsNeedToUpgrade=true;		
+		}		
+
 	//需要更新配置
 	if(IsNeedToUpgrade)
 		{

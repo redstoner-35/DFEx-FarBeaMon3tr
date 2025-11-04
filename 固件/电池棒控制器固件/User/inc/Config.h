@@ -53,6 +53,7 @@ typedef struct
 	VBatLowDef Vlow;
 	PDOBroadcastDef PDOCFG;
 	//输入系统配置
+	VBatLowDef PreChargeEndVoltage;     //预充电结束电压（电池电压高于该数值后，系统由低电流涓流充电转为恒流充电）
 	bool EnableSmartSinkPower;          //智能自充功率功能（开启后系统将根据开启充电时的系统温度自动配置合适的自充功率）
   bool EnableAutoPowerSave;           //自动省电模式，在充满电20秒后让适配器关闭快充，进入5V模式		
 	ChargePowerDef MaxSnkPower;         //最大的输入sink功率

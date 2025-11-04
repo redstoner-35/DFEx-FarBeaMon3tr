@@ -70,7 +70,13 @@ void ClearMenuIndex(void)
 	SetupMenuIdx=0;
 	}	
 	
-
+void ShowPressExitToLeave(void)
+	{
+	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
+	LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
+	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);	
+	}
+	
 //在关机前执行退出构造函数
 void DoThingsBeforeOFF(void)
 	{

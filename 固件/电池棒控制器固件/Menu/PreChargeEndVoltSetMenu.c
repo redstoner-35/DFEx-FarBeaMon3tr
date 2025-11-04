@@ -2,26 +2,8 @@
 #include "Config.h"
 #include "IP2366_REG.h"
 
-const EnumEditEntryDef LVCfg[9]=
+const EnumEditEntryDef PreChargeEndCfg[6]=
 	{
-		{
-		"2500mV(2.5V)",
-	  false,
-		VLow_2V5,
-		false,
-		},
-		{
-		"2600mV(2.6V)",
-	  false,
-		VLow_2V6,
-		false,
-		},
-		{
-		"2700mV(2.7V)",
-	  false,
-		VLow_2V7,
-		false,
-		},
 		{
 		"2800mV(2.8V)",
 	  false,
@@ -60,32 +42,36 @@ const EnumEditEntryDef LVCfg[9]=
 		}
 	};
 
-int ReadLVEnumValue(void)
+int ReadPreChargeEnumValue(void)
 	{
+	//非法的参数值，返回2V8
+  if(CfgData.PreChargeEndVoltage<VLow_2V8)return (int)VLow_2V8;	
 	//返回充电功率的enum值
-	return (int)CfgData.Vlow;
+	return (int)CfgData.PreChargeEndVoltage;
 	}
 	
-void FedLVEnumValue(int Input)
+void FedPreChargeEnumValue(int Input)
 	{
-	CfgData.Vlow=(VBatLowDef)Input;
-	SwitchingMenu(&SetMainMenu);
+	CfgData.PreChargeEndVoltage=(VBatLowDef)Input;
+	if(CfgData.PreChargeEndVoltage<VLow_2V8)
+		CfgData.PreChargeEndVoltage=VLow_2V8; //涓流结束电压不允许设置低于2.8V
+	SwitchingMenu(&ChgSysSetMenu);
 	}
 
-const MenuConfigDef LVSetMenu=
+const MenuConfigDef PreChargeEndSetMenu=
 	{
 	MenuType_EnumSetup,
 	//布尔类的入口
 	NULL,
 	//枚举编辑的入口
-	LVCfg,
-  &ReadLVEnumValue,
-  &FedLVEnumValue,		
+	PreChargeEndCfg,
+  &ReadPreChargeEnumValue,
+  &FedPreChargeEnumValue,		
 	//特殊渲染的处理
 	NULL, //渲染函数
 	NULL, //按键处理
 	//主设置菜单
-	"放电低压保护配置",
+	"预充电结束电压设置",
 	NULL,
 	NULL,
 	NULL, 

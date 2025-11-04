@@ -37,9 +37,7 @@ void DisplayCfgSyncProcessOK(void)
 	//写入完毕，回到之前的状态
 	UsingBackupConfig=LastBackupState;
 	
-	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	ShowPressExitToLeave();
 	IsResetRendered=true;
 	}
 
@@ -89,9 +87,7 @@ void ReadBackupConfigBack(void)
 		}		
 		
 	//读取完毕	
-	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	ShowPressExitToLeave();
 	IsResetRendered=true;	
 	}
 	
@@ -140,9 +136,7 @@ void DiscardCurrentPendingChanges(void)
 		}		
   
 	//读取完毕	
-	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	ShowPressExitToLeave();
 	IsResetRendered=true;		
 	}
 	
@@ -179,9 +173,7 @@ void SaveCurrentChanges(void)
 	else 
 		LCD_ShowChinese(21,37,"系统设置保存失败",RED,LGRAY,0);
 	//读取完毕	
-	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-  LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	ShowPressExitToLeave();
 	IsResetRendered=true;		
 	}	
 	

@@ -46,6 +46,16 @@ void EnterSinkPowerMenu(void)
 	SwitchingMenu(&SinkPowerSetMenu);
 	}	
 	
+void EnterPreChargeEndMenu(void)
+	{
+	SwitchingMenu(&PreChargeEndSetMenu);
+	}
+	
+void EnterPreChargeAutoSetMenu(void)
+	{
+	SwitchingMenu(&PreChargeAutoSetMenu);
+	}
+
 //菜单项参数
 static bool EnableMaxVPDConfig=false;
 static bool EnableSinkPwrConfig=false;
@@ -62,7 +72,7 @@ void SetEnableMaxVPDConfig(void)
 	else EnableMaxVPDConfig=false;
 	}	
 
-const SetupMenuSelDef ChargeSystemSetup[9]=
+const SetupMenuSelDef ChargeSystemSetup[11]=
 	{
 		{
 		"电池峰值电流设置",
@@ -75,6 +85,12 @@ const SetupMenuSelDef ChargeSystemSetup[9]=
 		false,
 		&AlwaysTrue,
 		&EnterPreChargeIset
+		},
+		{
+		"预充电结束电压设置",
+		false,
+		&AlwaysTrue,		
+		&EnterPreChargeEndMenu
 		},
 		{
 		"恒压充电电压设置",
@@ -111,6 +127,12 @@ const SetupMenuSelDef ChargeSystemSetup[9]=
 		false,
 	  &EnableSinkPwrConfig,		
 		&EnterSinkPowerMenu
+		},
+{
+		"预充电流自动设置",
+		false,
+		&AlwaysTrue,
+		&EnterPreChargeAutoSetMenu
 		},
 		{
 		"\0",

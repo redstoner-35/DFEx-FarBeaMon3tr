@@ -155,9 +155,7 @@ static void AdapterInitFaultHandler(void)
 		case Error_SysNotInDischarge:LCD_ShowChinese(17,37,"系统处于非正常模式",YELLOW,LGRAY,0);break;
 		case Error_SysFaultAsserted:LCD_ShowChinese(32,37,"系统出现故障",YELLOW,LGRAY,0);break;
 		}		
-	LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-	LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-	LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+	ShowPressExitToLeave();
 	//显示结束，标记结果已更新
 	IsErrorShown=true;
 	}	
@@ -452,9 +450,7 @@ void AdapterEmuRender(void)
 		  RenderMenuBG();
 		  if(EmuState==AdapEmu_StopDueToLowBatt)LCD_ShowChinese(10,22,"电池电量过低，模拟停止",RED,LGRAY,0);
 		  else LCD_ShowChinese(10,22,"系统出现故障，模拟停止",RED,LGRAY,0);
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-			LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-			LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);	
+			ShowPressExitToLeave();
 	    //模拟异常停止后，复位CC口继电器
 			if(IsCPortTriggerOK&&IsEnabledFakeAToCMode)
 				{

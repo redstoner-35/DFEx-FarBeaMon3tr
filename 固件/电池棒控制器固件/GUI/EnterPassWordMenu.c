@@ -72,9 +72,7 @@ void PassWordMenuRender(const PasswordInputDef *CFG)
 		LCD_ShowChinese(22,39,"请在",WHITE,LGRAY,0);
 		LCD_ShowIntNum(49,39,(AttackLockDelay/8)>0?AttackLockDelay/8:1,3,RED,LGRAY,12);
 		LCD_ShowChinese(72,39,"秒后再尝试",WHITE,LGRAY,0);
-		LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-		LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-		LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+		ShowPressExitToLeave();
 		//按键处理
 		IsPWUpdated=true;
 		if(KeyState.KeyEvent==KeyEvent_ESC&&CFG->ThingsToDoWhenExit!=NULL)CFG->ThingsToDoWhenExit();	

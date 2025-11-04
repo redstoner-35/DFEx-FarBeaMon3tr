@@ -1019,6 +1019,16 @@
               <FileType>1</FileType>
               <FilePath>.\Menu\QueryPDOBroadcastMenu.c</FilePath>
             </File>
+            <File>
+              <FileName>PreChargeEndVoltSetMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\PreChargeEndVoltSetMenu.c</FilePath>
+            </File>
+            <File>
+              <FileName>PreChargeCurrentAutoSet.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\PreChargeCurrentAutoSet.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

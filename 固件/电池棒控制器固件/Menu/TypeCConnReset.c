@@ -77,16 +77,12 @@ void TypeCResetRender(void)
 		case TCResetFSM_Success:
 			LCD_ShowString(24,26,"Type-C",GREEN,LGRAY,12,0);
 			LCD_ShowChinese(67,26,"链路已重置",GREEN,LGRAY,0);  
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-			LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-			LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);
+			ShowPressExitToLeave();
 		  break;
 		case TCResetFSM_Failed:
 			LCD_ShowString(19,26,"Type-C",RED,LGRAY,12,0);
 			LCD_ShowChinese(63,26,"链路重置失败",RED,LGRAY,0);  
-			LCD_ShowChinese(32,61,"按下",WHITE,LGRAY,0);
-			LCD_ShowString(59,61,"ESC",YELLOW,LGRAY,12,0);
-			LCD_ShowChinese(86,61,"以退出",WHITE,LGRAY,0);		
+			ShowPressExitToLeave();
 			break;
 		default:
 			LCD_ShowChinese(18,32,"正在重置",WHITE,LGRAY,0);

@@ -511,15 +511,22 @@ void IP2366_ReInitBasedOnConfig(void)
 	IP2366_ClearOCFlag(); //移除OC Flag
 	}	
 
-//根据配置动态计算和设置2366的限流
+//根据配置动态计算和设置2366的限流以及浮充截止电压
 void IP2366_SetIBatLIMBaseOnSysCfg(void)
 	{
 	int Current;
+	VBatLowDef DesiredVlow;
+	bool result=IP2366_GetIfInputConnected();
+	//设置低电压保护和预期浮充截止电压
+	if(result)DesiredVlow=CfgData.PreChargeEndVoltage;   //充电模式连接，更新充电结果
+	else DesiredVlow=CfgData.Vlow;    //放电模式使用低电压保护值
 	//计算动态限流
-	if(IP2366_GetIfInputConnected())Current=CfgData.InputConfig.ChargeCurrent; //充电模式已连接，设置为充电限流
+	if(result)Current=CfgData.InputConfig.ChargeCurrent; //充电模式已连接，设置为充电限流
 	else Current=CfgData.InputConfig.ChargeCurrent>CurrentIP2366FW->IP2366ICCMAX?CfgData.InputConfig.ChargeCurrent:CurrentIP2366FW->IP2366ICCMAX; //为了确保放电正常运行，当充电未接入时设置为9.7A限流(如果电池限流比这个大那就设置为9700)
 	//设置ICCMAX寄存器	
 	IP2366_SetICCMax(Current); 
+	//设置Vlow寄存器实现可调涓流电压的功能
+	IP2366_DynamicUpdateVlow(DesiredVlow);
 	}
 	
 //尝试恢复IP2366
