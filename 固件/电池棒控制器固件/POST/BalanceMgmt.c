@@ -16,7 +16,8 @@ bool BalanceState=false;
 int BalanceDisableTIM=0; //暂时关闭均衡的计时器
 int ChargeFullTIM=0; //充电满充计时器
 
-//内部全局和常亮
+//内部全局变量
+static int WaitChargingBeginTIM;
 static bool BalTypeCConnectedState=false; //均衡连接状态
 
 //配置均衡控制器
@@ -42,6 +43,7 @@ void BalanceMgmt_Init(void)
 		SelfTestErrorHandler();
 		}
 	//应用校准数据
+	WaitChargingBeginTIM=80; //开始充电等待10秒才进入
 	ShowPostInfo(53,"应用ADC校准数据","13",Msg_Statu);
 	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor);
 	}
@@ -58,7 +60,16 @@ static void Balance_ExtendBalMgmt(void)
 	{
 	bool State;
 	float BalValue;
+	BatteryStateDef SysState;
 	extern bool EnableManuBal;
+	extern bool IsUserForceDisableAutoCharge;
+	//系统开始充电，倒计时
+	IP2366_GetChargerState(&SysState);	
+  if(SysState==Batt_StandBy||SysState==Batt_discharging)WaitChargingBeginTIM=80;
+	else if(WaitChargingBeginTIM>0)WaitChargingBeginTIM--;		
+	
+	//电池电压还没到或者是倒计时未结束，不允许执行检测流程
+	if(ADCO.Vbatt<=10.1||WaitChargingBeginTIM)return; 	
 	//检测TypeC状态
 	State=IP2366_GetIfInputConnected();
 	if(BalTypeCConnectedState==State)return;
@@ -67,7 +78,8 @@ static void Balance_ExtendBalMgmt(void)
 	if(!BalTypeCConnectedState||BalanceForceEnableTIM>0)return;                //检测输入状态
 	if(CfgData.BalanceMode==Balance_Diasbled)BalValue=11.50;	
 	else BalValue=16.50; //根据均衡器模式选定需要自动均衡的时间	
-	if(LogData.UnbalanceBatteryAh<BalValue)return; //循环次数还没到
+	
+	if(IsUserForceDisableAutoCharge||LogData.UnbalanceBatteryAh<BalValue)return; //循环次数还没到或者是用户在本次开机强制退出均衡
 	SwitchingMenu(&AutoBALMenu);	//进入自动均衡
 	}	
 

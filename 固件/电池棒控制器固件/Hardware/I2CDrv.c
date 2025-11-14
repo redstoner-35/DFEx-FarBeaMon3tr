@@ -10,7 +10,7 @@ const char I2CSlaveADDR[]={IP2366ADDR,M24C512ADDR,M24C512SecuADDR};
 unsigned char SMIOADDR=0; //SMBUS IO扩展器的地址
 
 //I2C延时
-#define IIC_delay() delay_us(4)
+#define IIC_delay() delay_us(3)
 
 //static void IIC_delay(void)
 //  {

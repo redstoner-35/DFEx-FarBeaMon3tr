@@ -54,8 +54,8 @@
 
 #elif defined(USING_LED_NBT160)
 
-	#message "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=29A."
-	#define TurboICCMAX 29000
+	#message "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=34A."
+	#define TurboICCMAX 34500
 
 //安全保护机制，请勿修改！！！！
 #else
@@ -72,7 +72,7 @@
   
   //竞技模式下的电流定义
   #if (TurboICCMAX < 32000UL)
-     #define ECOTurboICCMAX TurboICCMAX-7000
+     #define ECOTurboICCMAX TurboICCMAX-7500
   #else
 	   //经济模式极亮限制在26A
 	   #define ECOTurboICCMAX 26000

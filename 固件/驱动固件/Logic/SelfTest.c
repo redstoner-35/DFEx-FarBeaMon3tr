@@ -111,7 +111,7 @@ void OutputFaultDetect(void)
 			OErrID=0;
 			}
 		//输出开路检测
-		else if(Data.FBInjectVolt<0.5&&Data.OutputVoltage>22.5) 
+		else if(Data.FBInjectVolt<0.5&&Data.OutputVoltage>22.8) 
 			{
 			buf=ErrTIMCounter(buf,1); //计时器累计
 			OErrID=1;

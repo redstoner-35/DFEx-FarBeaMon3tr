@@ -333,7 +333,6 @@ void LCD_ShowChar(u16 x,u16 y,u8 num,u16 fc,u16 bc,u8 sizey,u8 mode)
 	switch(sizey)
 		{
 		case 12:temp=&ascii_1206[num-' '][0];break;  //调用6x12字体
-		case 16:temp=&ascii_1608[num-' '][0];break;  //调用8x16字体
 		case 24:temp=&ascii_2412[num-' '][0];break;  //调用12*24字体
 	  default : return; //其余字体字库内没有，不显示
 		}

@@ -92,6 +92,9 @@ int main(void)
  ShowPostInfo(100,"系统初始化完成",(char *)QueryPostDoneID(),Msg_POSTOK);
  delay_ms(!CfgData.EnableFastBoot?400:150); //关闭快速启动则多延时一会让人可以看清
  ClearScreen();
+ //根据设置，执行菜单切换
+ if(CfgData.InstantCTest==InstantCTest_EnteredOK)SwitchingMenu(&CapTestMenu); //一次性测容条件满足直接进入测容菜单
+ else SwitchingMenu(CfgData.EnableLargeMenu?&LargeMainMenu:&MainMenu);        //否则切换到主菜单
  SensorRefreshFlag=false; //清除flag
  #ifndef EnableDebugMode
  WatchDog_Init(); //启动看门狗

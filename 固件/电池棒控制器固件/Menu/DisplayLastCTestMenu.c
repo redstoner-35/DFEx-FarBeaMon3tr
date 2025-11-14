@@ -5,11 +5,11 @@
 #include "Config.h"
 
 //内部变量
-static bool ShowMenuState;
+static char ShowMenuState=0;
 static bool IsUpdateCUI=false;
 
 //显示GUI下半部分
-void ShowLowerPart(void)
+static void ShowLowerPart(void)
 	{
 	u16 Color;
 	float Temp;
@@ -62,9 +62,28 @@ void ShowLowerPart(void)
 	LCD_ShowFloatNum1(98,64,LastCData.MaxVbatt,2,Color,LGRAY,12);
 	LCD_ShowChar(147,64,'V',WHITE,LGRAY,12,0);	
 	}
-
+	
+//内部函数，显示冲入容量的
+static void DisplayCTestAh(char Y,float Value,char *Str)
+	{
+	LCD_ShowChinese(3,Y,Str,WHITE,LGRAY,0);		
+	if(Value<10000) //小于10Ah使用mAH显示
+		{
+		LCD_ShowIntNum(87,Y,iroundf(Value),4,WHITE,LGRAY,12);
+		LCD_ShowString(129,Y,"mAh",WHITE,LGRAY,12,0);
+		}
+	else //使用浮点显示
+		{
+	  Value/=(float)1000;			
+		if(Value<100)LCD_ShowFloatNum1(87,Y,Value,2,WHITE,LGRAY,12);  //99.99显示
+		else if(Value<100)LCD_ShowFloatNum1(87,Y,Value,1,WHITE,LGRAY,12);  //999.9显示
+		else LCD_ShowIntNum(87,Y,iroundf(Value),5,WHITE,LGRAY,12); //9999显示
+		LCD_ShowString(138,Y,"Ah",WHITE,LGRAY,12,0);
+		}
+	}	
+	
 //显示菜单的上半部分
-void ShowUpperPart(void)
+static void ShowUpperPart(void)
 	{
 	float buf;
 	//显示时间
@@ -79,32 +98,37 @@ void ShowUpperPart(void)
 	else LCD_ShowIntNum(87,35,iroundf(buf),5,WHITE,LGRAY,12); //9999显示
 	LCD_ShowString(138,35,"Wh",WHITE,LGRAY,12,0);
 	//显示冲入Ah数
-	LCD_ShowChinese(3,49,"充入容量",WHITE,LGRAY,0);		
-	buf=LastCData.TotalmAH;
-	if(buf<10000) //小于10Ah使用mAH显示
-		{
-		LCD_ShowIntNum(87,49,iroundf(buf),4,WHITE,LGRAY,12);
-		LCD_ShowString(129,49,"mAh",WHITE,LGRAY,12,0);
-		}
-	else //使用浮点显示
-		{
-	  buf/=(float)1000;			
-		if(buf<100)LCD_ShowFloatNum1(87,49,buf,2,WHITE,LGRAY,12);  //99.99显示
-		else if(buf<100)LCD_ShowFloatNum1(87,49,buf,1,WHITE,LGRAY,12);  //999.9显示
-		else LCD_ShowIntNum(87,49,iroundf(buf),5,WHITE,LGRAY,12); //9999显示
-		LCD_ShowString(138,49,"Ah",WHITE,LGRAY,12,0);
-		}
-	//显示最高充电电流
-	LCD_ShowChinese(3,64,"最高充电电流",WHITE,LGRAY,0);		
-	LCD_ShowFloatNum1(87,64,LastCData.MaxChargeCurrent,2,WHITE,LGRAY,12);
-	LCD_ShowChar(147,64,'A',WHITE,LGRAY,12,0);	
+  DisplayCTestAh(49,LastCData.TotalmAH,"充入容量");
+	//显示等效Ah数
+	buf=LastCData.TotalWh/(3.6*BATTCOUNT);
+	buf*=1000;                         			//根据Wh以电池节数和3.6V的标称容量换算等效结果并转换为mAh
+	DisplayCTestAh(64,buf,"等效容量");	
 	}
+
+static void ShowLowestPart(void)
+	{
+	//显示最高充电电流
+	LCD_ShowChinese(3,21,"最高充电电流",WHITE,LGRAY,0);		
+	LCD_ShowFloatNum1(87,21,LastCData.MaxChargeCurrent,2,WHITE,LGRAY,12);
+	LCD_ShowChar(147,21,'A',WHITE,LGRAY,12,0);	
+	}
+	
 //容量显示的按键处理
 void CapHisKeyHandler(void)
 	{
 	//上下翻页
-	if(KeyState.KeyEvent==KeyEvent_Down)ShowMenuState=true;
-	if(KeyState.KeyEvent==KeyEvent_Up)ShowMenuState=false;
+	if(KeyState.KeyEvent==KeyEvent_Up)
+		{
+		//循环切换
+		if(ShowMenuState>0)ShowMenuState--;
+		else ShowMenuState=2;
+		}
+	if(KeyState.KeyEvent==KeyEvent_Down)
+		{
+	  //循环切换到下一个菜单
+		if(ShowMenuState<2)ShowMenuState++;
+		else ShowMenuState=0;
+		}
 	//退出
 	if(KeyState.KeyEvent==KeyEvent_ESC)
 		{
@@ -124,8 +148,12 @@ void ShowCapHisGUI(void)
 	{
 	if(!IsUpdateCUI)return;
 	RenderMenuBG();
-	if(!ShowMenuState)ShowUpperPart();
-	else ShowLowerPart();
+	switch(ShowMenuState)
+		{
+		case 0:ShowUpperPart();break;
+		case 1:ShowLowerPart();break;
+		case 2:ShowLowestPart();break;
+		}		
 	IsUpdateCUI=false;
 	}
 	
@@ -133,7 +161,7 @@ void ResetHisMenuToUpper(void)
 	{
 	//每次进入时重置数据
 	IsUpdateCUI=true;
-	ShowMenuState=false;
+	ShowMenuState=0;
 	}	
 	
 const MenuConfigDef CapTestHisMenu=

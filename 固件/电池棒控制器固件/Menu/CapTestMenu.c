@@ -262,7 +262,18 @@ void CTestGUIHandler(void)
 				else
 					{
 					LCD_ShowChinese(87,50,"电压",WHITE,LGRAY,0);
-					LCD_ShowFloatNum1(115,50,ADCO.Vbatt,1,GREEN,LGRAY,12);
+					//根据电压值切换显示精度
+					if(ADCO.Vbatt<10.0)LCD_ShowFloatNum1(115,50,ADCO.Vbatt,2,GREEN,LGRAY,12);	
+					else 
+						{
+						//大于等于10V，使用四舍五入+1位小数显示
+						Power=ADCO.Vbatt*100;
+						Temp=(int)Power;        //转换成10mV进行四舍五入
+						Temp%=10;
+						if(Temp>=5)Power=ADCO.Vbatt+0.1;
+						else Power=ADCO.Vbatt;              //对最后一位进行四舍五入
+						LCD_ShowFloatNum1(115,50,Power,1,GREEN,LGRAY,12);     
+						}
 					LCD_ShowChar(147,50,'V',GREEN,LGRAY,12,0);
 					}
 				//显示Ah数

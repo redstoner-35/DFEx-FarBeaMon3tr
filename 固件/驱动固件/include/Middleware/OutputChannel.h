@@ -39,7 +39,10 @@ typedef enum
 //输出PWMDAC预充电压配置
 #define PWMDACPreCharge 142 	//PWMDAC在正常启动流程下的预充电压(LSB=0.1V，默认系统设置为14.2V)
 	
-#if ( defined(USING_LED_FV7212D) | defined(USING_LED_SFT90X) )
+#if defined(USING_LED_NBT160)	
+	//PWMDAC在1流明挡位下的预充电压(LSB=0.1V，NBT160因为开启Vf比其他核心都高，需要15000mV才能有足够的亮度)
+	#define OneLumenOut 150
+#elif ( defined(USING_LED_FV7212D) | defined(USING_LED_SFT90X) )
 	//PWMDAC在1流明挡位下的预充电压(LSB=0.1V，垂直核心因为Vf高需要14700mV才能有足够的亮度)
 	#define OneLumenOut 147 
 #else 

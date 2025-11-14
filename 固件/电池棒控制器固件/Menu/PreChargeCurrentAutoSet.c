@@ -42,17 +42,17 @@ void PreChargeAutoSetRender(void)
 	if(LastCData.IsDataValid)
 		{
     PreChargeCurrentAutoUpdate();
-		LCD_ShowHybridString(27,18,"已完成预充电流的",GREEN,LGRAY,0);
-		LCD_ShowHybridString(27,32," 自动设置流程。",GREEN,LGRAY,0);
+		LCD_ShowHybridString(27,20,"已完成预充电流的",GREEN,LGRAY,0);
+		LCD_ShowHybridString(27,34," 自动设置流程。",GREEN,LGRAY,0);
 		memset(Sbuf,0,sizeof(Sbuf));	
 		snprintf(Sbuf,sizeof(Sbuf)-1,"预充电流:%dmA",CfgData.InputConfig.PreChargeCurrent);		
-		LCD_ShowHybridString(27,45,Sbuf,WHITE,LGRAY,0);	
+		LCD_ShowHybridString(27,47,Sbuf,WHITE,LGRAY,0);	
 		}		
 	else
 		{
-		LCD_ShowHybridString(27,18,"预充电流自动设置",RED,LGRAY,0);
-		LCD_ShowHybridString(27,32," 流程无法继续!",RED,LGRAY,0);
-		LCD_ShowHybridString(27,45,"请完成一次测容。",YELLOW,LGRAY,0);
+		LCD_ShowHybridString(27,20,"预充电流自动设置",RED,LGRAY,0);
+		LCD_ShowHybridString(27,34," 流程无法继续!",RED,LGRAY,0);
+		LCD_ShowHybridString(27,47,"请完成一次测容。",YELLOW,LGRAY,0);
 		}
 	ShowPressExitToLeave();
 	//渲染结束

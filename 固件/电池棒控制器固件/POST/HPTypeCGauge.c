@@ -19,6 +19,9 @@ const char *A226ErrorStr[]=
 "NotGenuineDevice"
 };
 
+//外部函数
+bool CalcIfDCDCOutEnabled(void);
+
 //全局变量，是否开启高精度测量模块
 bool IsEnableHPGauge=false;
 
@@ -40,7 +43,6 @@ void HPPowerGuage_Start(void)
 	INA226InitStatDef Result;
 	INADoutSreDef TestResult;
 	IP2366VBUSStateDef IP2366Result;
-	bool SelfTestResult;
 	float fbuf;
 	int retry;
 	char WakeMsg[sizeof(A226ERRORIDMSG)];
@@ -72,51 +74,55 @@ void HPPowerGuage_Start(void)
 	else IsEnableHPGauge=true;
 	delay_ms(100);
 	//进行一次测量尝试
-	ShowPostInfo(96,"功率计自检...\0","3A",Msg_Statu);		
-	SelfTestResult=INA226_SetAlertRegister(0);	
+	ShowPostInfo(96,"功率计自检...\0","3A",Msg_Statu);
+	retry=40;	
+	if(!INA226_SetAlertRegister(0))
+		{
+		ReportGaugeFailure();
+		return;
+		}
 	//循环等待直到CVRF置起，表示可以读取结果
-	retry=0;
-	if(SelfTestResult)do
+	do
 		{
 		//CNVR置起，标记已经成功初始化
 		if(INA226_QueueIfGaugeCanReady())break;
 		//继续等待
 		delay_ms(10);
-		retry++;
 		}
-	while(retry<40);
+	while(--retry);
 	//启动超时，报错
-  if(retry==40)
+  if(!retry)
 		{
-		ReportGaugeFailure();
+	  ReportGaugeFailure();
 		return;
-		}		
+		}
 	//读取2366寄存器结果对获取到的电压电流进行比对
-	SelfTestResult&=INA226_GetBusInformation(&TestResult);
-	IP2366Result.VBUSCurrent=0;
-	IP2366Result.VBUSVolt=0;
-	retry=0;
+	retry=500;
+	IP2366_EnableDCDC(false,false); //自检阶段短暂关闭充电
 	do
-		{
-		//获取IP2366的VBUS结果
-		if(IP2366_GetVBUSState(&IP2366Result))break; 
-		//获取失败，等待25mS再试
-		delay_ms(25);
-		retry++;
+		{		
+		//等待10mS
+		delay_ms(10);
+		//获取INA226的结果
+		if(!INA226_GetBusInformation(&TestResult))continue;
+		//获取IP2366的VBUS结果	
+		IP2366Result.VBUSCurrent=0;
+		IP2366Result.VBUSVolt=0;
+		if(IP2366_GetVBUSState(&IP2366Result))
+			{
+			fbuf=fabs(IP2366Result.VBUSVolt-TestResult.BusVolt);
+			if(fbuf>0.3)continue;       //和IP2366内的电压测量结果进行比对，如果电压误差大于0.3V，则说明电压采样系统异常，打断本轮循环
+			fbuf=fabs(IP2366Result.VBUSCurrent);
+			fbuf-=fabs(TestResult.BusCurrent);
+			if(fabs(fbuf)>0.5)continue; //和IP2366内的电流测量结果进行比对，如果电流误差大于0.5A，则说明电流误差异常，打断本轮循环		
+			//所有自我测试通过，退出
+			break;
+			}
 		}
-	while(retry<200);
-	//功率计自检超时，报错并退出
-	if(retry==200)
-		{
-		ReportGaugeFailure();
-		return;
-		}
-	fbuf=fabs(IP2366Result.VBUSVolt-TestResult.BusVolt);
-	if(fbuf>0.3)SelfTestResult=false;       //和IP2366内的电压测量结果进行比对，如果电压误差大于0.3V，则说明电压采样系统异常，报错
-	fbuf=fabs(IP2366Result.VBUSCurrent);
-	fbuf-=fabs(TestResult.BusCurrent);
-	if(fabs(fbuf)>0.5)SelfTestResult=false; //和IP2366内的电流测量结果进行比对，如果电流误差大于0.5A，则说明电流误差异常，报错
-	//判断是否自检失败
-	if(!SelfTestResult)ReportGaugeFailure();
+	while(--retry);
+	//结束自检流程，重新使能充电
+	IP2366_EnableDCDC(true,CalcIfDCDCOutEnabled());
+	//判断功率计是否正常
+	if(!retry)ReportGaugeFailure();
   else ShowPostInfo(97,"功率计自检完毕\0","3C",Msg_Statu);
 	}

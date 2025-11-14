@@ -128,6 +128,7 @@ extern StorageModeDef StorageMode; //存储模式缓存
 #define CfgChecksum CfgUnion.ROMImage.CRCResult
 
 //函数
+void TryToSaveConfigDuringPost(char Present); //尝试保存配置
 bool CheckIfConfigOK(bool IsBackup);  //检查指定的配置文件状态
 void SyncUnResetThings(CfgUnionDef *IN);  //检测出厂设置时同步不需要更改的内容
 bool CheckIfConfigIsSame(void); //配置相同

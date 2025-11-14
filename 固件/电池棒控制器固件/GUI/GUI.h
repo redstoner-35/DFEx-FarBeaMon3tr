@@ -196,8 +196,12 @@ void SelfTestErrorHandler(void);
 const char *QueryPostDoneID(void);	
 	
 //内部变量
-extern bool IsEnableAdvancedMode; //是否开启高级模式
-	
+extern bool IsEnableAdvancedMode; //是否开启高级模式、
+
+//自检菜单所用显示函数
+void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type); //展示自检信息	
+void PostScreenInit(void); //主菜单初始化
+
 //外部调用的显示函数
 void ShowPressExitToLeave(void);  //显示按下ESC退出
 void DoThingsBeforeOFF(void); //系统关机前执行菜单的善后函数
@@ -206,9 +210,7 @@ void ShowTimeCode(u16 y,long Time);  //根据传入的秒数显示时间
 void RenderMenuBG(void);	//菜单背景渲染
 #define ClearScreen() LCD_Fill(0,0,LCD_W,LCD_H,BLACK)
 void SwitchingMenu(const MenuConfigDef *TargetMenuIdx); //切换菜单
-void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type); //展示自检信息
 void MenuRenderProcess(void); //执行菜单渲染
 void GUIDelayHandler(void); //GUI计时处理
-void PostScreenInit(void); //主菜单初始化	
 	
 #endif

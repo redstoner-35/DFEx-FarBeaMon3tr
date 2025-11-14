@@ -22,6 +22,24 @@ void SyncUnResetThings(CfgUnionDef *IN)
 	IN->ROMImage.Data.Data.AutoSaveCfg=CfgData.AutoSaveCfg;
 	}
 
+//自检过程中尝试写入配置存储
+void TryToSaveConfigDuringPost(char Present)
+	{
+	if(WriteConfiguration(&CfgUnion,true))return;
+	//存储器写入失败，报错
+	ShowPostInfo(Present,"存储器写入异常\0","E9",Msg_Fault);
+	SelfTestErrorHandler();
+	}	
+
+//自检过程中尝试读取配置存储	
+void TryToReadConfigDuringPost(char Present,bool IsBackup)
+	{
+	if(ReadConfiguration(&CfgUnion,IsBackup))return;
+	//存储器读取失败，报错
+	ShowPostInfo(Present,"存储器读取异常\0","E8",Msg_Fault);
+	SelfTestErrorHandler();
+	}
+	
 //将默认配置加载到指定位置
 void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	{
@@ -218,11 +236,7 @@ void LoadConfig(void)
   CfgUnionDef BackUpCfg;
 	//读取数据	
 	ShowPostInfo(30,"加载系统配置文件\0","09",Msg_Statu);
-	if(!ReadConfiguration(&CfgUnion,false))
-		{
-		ShowPostInfo(30,"存储器读取异常\0","E8",Msg_Fault);
-		SelfTestErrorHandler();
-		}
+	TryToReadConfigDuringPost(30,false);
 	//检查配置
 	CRCResult=CalcROMCRC32(&CfgUnion);
 	if(CRCResult!=CfgChecksum)
@@ -230,11 +244,7 @@ void LoadConfig(void)
 		ShowPostInfo(32,"尝试读取备用配置\0","0A",Msg_Statu);
 		delay_ms(300);
 		//主文件配置数据损坏，尝试读取备用	
-		if(!ReadConfiguration(&CfgUnion,true))
-			{
-			ShowPostInfo(32,"存储器读取异常\0","E8",Msg_Fault);
-			SelfTestErrorHandler();
-			}
+		TryToReadConfigDuringPost(30,true);
 		CRCResult=CalcROMCRC32(&CfgUnion);	
 		if(CRCResult!=CfgChecksum)
 			{
@@ -243,14 +253,9 @@ void LoadConfig(void)
 			delay_Second(1);
 			RestoreDefaultConfig();
 			UsingBackupConfig=false;
-			result=WriteConfiguration(&CfgUnion,true);  //写主配置文件 
+			TryToSaveConfigDuringPost(32);  //写主配置文件 
 			UsingBackupConfig=true;
-			result&=WriteConfiguration(&CfgUnion,true); //写备用配置文件
-			if(!result)
-				{
-				ShowPostInfo(32,"存储器写入异常","E9",Msg_Fault);
-				SelfTestErrorHandler();
-				}		
+			TryToSaveConfigDuringPost(32); 	//写备用配置文件	
 			ShowPostInfo(32,"已加载出厂设置","W4",Msg_Warning);	
 			delay_Second(1);	
 			}
@@ -260,11 +265,7 @@ void LoadConfig(void)
 			delay_ms(300);	
 			//尝试对主用数据进行覆盖
 			UsingBackupConfig=false;
-			if(!WriteConfiguration(&CfgUnion,true))  //写主配置文件 
-				{
-				ShowPostInfo(32,"存储器写入异常","E9",Msg_Fault);
-				SelfTestErrorHandler();				
-				}
+			TryToSaveConfigDuringPost(32);
 			UsingBackupConfig=true;
 			ShowPostInfo(32,"已加载备用文件","0B",Msg_Warning);
 			delay_ms(300);
@@ -274,7 +275,7 @@ void LoadConfig(void)
 		{
 		ShowPostInfo(32,"检查备用配置文件\0","42",Msg_Statu);
 		//系统检查通过，检查备用配置文件
-		if(!ReadConfiguration(&BackUpCfg,false))
+		if(!ReadConfiguration(&BackUpCfg,true))
 			{
 			ShowPostInfo(32,"存储器读取异常\0","E8",Msg_Fault);
 			SelfTestErrorHandler();
@@ -286,11 +287,7 @@ void LoadConfig(void)
 			ShowPostInfo(32,"备用配置文件损坏","WB",Msg_Warning);
 			delay_ms(300);	
 			UsingBackupConfig=true;
-			if(!WriteConfiguration(&CfgUnion,true))  //写主配置文件 
-				{
-				ShowPostInfo(32,"存储器写入异常","E9",Msg_Fault);
-				SelfTestErrorHandler();				
-				}		
+			TryToSaveConfigDuringPost(32);  //写主配置文件 	
 			ShowPostInfo(32,"已覆盖为主用配置","WB",Msg_Warning);
 			delay_ms(300);
 			}
@@ -346,16 +343,9 @@ void LoadConfig(void)
 	//需要更新配置
 	if(IsNeedToUpgrade)
 		{
-		if(!WriteConfiguration(&CfgUnion,true))
-			{
-			ShowPostInfo(35,"存储器写入异常\0","E9",Msg_Fault);
-			SelfTestErrorHandler();
-			}		
-		else
-			{			
-			ShowPostInfo(35,"已进行自动修正\0","0D",Msg_Warning);
-			delay_Second(1);
-			}
+		TryToSaveConfigDuringPost(35);		
+		ShowPostInfo(35,"已进行自动修正\0","0D",Msg_Warning);
+		delay_Second(1);
 		}
 	//读取配置后如果关闭快速启动则显示剩下的操作
 	DCDCOutputBit=CfgData.OutputConfig.IsEnableOutput; //更新输出bit

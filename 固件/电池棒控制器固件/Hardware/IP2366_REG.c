@@ -438,8 +438,8 @@ void IP2366_DynamicUpdateVlow(VBatLowDef Vlow)
 	VBatLowDef CurrentVlow;
 	//获取当前电流参数
 	if(!IP2366_ReadReg(&buf,REG_SYSCTL10))return;
-	buf&=0x0E;
-	CurrentVlow=(VBatLowDef)(buf>>5)&0x07;
+	buf=(buf&0xE0)>>5;
+	CurrentVlow=(VBatLowDef)(buf&0x07);
   //当前系统电流参数和预期值不一致，更新Vlow
   if(CurrentVlow!=Vlow)IP2366_SetVLowVolt(Vlow);
 	}	
@@ -485,6 +485,24 @@ bool IP2366_GetIfInputConnected(void)
 	return false;
 	}	
 
+//获取VBUS是否有输入电压（该函数仅能在安全模式下使用）
+bool GetIfVBUSHasSinkVolt(void)
+	{
+	char buf;
+	int Volt;
+	//按顺序读取并计算电压
+	if(!IP2366_ReadReg(&buf,REG_VSYS_LSB))return false; 
+	Volt=(int)buf;
+	Volt&=0xFF;
+	if(!IP2366_ReadReg(&buf,REG_VSYS_MSB))return false;
+	Volt|=((int)buf)<<8;
+	Volt&=0xFFFF;            //拼合电压值
+	//检测电压值
+	if(Volt>4550)return true;  //系统正在充电中
+	//其余情况返回False
+	return false;
+	}	
+	
 //获取IP2366的C口是否已连接
 bool IP2366_GetIfCPortConnected(void)
 	{
@@ -782,17 +800,42 @@ bool IP2366_SetTypeCRole(TypeCRoleDef Role)
 	//设置成功返回true
 	return true;
 	}	
+
+//检测IP2366锁死
+static unsigned char ChipLockUpTime=0;	
+	
+void IP2366_LockUpDetect(void)
+	{
+	char buf,buf2;
+	//读取结果
+	if(!IP2366_ReadReg(&buf2,REG_STATE_CTL2))return;
+	if(!IP2366_ReadReg(&buf,REG_STATE_CTL0))return;  //读取STATE-CTL0和STATE-CTL2
+	//当前Vbus反馈没电但是电池状态异常，说明芯片死机了
+	if(!(buf2&0x80)&&(buf&0x20))
+		{
+		if(ChipLockUpTime>=18)
+			{
+			ChipLockUpTime=0;
+			IP2366_WriteReg(0x40,REG_SYSCTL0); //芯片死机，强制写MCU复位bit
+			}
+		//时间没到继续累加
+		else ChipLockUpTime++;
+		}
+	else ChipLockUpTime=0;
+	}	
 	
 //获取充电状态	
 bool IP2366_GetChargerState(BatteryStateDef *State)	
 	{
-	char buf;
+	char buf,buf2;
 	float Result,IMin;
 	BatteryStateDef temp;
 	bool IsEnteredCVMode=false;
 	//获取状态
-	if(!IP2366_ReadReg(&buf,REG_STATE_CTL0))return false; //STATE-CTL0
-	if(buf&0x08)temp=Batt_discharging; //输出已启用，电池正在向外放电
+	if(!IP2366_ReadReg(&buf2,REG_STATE_CTL2))return false;
+	if(!IP2366_ReadReg(&buf,REG_STATE_CTL0))return false;  //读取STATE-CTL0和STATE-CTL2
+	if(!(buf2&0x80))temp=Batt_StandBy; 			//VBUS都没电哪来的待机状态
+	else if(buf&0x08)temp=Batt_discharging; //输出已启用，电池正在向外放电
 	else if(buf&0x20)
 		{
 		//获取充电状态

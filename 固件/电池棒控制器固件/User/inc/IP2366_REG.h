@@ -268,6 +268,7 @@ extern const IP2366FWCapDef *CurrentIP2366FW;
 bool IP2366_QueryCurrentStateIsACC(BatteryStateDef IN); //查询电池状态是否需要库仑计统计	
 	
 //函数
+bool GetIfVBUSHasSinkVolt(void);	//获取VBUS是否有输入电压（该函数仅能在安全模式下使用）
 void IP2366_DynamicUpdateVlow(VBatLowDef Vlow);	//根据系统充放电状态智能更新涓流电压的函数
 bool IP2366_GetRecvPDOList(RecvPDOListDef *Result);	//获取输入广播的list状态
 bool IP2366_UpdateSinkPower(ChargePowerDef Power); //更新系统的充电输入（Sink模式）的功率
@@ -306,5 +307,6 @@ bool IP2366_SetReChargeParam(ReChargeConfig Vrecharge,IStopConfig IStop); //设置
 bool IP2366_UpdataChargePower(ChargePowerDef Power);	//更新充电功率
 bool IP2366_UpdateFullVoltage(int Volt); //更新充电电压(传入的单位为mV)
 void IP2366_ClearOCFlag(void); //清除OC Flag
+void IP2366_LockUpDetect(void); //检测2366锁死
 
 #endif

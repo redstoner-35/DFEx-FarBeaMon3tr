@@ -45,6 +45,7 @@ void IP2366_Telem(void)
 	IsTelemOK&=IP2366_GetRecvPDO(&PDO);
 	
 	IsCPortConnected=IP2366_GetIfCPortConnected();
+		
 	//开始进行INA226的测量	
 	if(IsEnableHPGauge)
 		{

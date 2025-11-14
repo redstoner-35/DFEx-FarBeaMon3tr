@@ -132,6 +132,7 @@ void DynamicUpdateSinkPower(void)
 		}
 	}
 	
+//IP2366初始化
 void IP2366_PreInit(void)
 	{
 	char i=5;
@@ -219,16 +220,16 @@ static void ChargeStepDown(void)
 	else CfgData.MaxSnkPower=Power_65W;
 	}
 	
-//设置系统的充放电使能和typec角色
-bool SetSystemDischargeState(void)
+//获取系统的充放电和C口角色状态
+static void QuerySystemChargeState(bool *ChgState,bool *DisState,TypeCRoleDef *TCRole)
 	{
-	bool ChgEN,DisEN,IsStepDown;
 	extern bool IsEnableAdapterEmu;
 	extern bool IsEnableTempChargeOnly;
 	extern AutoBalanFSMDef AutoBalState;
 	extern bool IsCPortBreaked;
+	//内部buffer	
+	bool ChgEN,DisEN;
 	TypeCRoleDef Role;		
-	BatteryStateDef BattState;
 	//计算DCDC使能状态
 	if(BalanceForceEnableTIM>0||AutoBalState==AutoBalance_RunningBalance)	
 		{
@@ -244,49 +245,6 @@ bool SetSystemDischargeState(void)
 		ChgEN=false;
 		DisEN=false;
 		Role=TypeC_NoConnect;
-		//判断过热保护是否满足条件
-		if(!CfgData.EnableThermalStepdown)IsStepDown=false;
-		else if(CfgData.InputConfig.ChargePower>Power_65W)IsStepDown=true;
-		else 
-			{
-			//根据充电功率判断是否满足掉档
-			if(!CurrentIP2366FW->ExtendedTCSetting)IsStepDown=false;
-			else if(CfgData.MaxSnkPower>Power_65W)IsStepDown=true;
-			else IsStepDown=false;
-			}
-		//触发过热保护强行把功率调回去
-		if(IsStepDown)
-			{	
-			//支持单独设置输出输入功率的固件，根据当前是充电还是放电，减少对应的功率值	
-			if(CurrentIP2366FW->ExtendedTCSetting)
-				{
-				//获取电池状态
-				BattState=Batt_StandBy;
-				IP2366_GetChargerState(&BattState);
-        switch(BattState)
-					{
-					case Batt_discharging:
-						//放电模式只降放电功率
-						DischargeStepDown();
-						break;
-					case Batt_StandBy:
-						//状态获取失败，全部降
-						ChargeStepDown();
-						DischargeStepDown();
-					  break;
-					default:
-						//其余情况是充电，只降充电
-					  ChargeStepDown();
-					  break;
-					} 
-				}
-			//不支持单独充放电设置的固件，同步一起降档
-			else ChargeStepDown();
-			//保存配置并更新sink和充电功率
-			WriteConfiguration(&CfgUnion,false);
-			DynamicUpdateSinkPower();
-			if(!IP2366_UpdataChargePower(CfgData.InputConfig.ChargePower))return false;
-			}
 		}
 	else if(IsEnableAdapterEmu)
 		{
@@ -303,6 +261,65 @@ bool SetSystemDischargeState(void)
 		else DisEN=DCDCOutputBit;
 		Role=DisEN?TypeC_Bidir:TypeC_SinkOnly; //根据输出是否启用配置角色为DRP或者DFP
 		}		
+	//数值计算结束，赋值到上一级函数的buffer里面去
+  if(ChgState!=NULL)*ChgState=ChgEN;
+	if(DisState!=NULL)*DisState=DisEN;
+	if(TCRole!=NULL)*TCRole=Role;
+	}
+	
+//设置系统的充放电使能和typec角色
+bool SetSystemDischargeState(void)
+	{
+	bool ChgEN,DisEN;
+	TypeCRoleDef Role;		
+  BatteryStateDef BattState;
+	bool IsStepDown;
+	//判断过热保护是否满足条件
+	if(!IsSystemOverheating)IsStepDown=false;                    //过热保护未触发
+	else if(!CfgData.EnableThermalStepdown)IsStepDown=false;
+	else if(CfgData.InputConfig.ChargePower>Power_65W)IsStepDown=true;
+	else 
+		{
+		//根据充电功率判断是否满足掉档
+		if(!CurrentIP2366FW->ExtendedTCSetting)IsStepDown=false;
+		else if(CfgData.MaxSnkPower>Power_65W)IsStepDown=true;
+		else IsStepDown=false;
+		}	
+	//过热保护使能，触发保护机制
+	if(IsStepDown)
+		{	
+		//支持单独设置输出输入功率的固件，根据当前是充电还是放电，减少对应的功率值	
+		if(CurrentIP2366FW->ExtendedTCSetting)
+			{
+			//获取电池状态
+			BattState=Batt_StandBy;
+			IP2366_GetChargerState(&BattState);
+      switch(BattState)
+				{
+				case Batt_discharging:
+					//放电模式只降放电功率
+					DischargeStepDown();
+					break;
+				case Batt_StandBy:
+					//状态获取失败，全部降
+					ChargeStepDown();
+					DischargeStepDown();
+					break;
+				default:
+					//其余情况是充电，只降充电
+					ChargeStepDown();
+					break;
+				} 
+			}
+		//不支持单独充放电设置的固件，同步一起降档
+		else ChargeStepDown();
+		//保存配置并更新sink和充电功率
+		WriteConfiguration(&CfgUnion,false);
+		DynamicUpdateSinkPower();
+		if(!IP2366_UpdataChargePower(CfgData.InputConfig.ChargePower))return false;	
+		}
+	//设置C口角色
+	QuerySystemChargeState(&ChgEN,&DisEN,&Role); //进行运算得出C口和充放电使能结果
 	if(!IP2366_EnableDCDC(ChgEN,DisEN))return false;
 	if(!IP2366_SetTypeCRole(Role))return false;
 	//设置成功
@@ -335,9 +352,12 @@ void SysAutoSavePowerCfg(void)
 	{
 	BatteryStateDef BattState;
 	IP2366SinkProtocolDef PROTBuf;
+	extern bool IsAutoBalRunning;
 	bool QCDISEnabled,ForceRefresh=false;
+	//当前处于自动均衡模式，关闭自动省电功能	
+	if(IsAutoBalRunning)QCDISEnabled=false;
 	//开启省电模式,未处于测容状态且当前2366固件支持省电模式，自动读取充电状态
-	if(!GetIfCapTestRunning()&&CfgData.EnableAutoPowerSave&&CurrentIP2366FW->ExtendedTCSetting)
+	else if(!GetIfCapTestRunning()&&CfgData.EnableAutoPowerSave&&CurrentIP2366FW->ExtendedTCSetting)
 		{
 		if(!IP2366_GetChargerState(&BattState))return;
 		switch(BattState)
@@ -447,15 +467,22 @@ void IP2366_ReInitBasedOnConfig(void)
 	IP2366InputDef ICFG;
 	IP2366OutConfigDef OCFG;
 	IP2366SinkProtocolDef PROTBuf;
-	bool DisableSinkFChg;
+	bool DisableSinkFChg;	
+	bool ChgEN,DisEN;
+	TypeCRoleDef Role;		
+	//外部参考	
 	extern bool OCState;
-	extern bool IsEnableAdapterEmu;
+	extern bool IsCPortBreaked;
+	//获取一边系统基础参数
+  QuerySystemChargeState(&ChgEN,&DisEN,&Role);		
+		
 	//设置低电保护、PDO参数和输出参数
 	OCFG.IsEnableDPDMOut=CfgData.OutputConfig.IsEnableDPDMOut;
 	OCFG.IsEnablePDOut=CfgData.OutputConfig.IsEnablePDOut;
 	OCFG.IsEnableSCPOut=CfgData.OutputConfig.IsEnableSCPOut;
 	OCFG.IsEnableHSCPOut=CfgData.OutputConfig.IsEnableHSCPOut;
-	OCFG.IsEnableOutput=CalcIfDCDCOutEnabled();
+	if(!DisEN)OCFG.IsEnableOutput=false;
+	else OCFG.IsEnableOutput=CalcIfDCDCOutEnabled();
 	
 	IP2366_SetVLowVolt(CfgData.Vlow);
 	if(!IsBootFromVBUS&&!OCState)IP2366_SetOutputState(&OCFG);	//如果是在过充阶段或者是单独插着Type-C，那就不能设置输出，不然单片机直接断电了
@@ -471,20 +498,16 @@ void IP2366_ReInitBasedOnConfig(void)
 		}		
 	ICFG.ChargePower=CfgData.InputConfig.ChargePower;	
 	ICFG.PreChargeCurrent=CfgData.InputConfig.PreChargeCurrent; //其他参数照常填写
-	if(IsEnableAdapterEmu)ICFG.IsEnableCharger=false; //关闭充电器
-	else ICFG.IsEnableCharger=IsSystemOverheating?false:true; //充电器如果过热触发则关闭		
-	//系统打开省电模式，重新配置时使用省电模式处理
-	if(CfgData.EnableAutoPowerSave)
-		{			
-		DisableSinkFChg=IPSinkState==IP2366_CPort_Reseted?false:true;
-		PROTBuf.EnableSinkDPDM=DisableSinkFChg?false:CfgData.SinkConfig.EnableSinkDPDM;
-		PROTBuf.EnableSinkPD=DisableSinkFChg?false:CfgData.SinkConfig.EnableSinkPD;
-		PROTBuf.EnableSinkSCP=DisableSinkFChg?false:CfgData.SinkConfig.EnableSinkSCP;		
-		IP2366_SetSinkProtocol(&PROTBuf);
-  	}
-	//系统关闭省电模式，使用Sink协议操作
-	else IP2366_SetSinkProtocol(&CfgData.SinkConfig);
-		
+	ICFG.IsEnableCharger=ChgEN; 															  //根据运算结果选择充电i是否开启
+	//根据系统配置设置是否禁用Sink协议
+	if(IsCPortBreaked)DisableSinkFChg=true; //C口被打断，强制禁用
+	else if(CfgData.EnableAutoPowerSave)DisableSinkFChg=IPSinkState==IP2366_CPort_Reseted?false:true;		
+	else DisableSinkFChg=false; //默认情况下Sink快充开启
+	//配置具体的协议项
+	PROTBuf.EnableSinkDPDM=DisableSinkFChg?false:CfgData.SinkConfig.EnableSinkDPDM;
+	PROTBuf.EnableSinkPD=DisableSinkFChg?false:CfgData.SinkConfig.EnableSinkPD;
+	PROTBuf.EnableSinkSCP=DisableSinkFChg?false:CfgData.SinkConfig.EnableSinkSCP;		
+	IP2366_SetSinkProtocol(&PROTBuf);	
 	//设置充电系统参数以及ICCMAX
 	if(CfgData.MaxSnkPower<CurrentSinkPower)CurrentSinkPower=CfgData.MaxSnkPower; //检测充电系统是否下调功率
 	IP2366_UpdateSinkPower(CurrentSinkPower);  //根据当前的充电功率，更新Sink功率到额定值
@@ -493,14 +516,9 @@ void IP2366_ReInitBasedOnConfig(void)
 	//设置Type-C模式
 	if(!IsBootFromVBUS&&!OCState) //如果是在过充阶段或者是单独插着Type-C，那就不能发送TCRST命令不然单片机直接断电了
 		{
-		if(!IsEnableAdapterEmu)
-			{
-			IP2366_SetTypeCRole(TypeC_NoConnect);
-			delay_ms(200);	
-			IP2366_SetTypeCRole(OCFG.IsEnableOutput?TypeC_Bidir:TypeC_SinkOnly);
-			}
-		else IP2366_SetTypeCRole(TypeC_SourceOnly); //开启适配器模拟启用UFP模式
-		delay_ms(100);
+		IP2366_SetTypeCRole(TypeC_NoConnect);
+		delay_ms(200);	
+		IP2366_SetTypeCRole(Role);
 		}
 	//设置PPS和fixed PDO参数
 	IP2366_SetDeepSleepModeEnabled(CfgData.SleepCfg==System_Sleep_Deep?true:false);
@@ -516,7 +534,10 @@ void IP2366_SetIBatLIMBaseOnSysCfg(void)
 	{
 	int Current;
 	VBatLowDef DesiredVlow;
-	bool result=IP2366_GetIfInputConnected();
+	bool result;
+	//根据系当前是否处于安全模式，从对应的函数取出充电结果	
+	if(IsBootFromVBUS)result=GetIfVBUSHasSinkVolt();
+	else result=IP2366_GetIfInputConnected();
 	//设置低电压保护和预期浮充截止电压
 	if(result)DesiredVlow=CfgData.PreChargeEndVoltage;   //充电模式连接，更新充电结果
 	else DesiredVlow=CfgData.Vlow;    //放电模式使用低电压保护值
@@ -536,6 +557,8 @@ extern short IPStallTime;
 void DetectIfIP2366Reset(void)
 	{
 	bool Reset;
+	//执行2366充电环卡死检测
+	IP2366_LockUpDetect();
 	//获取当前芯片通信状态
 	if(!IP2366_DetectIfChipReset(&Reset))IP2366StallRestore(); //开始计时
 	//芯片发生复位，重置寄存器
@@ -550,14 +573,43 @@ void DetectIfIP2366Reset(void)
 void IP2366_ReConfigOutWhenTypeCOFF(void)	
 	{
 	extern short VBUSReConnectTimeCounter;
+	float PreChargeEndVBat;
+	bool IsSystemCharging,IsAbleClearSafeMode;
 	if(!IsBootFromVBUS)return;
-	//电池电压不足或者当前电池电流过低，复位等待计时器
-  if(ADCO.Vbatt<9.6||ADCO.Ibatt<0.6)WaitAfterTypeCRemoved=50;
-	//电池电压正常	
+	//判断系统是否连接了输入正在充电	
+	IsSystemCharging=GetIfVBUSHasSinkVolt();
+	//根据系统设置的涓流电压计算出退出安全模式，转高功率充电的电压值
+	switch(CfgData.PreChargeEndVoltage)
+		{
+		case VLow_2V8:PreChargeEndVBat=2.8*BattCellCount;break;
+		case VLow_2V9:PreChargeEndVBat=2.9*BattCellCount;break;
+		case VLow_3V0:PreChargeEndVBat=3.0*BattCellCount;break;
+		case VLow_3V1:PreChargeEndVBat=3.1*BattCellCount;break;
+		case VLow_3V2:PreChargeEndVBat=3.2*BattCellCount;break;
+		//其余非法值使用3.0	
+		default: PreChargeEndVBat=3.0*BattCellCount;
+		}
+	//如果系统处于充电模式，则同时判断充电电流和电池电压是否达到要求
+	if(IsSystemCharging)
+		{
+		//电池电压未达到转恒流点，保持安全模式
+		if(ADCO.Vbatt<PreChargeEndVBat)IsAbleClearSafeMode=false;
+		//电池电压达到3.5V每节，强制转全功率充电
+		else if(ADCO.Vbatt>=(3.5*BattCellCount))IsAbleClearSafeMode=true;
+		//电池电压达到转恒流点，判断系统是否真的正在充电
+		else if(ADCO.Ibatt>0.2)IsAbleClearSafeMode=true;
+		//其余情况，保持在安全模式
+		else IsAbleClearSafeMode=false;
+		}
+	//系统处于待机或者放电，判断电压是否达到要求
+	else IsAbleClearSafeMode=ADCO.Vbatt<(3.5*BattCellCount)?false:true;	
+
+	//完成条件判断，根据条件是否满足定义计时器是否继续计时
+  if(!IsAbleClearSafeMode)WaitAfterTypeCRemoved=50;
 	else if(WaitAfterTypeCRemoved>0)WaitAfterTypeCRemoved--;
 	else
 		{
-		VBUSReConnectTimeCounter=48; 	//系统即将从安全模式切换到正常充电，置位消隐定时器避免容量测试误认为C口被拔出
+		if(GetIfCapTestRunning())VBUSReConnectTimeCounter=48; 	//系统即将从安全模式切换到正常充电，置位消隐定时器避免容量测试误认为C口被拔出
 		IsBootFromVBUS=false;
 		AUXPSU_SetIPDState(true);
 		AUXPSU_ConnectTCtoIP2366();		//充电达到足够时长之后切换回IP2366进行高功率充电
@@ -677,57 +729,45 @@ void IP2366_PostInit(void)
 		ShowPostInfo(79,"超充模式已启用\0","2B",Msg_Statu);
 		if(CfgData.IStop==IStop_100mA||CfgData.IStop==IStop_150mA)
 			{
-			ShowPostInfo(78,"停充电流非法\0","W9",Msg_Warning);
+			ShowPostInfo(79,"停充电流非法\0","W9",Msg_Warning);
 			delay_Second(1);
-			ShowPostInfo(78,"已自动修正\0","W9",Msg_Warning);
+			ShowPostInfo(79,"已自动修正\0","W9",Msg_Warning);
 			delay_Second(1);
 			CfgData.IStop=IStop_200mA;
-			if(!WriteConfiguration(&CfgUnion,true))
-				{
-				ShowPostInfo(30,"存储器写入异常\0","E9",Msg_Fault);
-				SelfTestErrorHandler();
-				}
+			TryToSaveConfigDuringPost(79);
 			}
 		if(EnableDetailOutput)delay_ms(300);
 		}
    else if(Result)
 		{
-		ShowPostInfo(78,"芯片为公版固件\0","2C",Msg_Warning);
+		ShowPostInfo(79,"芯片为公版固件\0","2C",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"超充模式已禁用\0","2C",Msg_Warning);
+		ShowPostInfo(79,"超充模式已禁用\0","2C",Msg_Warning);
 		delay_Second(1);
 		//将峰值限流调回去
 		CfgData.MaxVPD=PDMaxIN_20V;
 		CfgData.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
 		CfgData.InputConfig.ChargePower=CurrentIP2366FW->MaxCapableChgPower;
-		if(!WriteConfiguration(&CfgUnion,true))
-			{
-			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
-			SelfTestErrorHandler();
-			}		
+		TryToSaveConfigDuringPost(79);
 		}
 	//检查50mA per LSB的PDO支持
 	if(!CurrentIP2366FW->IsExtendPDOCapable&&CfgData.FixedPDOCfg.PDO20VICCMAX>4000)
 		{
-		ShowPostInfo(78,"芯片为公版固件\0","2D",Msg_Warning);
+		ShowPostInfo(79,"芯片为公版固件\0","2D",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"20V高功率已禁用\0","2D",Msg_Warning);
+		ShowPostInfo(79,"20V高功率已禁用\0","2D",Msg_Warning);
 		delay_Second(1);
 		//关闭20V PDO的4A以上设置
 		CfgData.FixedPDOCfg.PDO20VICCMAX=4000;
 		CfgData.FixedPDOCfg.IsEnable20VPDOSet=false;
-		if(!WriteConfiguration(&CfgUnion,true))
-			{
-			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
-			SelfTestErrorHandler();
-			}	
+		TryToSaveConfigDuringPost(79);
 		}
 	//检查
 	else if(!CurrentIP2366FW->IsExtendPDOCapable&&(CfgData.FixedPDOCfg.PDO20VICCMAX%50))
 		{
-		ShowPostInfo(78,"20V PDO电流值非法\0","WA",Msg_Warning);
+		ShowPostInfo(79,"20V PDO电流值非法\0","WA",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"已自动修正\0","WA",Msg_Warning);
+		ShowPostInfo(79,"已自动修正\0","WA",Msg_Warning);
 		delay_Second(1);
 		//修正PDO结果
 		i=CfgData.FixedPDOCfg.PDO20VICCMAX/50;
@@ -735,11 +775,7 @@ void IP2366_PostInit(void)
 	  if(i>7000)i=7000;
 		if(i<1000)i=1000;
 		CfgData.FixedPDOCfg.PDO20VICCMAX=i;
-		if(!WriteConfiguration(&CfgUnion,true))
-			{
-			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
-			SelfTestErrorHandler();
-			}				
+		TryToSaveConfigDuringPost(79);		
 		}
 	//检查高压SCP支持	
 	if(!!CurrentIP2366FW->IsHSCPCapable&&CfgData.OutputConfig.IsEnableHSCPOut)
@@ -750,11 +786,7 @@ void IP2366_PostInit(void)
 		delay_Second(1);
 		//关闭高功率SCP功能
 		CfgData.OutputConfig.IsEnableHSCPOut=false;
-		if(!WriteConfiguration(&CfgUnion,true))
-			{
-			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
-			SelfTestErrorHandler();
-			}		
+		TryToSaveConfigDuringPost(79);	
 		}
 	//设置再充电参数
 	ShowPostInfo(80,"设置再充电参数\0","2F",Msg_Statu);	
@@ -818,20 +850,16 @@ void IP2366_PostInit(void)
 	ShowPostInfo(93,"设置PPS广播\0","34",Msg_Statu);
 	if((CfgData.PPSConfig.PPS1Current>3000||CfgData.PPSConfig.PPS2Current>3000)&&!CurrentIP2366FW->IsExtendPDOCapable)	
 		{
-		ShowPostInfo(78,"芯片为公版固件\0","35",Msg_Warning);
+		ShowPostInfo(93,"芯片为公版固件\0","35",Msg_Warning);
 		delay_Second(1);
-		ShowPostInfo(78,"PPS电流已重置\0","35",Msg_Warning);
+		ShowPostInfo(93,"PPS电流已重置\0","35",Msg_Warning);
 		delay_Second(1);
 		//重置PPS电流为芯片默认值
 		CfgData.PPSConfig.PPS1Current=3000;
 		CfgData.PPSConfig.PPS2Current=3000;
 		CfgData.PPSConfig.IsEnablePPS1Set=false;
 		CfgData.PPSConfig.IsEnablePPS2Set=false;
-		if(!WriteConfiguration(&CfgUnion,true))
-			{
-			ShowPostInfo(80,"存储器写入异常\0","E9",Msg_Fault);
-			SelfTestErrorHandler();
-			}		
+		TryToSaveConfigDuringPost(93);		
 		}		
 	//写入寄存器设置PPS
 	if(!IP2366_SetPPSCurrent(&CfgData.PPSConfig))
@@ -868,30 +896,53 @@ void IP2366_PostInit(void)
 	//充电器不太聪明，强制输出20V为了避免芯片充电拉爆，强制充电器reset然后掉回去5V
 	else if(VBUSState.VBUSVolt>13.0)	
 		{
-		ShowPostInfo(93,"充电器电压过高\0","4A",Msg_Warning);
-		delay_ms(400);
-		ShowPostInfo(93,"正在尝试重置\0","4A",Msg_Warning);
-		delay_Second(1);	
-		ShowPostInfo(93,"可能需要1分钟\0","4A",Msg_Warning);		
-		delay_ms(300);
-		ShowPostInfo(93,"请耐心等待\0","4A",Msg_Warning);
-		delay_ms(200);
-		Force2366ToRestart();
-		AUXPSU_SetIPDState(false); //这里需要关闭Type-C IPD使系统掉电
-
-		retry=200;
+		//等待充电器重置过程中为了避免系统给电池充电导致统计不准，需要关闭充电器
+		retry=10;	
 		do
 			{
-			retry--;
+			//循环执行关闭充电器的指令
+			if(IP2366_EnableDCDC(false,false))break;
+			}			
+		while(--retry);                               
+		//显示重置进度
+		ShowPostInfo(94,"充电器电压过高\0","4A",Msg_Warning);
+		delay_ms(400);
+		ShowPostInfo(94,"正在尝试重置\0","4A",Msg_Warning);
+		delay_ms(300);
+		ShowPostInfo(94,"请耐心等待\0","4A",Msg_Warning);
+		delay_ms(200);
+
+    //设置IPD，使得充电器断开输入电源，强迫系统掉电
+		retry=200;
+		AUXPSU_SetIPDState(false); //这里需要关闭Type-C IPD使系统掉电
+		do
+			{
 			delay_ms(30);
+			//延迟30mS后获取VBUS电压
+			IP2366_GetVBUSState(&VBUSState);
+			if(VBUSState.VBUSVolt<6.0)break;
+			//重试失败，等待结果
+			retry--;
 			}
 		while(retry);
-		ShowPostInfo(93,"充电器重置超时\0","FE",Msg_Fault);
+		//充电器成功降压，重启系统
+    if(retry)
+			{
+			//强制2366进入休眠
+			Force2366ToRestart();
+			//延迟2秒等待2366睡着了再重启系统本身
+			ShowPostInfo(94,"充电器重置完毕\0","4A",Msg_Warning);
+			delay_Second(2);
+			NVIC_SystemReset();	
+			}
+		//充电器降压失败，报错
+		ShowPostInfo(94,"充电器重置超时\0","FE",Msg_Fault);
 		SelfTestErrorHandler();	
 		}
 	//否则只执行设置OTP
 	else do
 		{
+		AUXPSU_SetIPDState(true); //重新打开输入下拉，使能充电器
 		IsCmdSendOK=IP2366_SetOTPSign();
 		if(IsCmdSendOK)break;
 		retry--;

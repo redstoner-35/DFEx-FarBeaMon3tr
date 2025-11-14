@@ -170,7 +170,7 @@ void KickIP2366ToWakeUp(void)
 	GPIO_DirectionConfig(IP2366_INT_IOG,IP2366_INT_IOP,GPIO_DIR_OUT);
 	GPIO_InputConfig(IP2366_INT_IOG,IP2366_INT_IOP,DISABLE);  //设置为推挽输出保持2366唤醒
 	}
-	
+
 //休眠状态判断
 void IP2366_ReInitBasedOnConfig(void);
 void IP2366_SetIBatLIMBaseOnSysCfg(void);

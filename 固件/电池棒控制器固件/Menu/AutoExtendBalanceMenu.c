@@ -16,11 +16,14 @@ extern bool Is2366Telem;
 
 //函数声明
 bool SetSystemDischargeState(void);
+void IP2366_ReInitBasedOnConfig(void);
 
 //全局变量
 AutoBalanFSMDef AutoBalState;
 static char AutoBalTIM;
+bool IsAutoBalRunning=false;
 bool IsCPortBreaked=false;
+bool IsUserForceDisableAutoCharge=false;
 
 void AutoBalTIMHandler(void)
 	{
@@ -32,6 +35,7 @@ static void ResetChargerSystemToNormal(void)
 	{
 	AutoBalState=AutoBalance_End_Abnormal;
 	AutoBalTIM=0;
+	IsAutoBalRunning=false;
 	BalanceForceEnableTIM=0;
 	IsCPortBreaked=false;
 	SetSystemDischargeState();
@@ -40,22 +44,38 @@ static void ResetChargerSystemToNormal(void)
 //利用类似typec disconnect的办法强制断开输出
 static void BreakCPortConnection(void)
 	{
-	SetSystemDischargeState();
-	delay_ms(10);
+	IP2366SinkProtocolDef PROTBuf;
 	IsCPortBreaked=true;
-	//强制关闭Source
-	IP2366_SetTypeCRole(TypeC_NoConnect);
-	}
+	SetSystemDischargeState();
 	
+	//禁用所有输入Sink快充协议
+	PROTBuf.EnableSinkDPDM=false;
+	PROTBuf.EnableSinkPD=false;
+	PROTBuf.EnableSinkSCP=false;		
+	IP2366_SetSinkProtocol(&PROTBuf);	
+	}
+
 //在自动均衡循环结束后退回到主界面的操作
 static void BalanceEndGotoMainMenuProcess(bool IsNormalExit)
 	{
 	BalanceForceEnableTIM=0;
+	AutoBalTIM=0;
+	AutoBalState=AutoBalance_WaitBattCharge; //等待充电
+		
 	if(IsNormalExit)LogData.UnbalanceBatteryAh=0; //本次均衡已完成	
 	RunLogEntry.CurrentDataCRC=CalcRunLogCRC32(&RunLogEntry.Data); //计算运行日志的CRC32
 	WriteRuntimeLogToROM(); //保存日志
+	
+	//如果C口被打断，则复位IP2366的配置寄存器并重新握手
+	if(IsCPortBreaked)
+		{
+		IsCPortBreaked=false;
+		SetSystemDischargeState();
+		IP2366_ReInitBasedOnConfig();
+		}
+
 	//回到主界面
-	ClearScreen(); //清屏
+	ClearScreen(); 								//清屏
 	SwitchingMenu(&MainMenu);
 	}	
 	
@@ -118,7 +138,8 @@ void AutoBalFSMHandler(void)
 				IsUpdateBalUI=true;
 				AutoBalState=AutoBalance_ReChargingWait;
 				AutoBalTIM=40;
-				SetSystemDischargeState();  //重新开启输入输出
+				SetSystemDischargeState();  
+				IP2366_SetSinkProtocol(&CfgData.SinkConfig);	//重新开启输入输出并使能快充输入
 				break;
 				}
 			break;
@@ -146,6 +167,7 @@ void AutoBalFSMHandler(void)
 				IsUpdateBalUI=true; //状态变化时刷新UI
 				AutoBalState=AutoBalance_End;
 				AutoBalTIM=24;
+				IsAutoBalRunning=false;  //自动均衡已经结束，标记均衡流程结束重新使能自动省电模块
 				break;
 				}
 			//用户按下ESC，强制退出
@@ -164,11 +186,13 @@ void AutoBalFSMHandler(void)
 		//自动均衡循环正常结束
 		case AutoBalance_End:
 			if(AutoBalTIM||BATT!=Batt_StandBy)break;
+		  IsUserForceDisableAutoCharge=false;
 			BalanceEndGotoMainMenuProcess(true);
 			break;
 		//自动均衡循环异常
 		case AutoBalance_End_Abnormal:
 		  if(KeyState.KeyEvent!=KeyEvent_ESC)break;
+	    IsUserForceDisableAutoCharge=true;
 			BalanceEndGotoMainMenuProcess(false);
 			break;		
 		}
@@ -289,6 +313,8 @@ void EnableAutoBal(void)
 	{
 	IsCPortBreaked=false;
 	IsUpdateBalUI=true;
+	IsAutoBalRunning=true;
+	AutoBalTIM=80;
 	AutoBalState=AutoBalance_WaitBattCharge; //等待充电
 	BalanceForceEnableTIM=3600*8*5; //5个小时
 	}
