@@ -28,7 +28,6 @@ typedef struct
 #define NTCT0 25 //NTC标准阻值标定温度
 #define NTCT0ResK 15 //NTC在标定温度下的阻值(K)
 #define NTCBValue 3450 //NTC B值
-#define NTCTRIM -3 //温度修正值(℃)
 	
 #if (BATTCOUNT == 4)	
 	
@@ -60,7 +59,7 @@ extern ADCOutTypeDef ADCO;
 extern float PORVBatVolt; //上电时测量的电池电压
 
 //函数
-void InternalADC_LoadCalibration(int Vcal,int Ical); //应用校准值
+void InternalADC_LoadCalibration(int Vcal,int Ical,int TempCal); //应用校准值
 bool ADC_GetResult(void);
 void InternalADC_Init(void); //ADC初始化
 

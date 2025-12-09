@@ -48,12 +48,36 @@ void IntEditMenuKeyEffHandler(void)
 //执行实际GUI的渲染
 static void RenderIntEditGUI(const intEditMenuCfg *CFG)
 	{
-	int pos;
+	int pos,result;
 	float direct;
 	RenderMenuBG();
 	//显示左边的字符和数值
 	DisplayMinusButton(MinusHold?true:false);
-	LCD_ShowIntNum(47,29,*(CFG->Source),*(CFG->Source)>9999?5:4,CYAN,LGRAY,12);
+	result=*(CFG->Source); //取出数值
+	if(result>=0)	
+		{
+		//结果为正数，直接显示
+		LCD_ShowIntNum(47,29,result,result>9999?5:4,CYAN,LGRAY,12);
+		}
+	else
+		{
+		result*=-1; //转正数
+		LCD_ShowChar(47,29,'-',CYAN,LGRAY,12,0);
+		//计算位数
+		pos=0;
+		do
+			{
+		  pos++;
+		  result/=10; //结果除以10
+			}
+		while(result);
+		if(result>5)result=0;  //最大不能超过五位数
+		//重新取出数值
+		result=*(CFG->Source);
+		result*=-1;
+		//显示结果
+		LCD_ShowIntNum(56,29,result,pos,CYAN,LGRAY,12);
+		}	
 	LCD_ShowHybridString(96,29,CFG->Unit,CYAN,LGRAY,0);	
 	//显示选项框背景
 	LCD_DrawRectangle(43,26,115,43,BLACK);

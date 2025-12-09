@@ -1,7 +1,7 @@
 #include "GUI.h"
 #include "Config.h"
 
-const BoolListEntryDef SecuParam[10]=
+const BoolListEntryDef SecuParam[11]=
 	{
 		{
 		"高级菜单直接访问",
@@ -17,6 +17,13 @@ const BoolListEntryDef SecuParam[10]=
 		false,
 		false
 		},
+		{
+		"使能自动均衡修正",
+		true,
+		&CfgData.EnableExtendedBalance,
+		false,
+		false
+		},		
 		{
 		"使能充电系统配置",
 		true,

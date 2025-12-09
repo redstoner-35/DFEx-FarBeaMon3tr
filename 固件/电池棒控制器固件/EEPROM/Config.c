@@ -15,6 +15,7 @@ void SyncUnResetThings(CfgUnionDef *IN)
 	{
   IN->ROMImage.Data.Data.BatteryCurrentCalFactor=CfgData.BatteryCurrentCalFactor;
   IN->ROMImage.Data.Data.BatteryVoltageCalFactor=CfgData.BatteryVoltageCalFactor;
+	IN->ROMImage.Data.Data.SystemTempCalFactor=CfgData.SystemTempCalFactor;
 	IN->ROMImage.Data.Data.TypeCAmpereCalCharge=CfgData.TypeCAmpereCalCharge;
 	IN->ROMImage.Data.Data.TypeCVoltageCal=CfgData.TypeCVoltageCal;
 	IN->ROMImage.Data.Data.TypeCAmpereCal=CfgData.TypeCAmpereCal;
@@ -46,7 +47,8 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	//校准系数配置
 	if(IsFactoryOverride)
 		{
-		IN->ROMImage.Data.Data.BatteryCurrentCalFactor=1012;
+		IN->ROMImage.Data.Data.SystemTempCalFactor=-20;      	//温度校准配置
+		IN->ROMImage.Data.Data.BatteryCurrentCalFactor=1007;
 		IN->ROMImage.Data.Data.BatteryVoltageCalFactor=1000;
 		}
 	//存储模式和低压保护配置
@@ -72,7 +74,6 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	IN->ROMImage.Data.Data.SinkConfig.EnableSinkPD=true;
 	IN->ROMImage.Data.Data.SinkConfig.EnableSinkSCP=true; //输入快充协议
 	//输入配置
-
 	IN->ROMImage.Data.Data.VRecharge=Recharge_0V1;
 	IN->ROMImage.Data.Data.IStop=IStop_200mA;
 	IN->ROMImage.Data.Data.InputConfig.ChargeCurrent=CurrentIP2366FW->IP2366ICCMAX;
@@ -94,6 +95,7 @@ void LoadDefaultConfig(CfgUnionDef *IN,bool IsFactoryOverride)
 	IN->ROMImage.Data.Data.PDOCFG.Enable12V=true;  
 	IN->ROMImage.Data.Data.PDOCFG.Enable9V=true;  //所有PDO都打开
 	//安全配置
+	IN->ROMImage.Data.Data.EnableExtendedBalance=true; 								 //默认开启自动均衡
 	IN->ROMImage.Data.Data.EnableThermalStepdown=true;
   if(IsFactoryOverride)IN->ROMImage.Data.Data.EnableAdvAccess=false; //高级菜单使能不重置
   IN->ROMImage.Data.Data.EnableChargeConfig=false;

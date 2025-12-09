@@ -14,6 +14,9 @@ ChargeTestUnionDef CurrentTestResult;
 void ClearHistoryData(void)
 	{
 	LastCData.ChargeTime=0;
+	LastCData.PreChargeTime=0;
+  LastCData.CCChargeTime=0;
+  LastCData.CVChargeTime=0;		
 	LastCData.IsDataValid=false;
 	LastCData.MaxChargeCurrent=0;
 	LastCData.MaxChargeRatio=0;

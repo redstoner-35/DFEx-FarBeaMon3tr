@@ -3,227 +3,227 @@
 #include <math.h>
 
 
-//PMBUSçš„2^NæŒ‡æ•°è®¡ç®—
+//PMBUSµÄ2^NÖ¸Êı¼ÆËã
 double PMBUS_2NPowCalc(int Exp)
   {
-	//è°ƒç”¨Cè¯­è¨€æ•°å­¦åº“è®¡ç®—
+	//µ÷ÓÃCÓïÑÔÊıÑ§¿â¼ÆËã
   double result;
 	result=pow(2,(double)Exp);
 	return result;
 	}
-//å°†SLINEAR11æ¢ç®—ä¸ºFloat
+//½«SLINEAR11»»ËãÎªFloat
 float PMBUS_SLinearToFloat(unsigned int SIN)
   {
 	int exp;
 	float Buf;
-	exp=SIN>>11&0x1F;//å–æŒ‡æ•°
-	if(exp&0x10)exp|=0xFFFFFFF0;//è½¬32bitè´Ÿæ•°
-	Buf=PMBUS_2NPowCalc(exp);//å°†æ¢ç®—å‡ºæ¥çš„2*Næ”¾å…¥ç¼“å†²åŒº	
-	SIN&=0x7FF;//å°†æŒ‡æ•°éƒ¨åˆ†å»æ‰å‰©ä¸‹åº•æ•°
-	Buf*=(float)SIN;//ä¹˜ä¸Šåº•æ•°å¾—åˆ°æœ€ç»ˆçš„ç»“æœ
+	exp=SIN>>11&0x1F;//È¡Ö¸Êı
+	if(exp&0x10)exp|=0xFFFFFFF0;//×ª32bit¸ºÊı
+	Buf=PMBUS_2NPowCalc(exp);//½«»»Ëã³öÀ´µÄ2*N·ÅÈë»º³åÇø	
+	SIN&=0x7FF;//½«Ö¸Êı²¿·ÖÈ¥µôÊ£ÏÂµ×Êı
+	Buf*=(float)SIN;//³ËÉÏµ×ÊıµÃµ½×îÖÕµÄ½á¹û
 	return Buf;
 	}
-//ä»…å‘é€å‘½ä»¤
+//½ö·¢ËÍÃüÁî
 bool PMBUS_SendCommand(char Addr,char Command)
   {
-	//å‘é€èµ·å§‹ä½ï¼Œåœ°å€ï¼Œå‘½ä»¤
+	//·¢ËÍÆğÊ¼Î»£¬µØÖ·£¬ÃüÁî
   IIC_Start();
   IIC_Send_Byte(Addr);
-  if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+  if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 	IIC_Send_Byte(Command);
-	if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
-	//æˆåŠŸå®Œæˆæ“ä½œ
+	if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
+	//³É¹¦Íê³É²Ù×÷
 	IIC_Stop();
 	return true;
 	}
-//å•å­—èŠ‚è¯»å†™
+//µ¥×Ö½Ú¶ÁĞ´
 bool PMBUS_ByteReadWrite(bool IsWrite,unsigned char *Byte,char Addr,char Command)
   {
-	//å‘é€èµ·å§‹ä½ï¼Œåœ°å€ï¼Œå‘½ä»¤
+	//·¢ËÍÆğÊ¼Î»£¬µØÖ·£¬ÃüÁî
   IIC_Start();
   IIC_Send_Byte(Addr);
-  if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+  if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 	IIC_Send_Byte(Command);
-	if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
-	//å†™å…¥
+	if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
+	//Ğ´Èë
 	if(IsWrite)
 	  {
 		IIC_Send_Byte(*Byte);
-		if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+		if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 		}
-	//è¯»å–
+	//¶ÁÈ¡
 	else
 	  {
 		IIC_Start();
     IIC_Send_Byte(Addr+1);
-		if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
-		*Byte=IIC_Read_Byte(0);//è¯»å®Œ1byteånackè¡¨ç¤ºä¸è¦é€å‡ºæ›´å¤šæ•°æ®
+		if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
+		*Byte=IIC_Read_Byte(0);//¶ÁÍê1byteºónack±íÊ¾²»ÒªËÍ³ö¸ü¶àÊı¾İ
 		}
-	//æˆåŠŸå®Œæˆæ“ä½œ
+	//³É¹¦Íê³É²Ù×÷
 	IIC_Stop();
 	return true;
 	}
-//åŒå­—èŠ‚è¯»å†™(word)
-//MSB Firstè¡¨ç¤ºå‘é€å’Œæ¥æ”¶å­—èŠ‚çš„é¡ºåºï¼Œå¦‚æœæ˜¯ä¸ºtrue åˆ™é¡ºåºä¸º [D15-D8][D7-D0]
+//Ë«×Ö½Ú¶ÁĞ´(word)
+//MSB First±íÊ¾·¢ËÍºÍ½ÓÊÕ×Ö½ÚµÄË³Ğò£¬Èç¹ûÊÇÎªtrue ÔòË³ĞòÎª [D15-D8][D7-D0]
 bool PMBUS_WordReadWrite(bool MSBFirst,bool IsWrite,unsigned int *Word,char Addr,char Command)
   {
 	unsigned int buf;
-	//å‘é€èµ·å§‹ä½ï¼Œåœ°å€ï¼Œå‘½ä»¤
+	//·¢ËÍÆğÊ¼Î»£¬µØÖ·£¬ÃüÁî
   IIC_Start();
   IIC_Send_Byte(Addr);
-  if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+  if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 	IIC_Send_Byte(Command);
-	if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
-	//å†™å…¥(æ ¹æ®å‚æ•°è®¾ç½®LSBè¿˜æ˜¯MSB First)
+	if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
+	//Ğ´Èë(¸ù¾İ²ÎÊıÉèÖÃLSB»¹ÊÇMSB First)
 	if(IsWrite)
 	  {
-		IIC_Send_Byte(MSBFirst?((*Word>>8)&0xFF):(*Word&0xFF));//å‘é€æ•°æ®
-		if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+		IIC_Send_Byte(MSBFirst?((*Word>>8)&0xFF):(*Word&0xFF));//·¢ËÍÊı¾İ
+		if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 		IIC_Send_Byte(MSBFirst?(*Word&0xFF):((*Word>>8)&0xFF));
-		if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+		if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 		}
-  //è¯»å–(æ ¹æ®å‚æ•°è®¾ç½®LSBè¿˜æ˜¯MSB First)
+  //¶ÁÈ¡(¸ù¾İ²ÎÊıÉèÖÃLSB»¹ÊÇMSB First)
 	else
 	  {
 		IIC_Start();
     IIC_Send_Byte(Addr+1);
-		if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
-		buf=MSBFirst?((IIC_Read_Byte(1)<<8)&0xFF00):IIC_Read_Byte(1);//è°ƒæ•´æ¥æ”¶å­—èŠ‚é¡ºåº
+		if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
+		buf=MSBFirst?((IIC_Read_Byte(1)<<8)&0xFF00):IIC_Read_Byte(1);//µ÷Õû½ÓÊÕ×Ö½ÚË³Ğò
 		buf|=MSBFirst?IIC_Read_Byte(0):(IIC_Read_Byte(0)<<8);
-	  *Word=buf;//è¯»å–å®Œæˆï¼Œèµ‹å€¼
+	  *Word=buf;//¶ÁÈ¡Íê³É£¬¸³Öµ
 		}	
-	//æˆåŠŸå®Œæˆæ“ä½œ
+	//³É¹¦Íê³É²Ù×÷
 	IIC_Stop();
 	return true;
 	}
-//è¿›è¡Œå—å†™å…¥æ“ä½œå‰è·å–æ•°æ®é‡
+//½øĞĞ¿éĞ´Èë²Ù×÷Ç°»ñÈ¡Êı¾İÁ¿
 bool PMBUS_GetBlockWriteCount(int *Size,char Addr,char Command)
   {
-  *Size=-1;//å°ºå¯¸è®¾ç½®ä¸º-1ï¼Œåœ¨å‘½ä»¤æ²¡æœ‰æˆåŠŸæ—¶è¿”å›é”™è¯¯å€¼
-	//å‘é€èµ·å§‹ä½ï¼Œåœ°å€ï¼Œå‘½ä»¤
+  *Size=-1;//³ß´çÉèÖÃÎª-1£¬ÔÚÃüÁîÃ»ÓĞ³É¹¦Ê±·µ»Ø´íÎóÖµ
+	//·¢ËÍÆğÊ¼Î»£¬µØÖ·£¬ÃüÁî
   IIC_Start();
   IIC_Send_Byte(Addr);
-  if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+  if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 	IIC_Send_Byte(Command);
-	if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
-	//è¯»å–å—æ•°ç›®
+	if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
+	//¶ÁÈ¡¿éÊıÄ¿
 	IIC_Start();
   IIC_Send_Byte(Addr+1);
-	if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+	if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 	*Size=(int)IIC_Read_Byte(0);
-	//æˆåŠŸå®Œæˆæ“ä½œ
+	//³É¹¦Íê³É²Ù×÷
 	IIC_Stop();
 	return true;
 	}
-//è¿›è¡Œå—è¯»å†™æ“ä½œ
+//½øĞĞ¿é¶ÁĞ´²Ù×÷
 bool PMBUS_BlockReadWrite(bool IsWrite,unsigned char *Buf,char Addr,char Command)
   {
 	int size,i;
-	//å¦‚æœæ˜¯å†™å…¥çš„ï¼Œä¼šå°è¯•è·å–å°ºå¯¸
+	//Èç¹ûÊÇĞ´ÈëµÄ£¬»á³¢ÊÔ»ñÈ¡³ß´ç
 	if(IsWrite)
 	  {
-		//è·å–ç›®æ ‡å†™å…¥çš„å°ºå¯¸
+		//»ñÈ¡Ä¿±êĞ´ÈëµÄ³ß´ç
 		if(!PMBUS_GetBlockWriteCount(&size,Addr,Command))
 		  return false;
 		delay_us(10);
 		}
-  //å‘é€èµ·å§‹ä½ï¼Œåœ°å€ï¼Œå‘½ä»¤
+  //·¢ËÍÆğÊ¼Î»£¬µØÖ·£¬ÃüÁî
   IIC_Start();
   IIC_Send_Byte(Addr);
-  if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+  if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 	IIC_Send_Byte(Command);
-	if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
-	//å—å†™å…¥
+	if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
+	//¿éĞ´Èë
 	if(IsWrite)
 	  {
 		IIC_Send_Byte(size);
-		if(IIC_Wait_Ack())return false;//å‘é€å­—èŠ‚æ•°é‡å‘Šè¯‰ä»æœºæˆ‘è¦å†™å¤šå°‘å­—èŠ‚è¿‡æ¥
-		for(i=0;i<size;i++)//ä»ä½åˆ°é«˜å‘é€æ‰€æ¬²å†…å®¹
+		if(IIC_Wait_Ack())return false;//·¢ËÍ×Ö½ÚÊıÁ¿¸æËß´Ó»úÎÒÒªĞ´¶àÉÙ×Ö½Ú¹ıÀ´
+		for(i=0;i<size;i++)//´ÓµÍµ½¸ß·¢ËÍËùÓûÄÚÈİ
 			{
 			IIC_Send_Byte(Buf[i]);
-			if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+			if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 			}		
 		}
-	//å—è¯»å–
+	//¿é¶ÁÈ¡
 	else
 	  {
-		//è¯»å–å—æ•°ç›®
-		size=0;//åˆå§‹åŒ–ä¸º0
+		//¶ÁÈ¡¿éÊıÄ¿
+		size=0;//³õÊ¼»¯Îª0
 	  IIC_Start();
     IIC_Send_Byte(Addr+1);
-	  if(IIC_Wait_Ack())return false;//èŠ¯ç‰‡æ— ååº”ï¼Œè¿”å›false
+	  if(IIC_Wait_Ack())return false;//Ğ¾Æ¬ÎŞ·´Ó¦£¬·µ»Øfalse
 	  size=(int)IIC_Read_Byte(1);
-		if(!size||size>=0xFF)//è¯»åˆ°çš„æ•°æ®å¼‚å¸¸
+		if(!size||size>=0xFF)//¶Áµ½µÄÊı¾İÒì³£
 		  {
 			IIC_Stop();
-			return false;//åœæ­¢é€šä¿¡å¹¶è¿”å›é”™è¯¯
+			return false;//Í£Ö¹Í¨ĞÅ²¢·µ»Ø´íÎó
 			}
-		for(i=0;i<size;i++)Buf[i]=IIC_Read_Byte(i<(size-1)?1:0);//è¯»å–æ•°æ®	
+		for(i=0;i<size;i++)Buf[i]=IIC_Read_Byte(i<(size-1)?1:0);//¶ÁÈ¡Êı¾İ	
 		}
-	//æˆåŠŸå®Œæˆæ“ä½œ
+	//³É¹¦Íê³É²Ù×÷
 	IIC_Stop();
 	return true;	
 	}
-//è¯»å†™ä¾›åº”å•†é¢å¤–å®šä¹‰å¯„å­˜å™¨(Renesas ISL68/691xx)
+//¶ÁĞ´¹©Ó¦ÉÌ¶îÍâ¶¨Òå¼Ä´æÆ÷(Renesas ISL68/691xx)
 bool ISL_ReadWriteMFRReg(MFREXTRWCFG *CFGSTR)
  {
  int i;
  unsigned int DBUF;
  unsigned char PageNum;
- //æ“ä½œä¾›ç”µèŠ¯ç‰‡æŒ‡å‘è¦å†™å‚æ•°çš„pageï¼Œä¸æˆåŠŸåˆ™é€€å‡º
+ //²Ù×÷¹©µçĞ¾Æ¬Ö¸ÏòÒªĞ´²ÎÊıµÄpage£¬²»³É¹¦ÔòÍË³ö
  if(CFGSTR->PageCommandRequired!=0)
    {
    PageNum=CFGSTR->PageNumber;
 	 if(!PMBUS_ByteReadWrite(true,&PageNum,CFGSTR->VRMAddress,0x00))
 		 return false;
 	 }
- //å‘é€å‘½ä»¤ä»£ç 
- IIC_Start();//å¼€å§‹ä¿¡å·
- IIC_Send_Byte(CFGSTR->VRMAddress);//å‘é€ç›®æ ‡åœ°å€ï¼ˆå†™ï¼‰
+ //·¢ËÍÃüÁî´úÂë
+ IIC_Start();//¿ªÊ¼ĞÅºÅ
+ IIC_Send_Byte(CFGSTR->VRMAddress);//·¢ËÍÄ¿±êµØÖ·£¨Ğ´£©
  if(IIC_Wait_Ack()!=0)return false;
- IIC_Send_Byte(0xF7);	   //å‘é€MFR Specific EXT Command
+ IIC_Send_Byte(0xF7);	   //·¢ËÍMFR Specific EXT Command
  if(IIC_Wait_Ack()!=0)return false;
- IIC_Send_Byte(CFGSTR->EXTRegCode);//å‘é€é¢å¤–å¯„å­˜å™¨ä»£ç  
+ IIC_Send_Byte(CFGSTR->EXTRegCode);//·¢ËÍ¶îÍâ¼Ä´æÆ÷´úÂë 
  if(IIC_Wait_Ack()!=0)return false;
- IIC_Send_Byte(CFGSTR->EXTCommandCode);//å‘é€é¢å¤–å‘½ä»¤ä»£ç 
+ IIC_Send_Byte(CFGSTR->EXTCommandCode);//·¢ËÍ¶îÍâÃüÁî´úÂë
  if(IIC_Wait_Ack()!=0)return false;
- IIC_Stop();//åœæ­¢
- delay_ms(2);//åœ¨å‘å‡ºå‘½ä»¤ä¹‹åè¦å»¶è¿Ÿ2msæ‰èƒ½ç»§ç»­è¯»å†™æ•°æ®
- //å¦‚æœæ˜¯å†™å…¥ï¼Œåˆ™æ‰§è¡Œä»¥ä¸‹æµç¨‹
+ IIC_Stop();//Í£Ö¹
+ delay_ms(2);//ÔÚ·¢³öÃüÁîÖ®ºóÒªÑÓ³Ù2ms²ÅÄÜ¼ÌĞø¶ÁĞ´Êı¾İ
+ //Èç¹ûÊÇĞ´Èë£¬ÔòÖ´ĞĞÒÔÏÂÁ÷³Ì
  if(CFGSTR->IsWrite!=0)
   {
-  IIC_Start();//å¼€å§‹ä¿¡å·
-  IIC_Send_Byte(CFGSTR->VRMAddress);//å‘é€ç›®æ ‡åœ°å€ï¼ˆå†™ï¼‰
+  IIC_Start();//¿ªÊ¼ĞÅºÅ
+  IIC_Send_Byte(CFGSTR->VRMAddress);//·¢ËÍÄ¿±êµØÖ·£¨Ğ´£©
   if(IIC_Wait_Ack()!=0)return false;
-  IIC_Send_Byte(0xF5);	   //å‘é€MFR Specific EXT Data
+  IIC_Send_Byte(0xF5);	   //·¢ËÍMFR Specific EXT Data
 	if(IIC_Wait_Ack()!=0)return false;	
-	DBUF=*CFGSTR->DataIO;//ä¼ å…¥è¦å‘å‡ºçš„æ•°æ®
+	DBUF=*CFGSTR->DataIO;//´«ÈëÒª·¢³öµÄÊı¾İ
   for(i=0;i<4;i++)
    {
-	  IIC_Send_Byte(DBUF&0xFF);//å‘é€é…ç½®æ•°æ®
-	  if(IIC_Wait_Ack()==1)return false;//ç­‰å¾…å‘é€å®Œæ¯•,å¦‚æœNACKåˆ™é€€å‡º
-		 DBUF>>=8;//å‘é€å®Œæ¯•1ä¸ªå­—èŠ‚ï¼ŒæŠŠé«˜å­—èŠ‚ç§»åŠ¨ä¸‹æ¥ç»§ç»­å‘
+	  IIC_Send_Byte(DBUF&0xFF);//·¢ËÍÅäÖÃÊı¾İ
+	  if(IIC_Wait_Ack()==1)return false;//µÈ´ı·¢ËÍÍê±Ï,Èç¹ûNACKÔòÍË³ö
+		 DBUF>>=8;//·¢ËÍÍê±Ï1¸ö×Ö½Ú£¬°Ñ¸ß×Ö½ÚÒÆ¶¯ÏÂÀ´¼ÌĞø·¢
 	 }
 	}
- //å¦åˆ™æ‰§è¡Œè¯»å–
+ //·ñÔòÖ´ĞĞ¶ÁÈ¡
  else
   {
-	IIC_Start();//å¼€å§‹ä¿¡å·
-  IIC_Send_Byte(CFGSTR->VRMAddress);//å‘é€ç›®æ ‡åœ°å€ï¼ˆå†™ï¼‰
+	IIC_Start();//¿ªÊ¼ĞÅºÅ
+  IIC_Send_Byte(CFGSTR->VRMAddress);//·¢ËÍÄ¿±êµØÖ·£¨Ğ´£©
   if(IIC_Wait_Ack()!=0)return false;
-  IIC_Send_Byte(0xF5);	   //å‘é€MFR Specific EXT Data
+  IIC_Send_Byte(0xF5);	   //·¢ËÍMFR Specific EXT Data
 	if(IIC_Wait_Ack()!=0)return false;	
-	IIC_Start();//å¼€å§‹ä¿¡å·
-  IIC_Send_Byte(CFGSTR->VRMAddress+1);//å‘é€ç›®æ ‡åœ°å€ï¼ˆè¯»ï¼‰
+	IIC_Start();//¿ªÊ¼ĞÅºÅ
+  IIC_Send_Byte(CFGSTR->VRMAddress+1);//·¢ËÍÄ¿±êµØÖ·£¨¶Á£©
   if(IIC_Wait_Ack()!=0)return false;
-  for(i=0;i<4;i++)//å¼€å§‹æ¥å—æ•°æ®
+  for(i=0;i<4;i++)//¿ªÊ¼½ÓÊÜÊı¾İ
    {
-   DBUF>>=8;//å°†æ”¾åœ¨é«˜ä½çš„æ•°æ®å¾€ä½ä½æ–¹å‘ç§»åŠ¨
-	 DBUF|=IIC_Read_Byte(i<3?1:0)<<24;//æ¥æ”¶æ•°æ®æ”¾åˆ°æœ€é«˜ä½
+   DBUF>>=8;//½«·ÅÔÚ¸ßÎ»µÄÊı¾İÍùµÍÎ»·½ÏòÒÆ¶¯
+	 DBUF|=IIC_Read_Byte(i<3?1:0)<<24;//½ÓÊÕÊı¾İ·Åµ½×î¸ßÎ»
 	 }
-	*CFGSTR->DataIO=DBUF;//å°†è¯»å–çš„æ•°æ®ä¼ å‡ºè¿‡å»
+	*CFGSTR->DataIO=DBUF;//½«¶ÁÈ¡µÄÊı¾İ´«³ö¹ıÈ¥
 	}
- //æ“ä½œå®Œæ¯•
- IIC_Stop();//é€šä¿¡ç»“æŸï¼Œåœæ­¢
+ //²Ù×÷Íê±Ï
+ IIC_Stop();//Í¨ĞÅ½áÊø£¬Í£Ö¹
  return true;
  }

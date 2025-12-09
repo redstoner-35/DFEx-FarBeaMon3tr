@@ -1,74 +1,74 @@
 #include "ht32.h"
 #include "delay.h"
 
-//å®šä¹‰
-#define systick_ms_step 6000 //Systickè·‘1msçš„step
-#define systick_us_step 6 //systickå®šæ—¶å™¨è·‘1usçš„step
+//¶¨Òå
+#define systick_ms_step 6000 //SystickÅÜ1msµÄstep
+#define systick_us_step 6 //systick¶¨Ê±Æ÷ÅÜ1usµÄstep
 
 #pragma push
-#pragma O0  //delayä¸ç”¨ä»»ä½•ä¼˜åŒ–
+#pragma O0  //delay²»ÓÃÈÎºÎÓÅ»¯
 
 char DelaySeconds;
 
-//å»¶æ—¶åˆå§‹åŒ–
+//ÑÓÊ±³õÊ¼»¯
 void delay_init(void)
  {
-	SYSTICK_ClockSourceConfig(SYSTICK_SRC_STCLK);//ä½¿ç”¨48MHz AHB
-	 SYSTICK_IntConfig(DISABLE);//ç¦æ­¢systickä¸­æ–­ 
-	SYSTICK_CounterCmd(SYSTICK_COUNTER_DISABLE);//å…³é—­å®šæ—¶å™¨
-	SYSTICK_CounterCmd(SYSTICK_COUNTER_CLEAR);//æ¸…é™¤å®šæ—¶å™¨æ•°æ®
+	SYSTICK_ClockSourceConfig(SYSTICK_SRC_STCLK);//Ê¹ÓÃ48MHz AHB
+	 SYSTICK_IntConfig(DISABLE);//½ûÖ¹systickÖĞ¶Ï 
+	SYSTICK_CounterCmd(SYSTICK_COUNTER_DISABLE);//¹Ø±Õ¶¨Ê±Æ÷
+	SYSTICK_CounterCmd(SYSTICK_COUNTER_CLEAR);//Çå³ı¶¨Ê±Æ÷Êı¾İ
 	DelaySeconds=0; 
  }
 
-//msçº§åˆ«å»¶æ—¶
+//ms¼¶±ğÑÓÊ±
 void delay_ms(u16 ms)
 {	
   #if (ms > 2790)
   #error Delayms()-ERROR: Delay time exceeded maxmium value
 	#endif
 	u32 temp;		   
-	SysTick->LOAD=(u32)ms*systick_ms_step;				//æ—¶é—´åŠ è½½(SysTick->LOADä¸º24bit)
-	SysTick->VAL =0x00;							//æ¸…ç©ºè®¡æ•°å™¨
-	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk ;	//å¼€å§‹å€’æ•°  
+	SysTick->LOAD=(u32)ms*systick_ms_step;				//Ê±¼ä¼ÓÔØ(SysTick->LOADÎª24bit)
+	SysTick->VAL =0x00;							//Çå¿Õ¼ÆÊıÆ÷
+	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk ;	//¿ªÊ¼µ¹Êı  
 	do
 	{
 		temp=SysTick->CTRL;
-	}while((temp&0x01)&&!(temp&(1<<16)));		//ç­‰å¾…æ—¶é—´åˆ°è¾¾   
-	SysTick->CTRL&=~SysTick_CTRL_ENABLE_Msk;	//å…³é—­è®¡æ•°å™¨
-	SysTick->VAL =0X00;       					//æ¸…ç©ºè®¡æ•°å™¨	  	    
+	}while((temp&0x01)&&!(temp&(1<<16)));		//µÈ´ıÊ±¼äµ½´ï   
+	SysTick->CTRL&=~SysTick_CTRL_ENABLE_Msk;	//¹Ø±Õ¼ÆÊıÆ÷
+	SysTick->VAL =0X00;       					//Çå¿Õ¼ÆÊıÆ÷	  	    
 }
 
-//usçº§åˆ«å»¶æ—¶
+//us¼¶±ğÑÓÊ±
 void delay_us(u16 us)
 {	 		  	  
 	u32 temp;	
-	__disable_irq(); //ä¸ºäº†é¿å…å½±å“usçº§åˆ«å®šæ—¶çš„ç²¾åº¦ï¼Œéœ€è¦å±è”½æ‰€æœ‰ä¸­æ–­
+	__disable_irq(); //ÎªÁË±ÜÃâÓ°Ïìus¼¶±ğ¶¨Ê±µÄ¾«¶È£¬ĞèÒªÆÁ±ÎËùÓĞÖĞ¶Ï
   #if (us > 2796000)
   #error Delayus()-ERROR: Delay time exceeded maxmium value
 	#endif	
-	SysTick->LOAD=(u32)us*systick_us_step;				//æ—¶é—´åŠ è½½(SysTick->LOADä¸º24bit)
-	SysTick->VAL =0x00;							//æ¸…ç©ºè®¡æ•°å™¨
-	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk ;	//å¼€å§‹å€’æ•°  
+	SysTick->LOAD=(u32)us*systick_us_step;				//Ê±¼ä¼ÓÔØ(SysTick->LOADÎª24bit)
+	SysTick->VAL =0x00;							//Çå¿Õ¼ÆÊıÆ÷
+	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk ;	//¿ªÊ¼µ¹Êı  
 	do
 	{
 		temp=SysTick->CTRL;
-	}while((temp&0x01)&&!(temp&(1<<16)));		//ç­‰å¾…æ—¶é—´åˆ°è¾¾   
-	SysTick->CTRL&=~SysTick_CTRL_ENABLE_Msk;	//å…³é—­è®¡æ•°å™¨
-	SysTick->VAL =0x00;       					//æ¸…ç©ºè®¡æ•°å™¨	  	    
-	__enable_irq(); //å®šæ—¶ç»“æŸï¼Œå¼€å¯æ‰€æœ‰ä¸­æ–­
+	}while((temp&0x01)&&!(temp&(1<<16)));		//µÈ´ıÊ±¼äµ½´ï   
+	SysTick->CTRL&=~SysTick_CTRL_ENABLE_Msk;	//¹Ø±Õ¼ÆÊıÆ÷
+	SysTick->VAL =0x00;       					//Çå¿Õ¼ÆÊıÆ÷	  	    
+	__enable_irq(); //¶¨Ê±½áÊø£¬¿ªÆôËùÓĞÖĞ¶Ï
 }
 
-//sçº§åˆ«å»¶æ—¶
+//s¼¶±ğÑÓÊ±
 void delay_Second(u8 sec)
 {	   
-	SysTick->LOAD=(u32)systick_ms_step*1000;				//æ—¶é—´åŠ è½½(å»¶è¿Ÿ1ç§’é’Ÿ)
-	SysTick->VAL =0x00;							//æ¸…ç©ºè®¡æ•°å™¨
-	DelaySeconds=sec; //å­˜æ”¾å€’æ•°ç§’æ•°
-  SYSTICK_IntConfig(ENABLE);//å¯åŠ¨systickä¸­æ–­
-	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk ;	//å¼€å§‹å€’æ•°  
-  while(DelaySeconds);//ç­‰å¾…è®¡æ—¶ç»“æŸ 
-	SYSTICK_IntConfig(DISABLE);//ç¦æ­¢systickä¸­æ–­
-	SysTick->CTRL&=~SysTick_CTRL_ENABLE_Msk;	//å…³é—­è®¡æ•°å™¨
-	SysTick->VAL =0X00;       					//æ¸…ç©ºè®¡æ•°å™¨	  	    
+	SysTick->LOAD=(u32)systick_ms_step*1000;				//Ê±¼ä¼ÓÔØ(ÑÓ³Ù1ÃëÖÓ)
+	SysTick->VAL =0x00;							//Çå¿Õ¼ÆÊıÆ÷
+	DelaySeconds=sec; //´æ·Åµ¹ÊıÃëÊı
+  SYSTICK_IntConfig(ENABLE);//Æô¶¯systickÖĞ¶Ï
+	SysTick->CTRL|=SysTick_CTRL_ENABLE_Msk ;	//¿ªÊ¼µ¹Êı  
+  while(DelaySeconds);//µÈ´ı¼ÆÊ±½áÊø 
+	SYSTICK_IntConfig(DISABLE);//½ûÖ¹systickÖĞ¶Ï
+	SysTick->CTRL&=~SysTick_CTRL_ENABLE_Msk;	//¹Ø±Õ¼ÆÊıÆ÷
+	SysTick->VAL =0X00;       					//Çå¿Õ¼ÆÊıÆ÷	  	    
 }
 #pragma pop

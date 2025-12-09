@@ -44,7 +44,7 @@ void BattICALMenuDummy(void)
 void LoadBattCalibrationData(void)
 	{
 	//退出时加载ADC校准值使校准结果立即生效
-	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor);
+	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor,CfgData.SystemTempCalFactor);
 	}	
 	
 //菜单输入

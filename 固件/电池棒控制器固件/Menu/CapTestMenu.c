@@ -77,15 +77,24 @@ void ResetCapTestSystem(void)
 	CurrentTestResult.Data.MaxVbatt=0;
 	CurrentTestResult.Data.StartVbatt=0;
 	CurrentTestResult.Data.TotalWh=0;
+  CurrentTestResult.Data.CCChargeTime=0;
+  CurrentTestResult.Data.CVChargeTime=0;
+  CurrentTestResult.Data.PreChargeTime=0;		
 	}
 	
 //测容系统累加处理
 void CTestAverageACC(void)
 	{
 	extern bool OCState;
+	#define BattIsCharging() (BATT==Batt_CCCharge||BATT==Batt_PreChage||BATT==Batt_CVCharge||BATT==Batt_ChgDone)
 	//判断测容完毕计时器累减	
 	if(ConfirmTimeCounter>0)ConfirmTimeCounter--;	
-	if(VBUSReConnectTimeCounter>0)VBUSReConnectTimeCounter--;
+	if(VBUSReConnectTimeCounter>0)
+		{
+		//电池重新开始充电中
+	  if(VBUSReConnectTimeCounter<50&&VBUS.IsTypeCConnected&&BattIsCharging())VBUSReConnectTimeCounter=0;
+	  else VBUSReConnectTimeCounter--;
+		}
 	//测容系统没有激活，禁止遥测
 	if(CFSMState!=CapTest_WaitTypeCInsert&&CFSMState!=CapTest_Running&&CFSMState!=CapTest_ConfirmForceStopTest)return;
 	Is2366Telem=true;
@@ -109,6 +118,14 @@ void CTestAverageACC(void)
 		//进行电压采样
 		if(CurrentTestResult.Data.StartVbatt==0&&IBattsumbuf>0.15)CurrentTestResult.Data.StartVbatt=VBattSumbuf; //成功开始充电，抓取一次结果
 		//进行时间累加
+	  switch(BATT)
+			{
+			case Batt_PreChage:CurrentTestResult.Data.PreChargeTime++;break;
+			case Batt_CCCharge:CurrentTestResult.Data.CCChargeTime++;break;
+			case Batt_CVCharge:CurrentTestResult.Data.CVChargeTime++;break;
+			//其余情况啥都不去做
+			default:break;
+			}
 		CurrentTestResult.Data.ChargeTime++;
 		//采集最高电压和温度
 		if(CurrentTestResult.Data.MaxVbatt<VBattSumbuf)CurrentTestResult.Data.MaxVbatt=VBattSumbuf;
@@ -125,6 +142,7 @@ void CTestAverageACC(void)
 		//采集完毕，更新GUI
 		IsUpDateGUI=false;
 		}
+	#undef BattIsCharging 
 	}
 
 //按键处理

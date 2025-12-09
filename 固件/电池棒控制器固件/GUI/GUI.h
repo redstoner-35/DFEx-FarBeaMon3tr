@@ -101,6 +101,7 @@ typedef struct
 	}MenuConfigDef;	
 	
 //²Ëµ¥entry
+extern const MenuConfigDef SysTCALMenu;
 extern const MenuConfigDef PreChargeAutoSetMenu;
 extern const MenuConfigDef PreChargeEndSetMenu;
 extern const MenuConfigDef QueryPDOListMenu;

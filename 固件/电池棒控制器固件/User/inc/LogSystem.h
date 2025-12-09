@@ -6,7 +6,7 @@
 #include "Config.h"
 
 //定义
-#define RunTimeLoggerDepth 552  //运行日志的深度
+#define RunTimeLoggerDepth 555  //运行日志的深度
 #define RunTimeLogKey "R@DB" //运行log的内容检查Key
 
 typedef struct

@@ -7,6 +7,9 @@ typedef struct
 	{
 	bool IsDataValid; //数据区域是否有效
 	unsigned long ChargeTime; //充电时长(秒)
+	unsigned long PreChargeTime;
+	unsigned long CCChargeTime; 
+	unsigned long CVChargeTime; //涓流、恒压、恒流充电时长
 	float TotalmAH; //冲入的电量(mAH)
 	float MaxChargeCurrent; //充电期间最高电流
 	float MaxChargeTemp; //充电期间最高温度

@@ -18,6 +18,7 @@ float PORVBatVolt=0;
 static bool IsADCLoadCalibrationVal=false;
 static int VbattCal=1000;
 static int IbattCal=1000;
+static float TemperatureCal=0;
 
 //ADC结束转换回调
 void ADC_EOC_interrupt_Callback(void)
@@ -88,7 +89,6 @@ bool ADC_GetResult(void)
 		Rt=((float)NTCUpperResValueK*buf)/(VREF-buf);//得到NTC+单片机IO导通电阻的传感器温度值
 		buf=1/((1/(273.15+(float)NTCT0))+log(Rt/(float)NTCT0ResK)/(float)NTCBValue);//计算出温度
 		buf-=273.15;//减去开氏温标常数变为摄氏度
-		buf+=(float)NTCTRIM;//加上修正值	
 		if(buf<(-40)||buf>125)	//温度传感器异常
 			{
 			ADCO.IsNTCOK=false;
@@ -98,6 +98,7 @@ bool ADC_GetResult(void)
 			{
 			ADCO.IsNTCOK=true;
 			ADCO.Systemp=buf;
+			if(IsADCLoadCalibrationVal)ADCO.Systemp+=TemperatureCal; //如果校准数据成功加载，则加载温度校准值
 			}
 		GPIO_SetOutBits(TVSEL_IOG,TVSEL_IOP); //令TVSEL=0，选择温度测量	
 		}
@@ -106,11 +107,13 @@ bool ADC_GetResult(void)
 	}		
 	
 //ADC加载校准数值
-void InternalADC_LoadCalibration(int Vcal,int Ical)
+void InternalADC_LoadCalibration(int Vcal,int Ical,int TempCal)
 	{
 	IsADCLoadCalibrationVal=true;
 	VbattCal=Vcal;
 	IbattCal=Ical;	
+	TemperatureCal=(float)TempCal;
+	TemperatureCal/=10;              //温度校准值=0.1度per LSB
 	}	
 	
 //内部ADC初始化

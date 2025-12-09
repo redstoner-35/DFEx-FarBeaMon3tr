@@ -8,8 +8,8 @@
 static char ShowMenuState=0;
 static bool IsUpdateCUI=false;
 
-//显示GUI下半部分
-static void ShowLowerPart(void)
+//显示电池充电时最高温度，C数和开始以及最高电压
+static void ShowVTBATAndCCount(void)
 	{
 	u16 Color;
 	float Temp;
@@ -82,13 +82,31 @@ static void DisplayCTestAh(char Y,float Value,char *Str)
 		}
 	}	
 	
-//显示菜单的上半部分
-static void ShowUpperPart(void)
+//显示系统的充电时长
+static void ShowChargeTime(void)
 	{
-	float buf;
 	//显示时间
 	LCD_ShowChinese(3,21,"充电时长",WHITE,LGRAY,0);
-	ShowTimeCode(21,LastCData.ChargeTime);
+	ShowTimeCode(21,LastCData.ChargeTime);	
+	//显示预充时间
+	LCD_ShowChinese(3,35,"涓流时长",WHITE,LGRAY,0);
+	ShowTimeCode(35,LastCData.PreChargeTime);
+  //显示恒流时间
+ 	LCD_ShowChinese(3,49,"恒流时长",WHITE,LGRAY,0);
+	ShowTimeCode(49,LastCData.CCChargeTime);
+  //显示恒压时长
+ 	LCD_ShowChinese(3,64,"恒压时长",WHITE,LGRAY,0);
+	ShowTimeCode(64,LastCData.CVChargeTime);   				
+	}
+
+//显示充电电流和容量
+static void ShowICCAndCap(void)
+	{
+	float buf;
+	//显示最高充电电流
+	LCD_ShowChinese(3,21,"最高充电电流",WHITE,LGRAY,0);		
+	LCD_ShowFloatNum1(87,21,LastCData.MaxChargeCurrent,2,WHITE,LGRAY,12);
+	LCD_ShowChar(147,21,'A',WHITE,LGRAY,12,0);	
 	//显示充入电量
   LCD_ShowChinese(3,35,"充入能量",WHITE,LGRAY,0);		
 	buf=LastCData.TotalWh;
@@ -103,14 +121,6 @@ static void ShowUpperPart(void)
 	buf=LastCData.TotalWh/(3.6*BATTCOUNT);
 	buf*=1000;                         			//根据Wh以电池节数和3.6V的标称容量换算等效结果并转换为mAh
 	DisplayCTestAh(64,buf,"等效容量");	
-	}
-
-static void ShowLowestPart(void)
-	{
-	//显示最高充电电流
-	LCD_ShowChinese(3,21,"最高充电电流",WHITE,LGRAY,0);		
-	LCD_ShowFloatNum1(87,21,LastCData.MaxChargeCurrent,2,WHITE,LGRAY,12);
-	LCD_ShowChar(147,21,'A',WHITE,LGRAY,12,0);	
 	}
 	
 //容量显示的按键处理
@@ -150,9 +160,9 @@ void ShowCapHisGUI(void)
 	RenderMenuBG();
 	switch(ShowMenuState)
 		{
-		case 0:ShowUpperPart();break;
-		case 1:ShowLowerPart();break;
-		case 2:ShowLowestPart();break;
+		case 0:ShowICCAndCap();break;  //默认进入菜单之后，显示容量和充电电流
+		case 1:ShowVTBATAndCCount();break; //第二屏显示电池电压，温度和倍率
+		case 2:ShowChargeTime();break;  //第三屏幕，显示系统的充电时长和各个阶段的耗时
 		}		
 	IsUpdateCUI=false;
 	}

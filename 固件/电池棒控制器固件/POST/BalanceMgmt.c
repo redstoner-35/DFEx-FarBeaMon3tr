@@ -45,7 +45,7 @@ void BalanceMgmt_Init(void)
 	//应用校准数据
 	WaitChargingBeginTIM=80; //开始充电等待10秒才进入
 	ShowPostInfo(53,"应用ADC校准数据","13",Msg_Statu);
-	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor);
+	InternalADC_LoadCalibration(CfgData.BatteryVoltageCalFactor,CfgData.BatteryCurrentCalFactor,CfgData.SystemTempCalFactor);
 	}
 	
 //强制关闭均衡
@@ -63,6 +63,13 @@ static void Balance_ExtendBalMgmt(void)
 	BatteryStateDef SysState;
 	extern bool EnableManuBal;
 	extern bool IsUserForceDisableAutoCharge;
+	//在均衡未完全关闭且用户禁止自动均衡的状态下，停止该函数响应禁止自动均衡
+  if(CfgData.BalanceMode!=Balance_Diasbled&&!CfgData.EnableExtendedBalance)
+		{
+		//关闭自动均衡时自动清除未均衡容量避免溢出
+		if(LogData.UnbalanceBatteryAh>20.0)LogData.UnbalanceBatteryAh=0;
+		return;			
+		}			
 	//系统开始充电，倒计时
 	IP2366_GetChargerState(&SysState);	
   if(SysState==Batt_StandBy||SysState==Batt_discharging)WaitChargingBeginTIM=80;

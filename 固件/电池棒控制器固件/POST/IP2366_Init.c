@@ -609,7 +609,7 @@ void IP2366_ReConfigOutWhenTypeCOFF(void)
 	else if(WaitAfterTypeCRemoved>0)WaitAfterTypeCRemoved--;
 	else
 		{
-		if(GetIfCapTestRunning())VBUSReConnectTimeCounter=48; 	//系统即将从安全模式切换到正常充电，置位消隐定时器避免容量测试误认为C口被拔出
+		if(GetIfCapTestRunning())VBUSReConnectTimeCounter=80; 	//系统即将从安全模式切换到正常充电，置位消隐定时器避免容量测试误认为C口被拔出
 		IsBootFromVBUS=false;
 		AUXPSU_SetIPDState(true);
 		AUXPSU_ConnectTCtoIP2366();		//充电达到足够时长之后切换回IP2366进行高功率充电
@@ -640,6 +640,7 @@ void IP2366_PostInit(void)
 	bool Result;
 	IP2366VBUSStateDef VBUSState;
 	IP2366InputDef ICFG;	
+	IP2366SinkProtocolDef SinkCFG;
 	float VdroopRate;
 	int retry=5,i;
 	char VendorString[5];
@@ -668,16 +669,48 @@ void IP2366_PostInit(void)
 		delay_Second(1);
 		if(!IsBootFromVBUS)
 			{
+			//获取一遍VBUS电压
+			IP2366_GetVBUSState(&VBUSState);
+			
 			RunLogEntry.LastDataCRC=CalcRunLogCRC32(&RunLogEntry.Data); //强制刷新旧日志的结果
 			IsBootFromVBUS=true;
 			RunLogEntry.CurrentDataCRC=CalcRunLogCRC32(&RunLogEntry.Data); //计算运行日志的CRC32
 			ShowPostInfo(78,"系统将进入安全模式\0","W8",Msg_Warning);
-			WriteRuntimeLogToROM(); //保存日志				
+			WriteRuntimeLogToROM(); //保存日志		
+				
 			//电池电量异常，此时系统进入Fail-Safe Boot模式，强制C口取电为系统供电	
-			ForceEnableAdvPM();
-			AUXPSU_SetIPDState(true);
-			AUXPSU_ConnectTCtoIPD();
-			delay_Second(1);
+			SinkCFG.EnableSinkDPDM=false;
+      SinkCFG.EnableSinkPD=false;
+      SinkCFG.EnableSinkSCP=false;				
+			IP2366_SetSinkProtocol(&SinkCFG); //关闭所有C口协议
+			IP2366_EnableDCDC(false,false);   //关闭充电器
+			
+			//充电器不太聪明，强制输出20V为了避免芯片充电拉爆，强制充电器reset然后掉回去5V
+			retry=200;
+			if(VBUSState.VBUSVolt>13.0)do
+				{	
+				delay_ms(30);
+				//延迟30mS后获取VBUS电压
+				IP2366_GetVBUSState(&VBUSState);
+				if(VBUSState.VBUSVolt<6.0)break;
+				//重试失败，等待结果
+				retry--;
+				}
+			while(retry);
+			//充电器成功降压，切换继电器到安全模式，并重启系统
+			if(retry)
+				{							
+				ForceEnableAdvPM();	
+				AUXPSU_SetIPDState(true);						
+				AUXPSU_ConnectTCtoIPD();					
+				delay_Second(1);									
+				ShowPostInfo(78,"充电器重置完毕\0","4A",Msg_Warning);
+				delay_Second(1);
+				NVIC_SystemReset();	
+				}
+			//充电器降压失败，报错
+			ShowPostInfo(78,"充电器重置超时\0","FE",Msg_Fault);
+			SelfTestErrorHandler();			
 			}
 		}
 	else if(IsBootFromVBUS&&ADCO.Vbatt>(3.50*BattCellCount))
@@ -869,7 +902,7 @@ void IP2366_PostInit(void)
 		}	
 	//发送重新握手的指令
 	ShowPostInfo(94,"发送TypeC重连命令\0","36",Msg_Statu);
-	IP2366_GetVBUSState(&VBUSState);
+	
   if(!IsBootFromVBUS)do
 		{
 		IsCmdSendOK=IP2366_SetTypeCRole(TypeC_NoConnect);
@@ -893,52 +926,6 @@ void IP2366_PostInit(void)
 		ShowPostInfo(94,"重连命令重试中\0","37",Msg_Warning);
 		}
 	while(retry>0);
-	//充电器不太聪明，强制输出20V为了避免芯片充电拉爆，强制充电器reset然后掉回去5V
-	else if(VBUSState.VBUSVolt>13.0)	
-		{
-		//等待充电器重置过程中为了避免系统给电池充电导致统计不准，需要关闭充电器
-		retry=10;	
-		do
-			{
-			//循环执行关闭充电器的指令
-			if(IP2366_EnableDCDC(false,false))break;
-			}			
-		while(--retry);                               
-		//显示重置进度
-		ShowPostInfo(94,"充电器电压过高\0","4A",Msg_Warning);
-		delay_ms(400);
-		ShowPostInfo(94,"正在尝试重置\0","4A",Msg_Warning);
-		delay_ms(300);
-		ShowPostInfo(94,"请耐心等待\0","4A",Msg_Warning);
-		delay_ms(200);
-
-    //设置IPD，使得充电器断开输入电源，强迫系统掉电
-		retry=200;
-		AUXPSU_SetIPDState(false); //这里需要关闭Type-C IPD使系统掉电
-		do
-			{
-			delay_ms(30);
-			//延迟30mS后获取VBUS电压
-			IP2366_GetVBUSState(&VBUSState);
-			if(VBUSState.VBUSVolt<6.0)break;
-			//重试失败，等待结果
-			retry--;
-			}
-		while(retry);
-		//充电器成功降压，重启系统
-    if(retry)
-			{
-			//强制2366进入休眠
-			Force2366ToRestart();
-			//延迟2秒等待2366睡着了再重启系统本身
-			ShowPostInfo(94,"充电器重置完毕\0","4A",Msg_Warning);
-			delay_Second(2);
-			NVIC_SystemReset();	
-			}
-		//充电器降压失败，报错
-		ShowPostInfo(94,"充电器重置超时\0","FE",Msg_Fault);
-		SelfTestErrorHandler();	
-		}
 	//否则只执行设置OTP
 	else do
 		{

@@ -107,7 +107,7 @@ extern char DelaySeconds;
 
 void SysTick_Handler(void)
 {
-	//ç§’æ•°å€’è®¡æ—¶
+	//ÃëÊıµ¹¼ÆÊ±
   if(DelaySeconds)DelaySeconds--;
 }
 /*********************************************************************************************************//**
@@ -116,7 +116,7 @@ void SysTick_Handler(void)
  ************************************************************************************************************/
 void EXTI4_15_IRQHandler(void)
 {
- //EXTI4-15å±äºæŒ‰é”®ï¼Œè¿›è¡Œä¾§æŒ‰å¤„ç†
+ //EXTI4-15ÊôÓÚ°´¼ü£¬½øĞĞ²à°´´¦Àí
  SideKey_IntCallback();
 }
 
@@ -129,7 +129,7 @@ void ADC_EOC_interrupt_Callback(void);
 void ADC_IRQHandler(void)
 {
   if(ADC_GetIntStatus(HT_ADC0, ADC_INT_CYCLE_EOC) == SET)
-    ADC_EOC_interrupt_Callback();//è¿›è¡Œä¸­æ–­å¤„ç†
+    ADC_EOC_interrupt_Callback();//½øĞĞÖĞ¶Ï´¦Àí
 }
 /*********************************************************************************************************//**
  * @brief   This function handles PDMA-CH0-1 interrupt.
@@ -137,10 +137,10 @@ void ADC_IRQHandler(void)
  ************************************************************************************************************/
 void PDMA_CH0_1_IRQHandler(void)
  {
- //LCD TXæœ‰æ•ˆ
+ //LCD TXÓĞĞ§
  if(PDMA_GetFlagStatus(PDMA_SPI0_TX,PDMA_FLAG_TC))
   {
-	PDMA_ClearFlag(PDMA_SPI0_TX,PDMA_FLAG_TC);//æ¸…é™¤flag
+	PDMA_ClearFlag(PDMA_SPI0_TX,PDMA_FLAG_TC);//Çå³ıflag
 	IsPDMATranferDone=true;
 	}
 }
@@ -153,10 +153,10 @@ extern bool SensorRefreshFlag;
 
 void GPTM0_IRQHandler(void)
  {
-   //æ›´æ–°äº‹ä»¶æ ‡å¿—ä½ä½¿èƒ½
+   //¸üĞÂÊÂ¼ş±êÖ¾Î»Ê¹ÄÜ
 	 if(TM_GetFlagStatus(HT_GPTM0,TM_INT_UEV))
 	  {
 		TM_ClearFlag(HT_GPTM0,TM_INT_UEV);
-		SensorRefreshFlag=true;//è¯·æ±‚ä¼ æ„Ÿå™¨åˆ·æ–°
+		SensorRefreshFlag=true;//ÇëÇó´«¸ĞÆ÷Ë¢ĞÂ
 		}
  }

@@ -1029,6 +1029,11 @@
               <FileType>1</FileType>
               <FilePath>.\Menu\PreChargeCurrentAutoSet.c</FilePath>
             </File>
+            <File>
+              <FileName>SystemTempCalMenu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Menu\SystemTempCalMenu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

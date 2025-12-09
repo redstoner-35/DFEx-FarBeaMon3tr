@@ -3,72 +3,72 @@
 #include "I2C.h"
 #include "I2CAddr.h"
 
-//æ£€æŸ¥FM24C512çš„å®‰å…¨æ‰‡åŒºæ˜¯å¦è¢«é”å®š
+//¼ì²éFM24C512µÄ°²È«ÉÈÇøÊÇ·ñ±»Ëø¶¨
 SecuLockState M24C512_QuerySecuSetLockStat(void)
  {
  char buf;	 
- //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+ //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR);
  if(IIC_Wait_Ack())return LockState_EEPROM_NACK;
- IIC_Send_Byte(0x04);	 //é«˜ä½åœ°å€XXXX_X10X 
+ IIC_Send_Byte(0x04);	 //¸ßÎ»µØÖ·XXXX_X10X 
  if(IIC_Wait_Ack())return LockState_EEPROM_NACK;
- IIC_Send_Byte(0x00); //ä½ä½åœ°å€XXXX_XXXX
+ IIC_Send_Byte(0x00); //µÍÎ»µØÖ·XXXX_XXXX
  if(IIC_Wait_Ack())return LockState_EEPROM_NACK;	 
- //è¯»å–
+ //¶ÁÈ¡
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR+1);
- if(IIC_Wait_Ack())return LockState_EEPROM_NACK; //é‡å¤å¯åŠ¨ä¸€æ¬¡å¼€å§‹è¯»æ•°æ®	 
- buf=IIC_Read_Byte(0);//è¯»ä¸€å­—èŠ‚ä¹‹åNACKè¡¨ç¤ºä¸è¯»äº†
+ if(IIC_Wait_Ack())return LockState_EEPROM_NACK; //ÖØ¸´Æô¶¯Ò»´Î¿ªÊ¼¶ÁÊı¾İ	 
+ buf=IIC_Read_Byte(0);//¶ÁÒ»×Ö½ÚÖ®ºóNACK±íÊ¾²»¶ÁÁË
  IIC_Stop();
- //å¦‚æœé”å®šå­—èŠ‚çš„ç¬¬2ä½ä¸º1åˆ™è¡¨ç¤ºå·²é”å®š	 
+ //Èç¹ûËø¶¨×Ö½ÚµÄµÚ2Î»Îª1Ôò±íÊ¾ÒÑËø¶¨	 
  if(buf&0x02)return LockState_Locked;
  return LockState_Unlocked;
  }
 
-//ç»™å®‰å…¨å­˜å‚¨åŒºä¸Šé”
+//¸ø°²È«´æ´¢ÇøÉÏËø
 char M24C512_LockSecuSct(void)
  {
-  //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+  //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR);
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(0x04);	 //é«˜ä½åœ°å€XXXX_X10X 
+ IIC_Send_Byte(0x04);	 //¸ßÎ»µØÖ·XXXX_X10X 
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(0x00); //ä½ä½åœ°å€XXXX_XXXX
+ IIC_Send_Byte(0x00); //µÍÎ»µØÖ·XXXX_XXXX
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(0x02); //é”å®šå­—èŠ‚XXXX_XX1X
+ IIC_Send_Byte(0x02); //Ëø¶¨×Ö½ÚXXXX_XX1X
  if(!IIC_Wait_Ack())
    {
 	 IIC_Stop();
-	 return 1;//å‘é€å®Œæ¯•åå›å¤ACKï¼Œé”å®šå¤±è´¥ 
+	 return 1;//·¢ËÍÍê±Ïºó»Ø¸´ACK£¬Ëø¶¨Ê§°Ü 
 	 }
  return 0;
  }
 
-//å†™å…¥FM24C512çš„Security Sector
+//Ğ´ÈëFM24C512µÄSecurity Sector
 char M24C512_WriteSecuSct(char *Data,int StartAddr,int len)
  {
  int i;
- //åˆ¤æ–­å‚æ•°
- if(StartAddr>127)return 1; //å®‰å…¨æ‰‡åŒºå›ºå®š128å­—èŠ‚å¤§å°
- if(len+StartAddr>127)len=127-StartAddr;//å†™å…¥è¶…é•¿åº¦ï¼Œé™åˆ¶é•¿åº¦ 
- //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+ //ÅĞ¶Ï²ÎÊı
+ if(StartAddr>127)return 1; //°²È«ÉÈÇø¹Ì¶¨128×Ö½Ú´óĞ¡
+ if(len+StartAddr>127)len=127-StartAddr;//Ğ´Èë³¬³¤¶È£¬ÏŞÖÆ³¤¶È 
+ //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR);
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(0x00);	 //é«˜ä½åœ°å€XXXX_X00X 
+ IIC_Send_Byte(0x00);	 //¸ßÎ»µØÖ·XXXX_X00X 
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(StartAddr&0x7F); //ä½ä½åœ°å€
+ IIC_Send_Byte(StartAddr&0x7F); //µÍÎ»µØÖ·
  if(IIC_Wait_Ack())return 1;
- //å‘é€æ•°æ®
+ //·¢ËÍÊı¾İ
  for(i=0;i<len;i++)
     {
 	  IIC_Send_Byte(Data[i]);
 	  if(IIC_Wait_Ack())return 1;
 	  }	 
  IIC_Stop();
- //å‘é€å®Œæ¯•åç­‰å¾…å™¨ä»¶å¤„ç†
+ //·¢ËÍÍê±ÏºóµÈ´ıÆ÷¼ş´¦Àí
  i=0;
  while(i<50)
     {
@@ -82,83 +82,83 @@ char M24C512_WriteSecuSct(char *Data,int StartAddr,int len)
 	  delay_ms(1);
 	  i++;
 	  }
- if(i==50)return 1;//ç­‰å¾…è¶…æ—¶
- //å†™å…¥æˆåŠŸï¼Œé€€å‡º
+ if(i==50)return 1;//µÈ´ı³¬Ê±
+ //Ğ´Èë³É¹¦£¬ÍË³ö
  return 0;
  }
-//è¯»å–FM24C512çš„Security Sector
+//¶ÁÈ¡FM24C512µÄSecurity Sector
 char M24C512_ReadSecuSct(char *Data,int StartAddr,int len)
  {
  int i;
- //åˆ¤æ–­å‚æ•°
- if(StartAddr>127)return 1; //å®‰å…¨æ‰‡åŒºå›ºå®š128å­—èŠ‚å¤§å°
- if(len+StartAddr>128)len=128-StartAddr;//å†™å…¥è¶…é•¿åº¦ï¼Œé™åˆ¶é•¿åº¦ 
- //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+ //ÅĞ¶Ï²ÎÊı
+ if(StartAddr>127)return 1; //°²È«ÉÈÇø¹Ì¶¨128×Ö½Ú´óĞ¡
+ if(len+StartAddr>128)len=128-StartAddr;//Ğ´Èë³¬³¤¶È£¬ÏŞÖÆ³¤¶È 
+ //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR);
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(0x00);	 //é«˜ä½åœ°å€XXXX_X00X 
+ IIC_Send_Byte(0x00);	 //¸ßÎ»µØÖ·XXXX_X00X 
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(StartAddr&0x7F); //ä½ä½åœ°å€
+ IIC_Send_Byte(StartAddr&0x7F); //µÍÎ»µØÖ·
  if(IIC_Wait_Ack())return 1;
- //è¯»å–æ•°æ®
+ //¶ÁÈ¡Êı¾İ
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR+1);
- if(IIC_Wait_Ack())return 1; //é‡å¤å¯åŠ¨ä¸€æ¬¡å¼€å§‹è¯»æ•°æ®
- for(i=0;i<len;i++)Data[i]=IIC_Read_Byte(i<(len-1)?1:0);//å¾ªç¯è¯»æ•°æ®ï¼Œç›´åˆ°æœ€åå‘é€NACK
+ if(IIC_Wait_Ack())return 1; //ÖØ¸´Æô¶¯Ò»´Î¿ªÊ¼¶ÁÊı¾İ
+ for(i=0;i<len;i++)Data[i]=IIC_Read_Byte(i<(len-1)?1:0);//Ñ­»·¶ÁÊı¾İ£¬Ö±µ½×îºó·¢ËÍNACK
  IIC_Stop();
- //è¯»å–æˆåŠŸï¼Œé€€å‡º
+ //¶ÁÈ¡³É¹¦£¬ÍË³ö
  return 0;
  }
 
-//è¯»å–FM24C512çš„UID
+//¶ÁÈ¡FM24C512µÄUID
 char M24C512_ReadUID(char *Data,int len)
  {
  int i;
- //åˆ¤æ–­å‚æ•°
- if(len>16)return 1;//å†™å…¥è¶…é•¿åº¦ï¼Œé™åˆ¶é•¿åº¦ 
- //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+ //ÅĞ¶Ï²ÎÊı
+ if(len>16)return 1;//Ğ´Èë³¬³¤¶È£¬ÏŞÖÆ³¤¶È 
+ //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR);
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(0x02);	 //é«˜ä½åœ°å€XXXX_XX1X 
+ IIC_Send_Byte(0x02);	 //¸ßÎ»µØÖ·XXXX_XX1X 
  if(IIC_Wait_Ack())return 1;
- IIC_Send_Byte(0x00); //ä½ä½åœ°å€XXXX_0000
+ IIC_Send_Byte(0x00); //µÍÎ»µØÖ·XXXX_0000
  if(IIC_Wait_Ack())return 1;
- //è¯»å–æ•°æ®
+ //¶ÁÈ¡Êı¾İ
  IIC_Start();
  IIC_Send_Byte(M24C512SecuADDR+1);
- if(IIC_Wait_Ack())return 1; //é‡å¤å¯åŠ¨ä¸€æ¬¡å¼€å§‹è¯»æ•°æ®
- for(i=0;i<len;i++)Data[i]=IIC_Read_Byte(i<(len-1)?1:0);//å¾ªç¯è¯»æ•°æ®ï¼Œç›´åˆ°æœ€åå‘é€NACK
+ if(IIC_Wait_Ack())return 1; //ÖØ¸´Æô¶¯Ò»´Î¿ªÊ¼¶ÁÊı¾İ
+ for(i=0;i<len;i++)Data[i]=IIC_Read_Byte(i<(len-1)?1:0);//Ñ­»·¶ÁÊı¾İ£¬Ö±µ½×îºó·¢ËÍNACK
  IIC_Stop();
- //è¯»å–æˆåŠŸï¼Œé€€å‡º
+ //¶ÁÈ¡³É¹¦£¬ÍË³ö
  return 0;
  } 
  
-//M24C512 å†™å…¥æ•°æ®
+//M24C512 Ğ´ÈëÊı¾İ
 char M24C512_PageWrite(char *Data,int StartAddr,int len)
  {
  int i,txlen,offset;
  #ifdef UsingEE_24C1024
  unsigned char DeviceAddr=M24C512ADDR;
  #endif
- //åˆ¤æ–­å‚æ•°
+ //ÅĞ¶Ï²ÎÊı
  if(StartAddr>MaxByteRange)return 1;	
  if(StartAddr+len>MaxByteRange)len=MaxByteRange-StartAddr;
  offset=0;
- //å¼€å§‹å‘é€
+ //¿ªÊ¼·¢ËÍ
  while(len>0)
    {
-	 //è®¡ç®—æ¬²å‘é€çš„é•¿åº¦
+	 //¼ÆËãÓû·¢ËÍµÄ³¤¶È
 	 txlen=StartAddr%MaxPageSize; 
    txlen=MaxPageSize-txlen;
 	 if(txlen>len)txlen=len;
    #ifdef UsingEE_24C1024		 
-	 //è®¡ç®—ç›®æ ‡å™¨ä»¶åœ°å€
+	 //¼ÆËãÄ¿±êÆ÷¼şµØÖ·
 	 if((StartAddr>>16)&0x01)DeviceAddr|=0x02;
-	 else DeviceAddr&=0xFD; //å½“è¯»å†™ä½ç½®è¶…è¿‡0xFFFFä¹‹ååˆ‡æ¢åˆ°Page 1
+	 else DeviceAddr&=0xFD; //µ±¶ÁĞ´Î»ÖÃ³¬¹ı0xFFFFÖ®ºóÇĞ»»µ½Page 1
    #endif
-	 //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+	 //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
    IIC_Start();
    #ifdef UsingEE_24C1024	 
 	 IIC_Send_Byte(DeviceAddr);
@@ -170,14 +170,14 @@ char M24C512_PageWrite(char *Data,int StartAddr,int len)
    if(IIC_Wait_Ack())return 1;
    IIC_Send_Byte(StartAddr&0xFF);
    if(IIC_Wait_Ack())return 1;
-   //å‘é€æ•°æ®
+   //·¢ËÍÊı¾İ
    for(i=0;i<txlen;i++)
     {
 	  IIC_Send_Byte(Data[i+offset]);
 	  if(IIC_Wait_Ack())return 1;
 	  }	 
    IIC_Stop();
-   //å‘é€å®Œæ¯•åç­‰å¾…å™¨ä»¶å¤„ç†
+   //·¢ËÍÍê±ÏºóµÈ´ıÆ÷¼ş´¦Àí
    i=0;
    while(i<50)
     {
@@ -191,8 +191,8 @@ char M24C512_PageWrite(char *Data,int StartAddr,int len)
 	  delay_ms(1);
 	  i++;
 	  }
-	 if(i==50)return 1;//ç­‰å¾…è¶…æ—¶
-	 //è®¡ç®—æ–°çš„ç¼“å†²åŒºè¯»å–ï¼ŒROMå†™å…¥å’Œé•¿åº¦
+	 if(i==50)return 1;//µÈ´ı³¬Ê±
+	 //¼ÆËãĞÂµÄ»º³åÇø¶ÁÈ¡£¬ROMĞ´ÈëºÍ³¤¶È
    offset+=txlen;
 	 StartAddr+=txlen;
 	 len-=txlen; 
@@ -200,30 +200,30 @@ char M24C512_PageWrite(char *Data,int StartAddr,int len)
  return 0;
  }
 
-//M24C512è¯»å–æ•°æ®
+//M24C512¶ÁÈ¡Êı¾İ
 char M24C512_PageRead(char *Data,int StartAddr,int len)
  {
  int i,rxlen,offset;
  #ifdef UsingEE_24C1024
  unsigned char DeviceAddr=M24C512ADDR;
  #endif
- //åˆ¤æ–­å‚æ•°
+ //ÅĞ¶Ï²ÎÊı
  if(StartAddr>MaxByteRange)return 1;	
  if(StartAddr+len>MaxByteRange)len=MaxByteRange-StartAddr; 
  offset=0;
- //å¼€å§‹è¯»æ•°æ®
+ //¿ªÊ¼¶ÁÊı¾İ
  while(len>0)
    {
-	 //è®¡ç®—æ¬²å‘é€çš„é•¿åº¦
+	 //¼ÆËãÓû·¢ËÍµÄ³¤¶È
 	 rxlen=StartAddr%MaxPageSize; 
    rxlen=MaxPageSize-rxlen;
 	 if(rxlen>len)rxlen=len; 
    #ifdef UsingEE_24C1024		 
-	 //è®¡ç®—ç›®æ ‡å™¨ä»¶åœ°å€
+	 //¼ÆËãÄ¿±êÆ÷¼şµØÖ·
 	 if((StartAddr>>16)&0x01)DeviceAddr|=0x02;
-	 else DeviceAddr&=0xFD; //å½“è¯»å†™ä½ç½®è¶…è¿‡0xFFFFä¹‹ååˆ‡æ¢åˆ°Page 1
+	 else DeviceAddr&=0xFD; //µ±¶ÁĞ´Î»ÖÃ³¬¹ı0xFFFFÖ®ºóÇĞ»»µ½Page 1
    #endif
-	 //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+	 //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
    IIC_Start();
    #ifdef UsingEE_24C1024	 
 	 IIC_Send_Byte(DeviceAddr);
@@ -235,44 +235,44 @@ char M24C512_PageRead(char *Data,int StartAddr,int len)
    if(IIC_Wait_Ack())return 1;
    IIC_Send_Byte(StartAddr&0xFF);
    if(IIC_Wait_Ack())return 1;	
-   //è¯»å–å†…å®¹
+   //¶ÁÈ¡ÄÚÈİ
    IIC_Start();
    IIC_Send_Byte(M24C512ADDR+1);
-   if(IIC_Wait_Ack())return 1;//é‘ºîˆœå¢–éƒçŠ²å¼½æ´æ—“ç´æ©æ–¿æ´–1
+   if(IIC_Wait_Ack())return 1;//èŠ?‰‡æ— ååº”ï¼Œè¿”å›1
    for(i=0;i<rxlen;i++)Data[i+offset]=IIC_Read_Byte(i<(rxlen-1)?1:0); 
    IIC_Stop();
-	 //ä¸€è½®è¯»å–å®Œæ¯•ï¼Œè®¡ç®—æ–°çš„ç¼“å†²åŒºè¯»å–ï¼ŒROMå†™å…¥å’Œé•¿åº¦
+	 //Ò»ÂÖ¶ÁÈ¡Íê±Ï£¬¼ÆËãĞÂµÄ»º³åÇø¶ÁÈ¡£¬ROMĞ´ÈëºÍ³¤¶È
 	 offset+=rxlen;
 	 StartAddr+=rxlen;
 	 len-=rxlen; 
 	 }
- //è¯»å–æ“ä½œå®Œæ¯•
+ //¶ÁÈ¡²Ù×÷Íê±Ï
  return 0;
  }
-//æ“¦é™¤EEPROMæŒ‡å®šåŒºåŸŸå†…çš„æ•°æ®å†…å®¹
+//²Á³ıEEPROMÖ¸¶¨ÇøÓòÄÚµÄÊı¾İÄÚÈİ
 char M24C512_Erase(int StartAddr,int len)
  {
  int i,txlen,offset;
  #ifdef UsingEE_24C1024
  unsigned char DeviceAddr=M24C512ADDR;
  #endif
- //åˆ¤æ–­å‚æ•°
+ //ÅĞ¶Ï²ÎÊı
  if(StartAddr>MaxByteRange)return 1;	
  if(StartAddr+len>MaxByteRange)len=MaxByteRange-StartAddr;
  offset=0;
- //å¼€å§‹å‘é€
+ //¿ªÊ¼·¢ËÍ
  while(len>0)
    {
-	 //è®¡ç®—æ¬²å‘é€çš„é•¿åº¦
+	 //¼ÆËãÓû·¢ËÍµÄ³¤¶È
 	 txlen=StartAddr%MaxPageSize; 
    txlen=MaxPageSize-txlen;
 	 if(txlen>len)txlen=len; 
    #ifdef UsingEE_24C1024		 
-	 //è®¡ç®—ç›®æ ‡å™¨ä»¶åœ°å€
+	 //¼ÆËãÄ¿±êÆ÷¼şµØÖ·
 	 if((StartAddr>>16)&0x01)DeviceAddr|=0x02;
-	 else DeviceAddr&=0xFD; //å½“è¯»å†™ä½ç½®è¶…è¿‡0xFFFFä¹‹ååˆ‡æ¢åˆ°Page 1
+	 else DeviceAddr&=0xFD; //µ±¶ÁĞ´Î»ÖÃ³¬¹ı0xFFFFÖ®ºóÇĞ»»µ½Page 1
    #endif
-   //å‘é€åœ°å€ï¼Œç›®æ ‡è¦è¯»å†™çš„ä½ç½®
+   //·¢ËÍµØÖ·£¬Ä¿±êÒª¶ÁĞ´µÄÎ»ÖÃ
    IIC_Start();
    #ifdef UsingEE_24C1024	 
 	 IIC_Send_Byte(DeviceAddr);
@@ -291,7 +291,7 @@ char M24C512_Erase(int StartAddr,int len)
 	  if(IIC_Wait_Ack())return 1;
 	  }	 
    IIC_Stop();
-   //å‘é€å®Œæ¯•åç­‰å¾…å™¨ä»¶å¤„ç†
+   //·¢ËÍÍê±ÏºóµÈ´ıÆ÷¼ş´¦Àí
    i=0;
    while(i<50)
     {
@@ -305,8 +305,8 @@ char M24C512_Erase(int StartAddr,int len)
 	  delay_ms(1);
 	  i++;
 	  }
-	 if(i==50)return 1;//ç­‰å¾…è¶…æ—¶
-	 //è®¡ç®—æ–°çš„ç¼“å†²åŒºè¯»å–ï¼ŒROMå†™å…¥å’Œé•¿åº¦
+	 if(i==50)return 1;//µÈ´ı³¬Ê±
+	 //¼ÆËãĞÂµÄ»º³åÇø¶ÁÈ¡£¬ROMĞ´ÈëºÍ³¤¶È
    offset+=txlen;
 	 StartAddr+=txlen;
 	 len-=txlen; 

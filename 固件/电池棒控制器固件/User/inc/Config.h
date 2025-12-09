@@ -69,6 +69,7 @@ typedef struct
 	bool EnableOTPConfig; //打开过热保护配置
 	bool EnableThermalStepdown; //开启过热后自动掉功率的机制
 	bool EnableTCCalibration; //开启TypeC功率计修正值配置
+	bool EnableExtendedBalance; //在均衡开启的时候，是否使能自动补充均衡
 	//TypeC功率修正数据配置	
 	int TypeCAmpereCalCharge;  //充电时的修正值
 	int TypeCVoltageCal;  
@@ -96,7 +97,8 @@ typedef struct
   //存储模式和自动存盘配置
 	AutoSaveCfgDef AutoSaveCfg;
 	StorageModeDef StorageModeINROM;
-  //本地电池测量校准设置
+  //本地电池和温度测量校准设置
+  int SystemTempCalFactor;     //系统温度测量校准系数
 	int BatteryVoltageCalFactor;
 	int BatteryCurrentCalFactor; //电池电压电流校准系数
 	}SystemCfgDef;

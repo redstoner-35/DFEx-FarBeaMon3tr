@@ -5,11 +5,11 @@
 #include <string.h>
 #include "I2CAddr.h"
 
-//å†…éƒ¨è®¾å¤‡åœ°å€åˆ—è¡¨
+//ÄÚ²¿Éè±¸µØÖ·ÁÐ±í
 const char I2CSlaveADDR[]={IP2366ADDR,M24C512ADDR,M24C512SecuADDR};
-unsigned char SMIOADDR=0; //SMBUS IOæ‰©å±•å™¨çš„åœ°å€
+unsigned char SMIOADDR=0; //SMBUS IOÀ©Õ¹Æ÷µÄµØÖ·
 
-//I2Cå»¶æ—¶
+//I2CÑÓÊ±
 #define IIC_delay() delay_us(3)
 
 //static void IIC_delay(void)
@@ -18,34 +18,34 @@ unsigned char SMIOADDR=0; //SMBUS IOæ‰©å±•å™¨çš„åœ°å€
 //	while(--i);
 //	}
 
-//æŠ¥å‘Šå¼‚å¸¸ä»Žæœºåœ°å€
+//±¨¸æÒì³£´Ó»úµØÖ·
 static void ReportFailedSlave(char Addr)
 	{
 	char FaultADDRINFO[32];
-	ShowPostInfo(16,"ä»Žæœºé€šä¿¡å¼‚å¸¸\0","W2",Msg_Warning);
+	ShowPostInfo(16,"´Ó»úÍ¨ÐÅÒì³£\0","W2",Msg_Warning);
 	delay_Second(1);
 	memset(FaultADDRINFO,0,sizeof(FaultADDRINFO));
-	snprintf(FaultADDRINFO,32,"å¼‚å¸¸åœ°å€:0x%02X",Addr);
+	snprintf(FaultADDRINFO,32,"Òì³£µØÖ·:0x%02X",Addr);
 	ShowPostInfo(16,FaultADDRINFO,"W2",Msg_Warning);
 	}
 
-//SMBUSåˆå§‹åŒ–
+//SMBUS³õÊ¼»¯
 void SMBUS_Init(void)
   {
 	 char i;
 	 
-	 ShowPostInfo(16,"å¯åŠ¨SMBUSæŽ§åˆ¶å™¨\0","06",Msg_Statu);
-	 //é…ç½®GPIO(SCL)
-   AFIO_GPxConfig(IIC_SCL_IOB,IIC_SCL_IOP, AFIO_FUN_GPIO);//I2C SCL(ç”¨æ¥åšæ—¶é’Ÿ)
-   GPIO_DirectionConfig(IIC_SCL_IOG,IIC_SCL_IOP,GPIO_DIR_OUT);//é…ç½®ä¸ºè¾“å‡º
-   GPIO_SetOutBits(IIC_SCL_IOG,IIC_SCL_IOP);//è¾“å‡ºè®¾ç½®ä¸º1
-	 GPIO_PullResistorConfig(IIC_SCL_IOG,IIC_SCL_IOP,GPIO_PR_UP);//å¯ç”¨ä¸Šæ‹‰
-	 //é…ç½®GPIO(SDA)
-   AFIO_GPxConfig(IIC_SDA_IOB,IIC_SDA_IOP, AFIO_FUN_GPIO);//I2C SDA(ç”¨æ¥åšæ•°æ®)
-   GPIO_DirectionConfig(IIC_SDA_IOG,IIC_SDA_IOP,GPIO_DIR_OUT);//é…ç½®ä¸ºè¾“å‡º
-   GPIO_SetOutBits(IIC_SDA_IOG,IIC_SDA_IOP);//è¾“å‡ºè®¾ç½®ä¸º1	 
-	 GPIO_PullResistorConfig(IIC_SDA_IOG,IIC_SDA_IOP,GPIO_PR_UP);//å¯ç”¨ä¸Šæ‹‰
-	 //æµ‹è¯•slave
+	 ShowPostInfo(16,"Æô¶¯SMBUS¿ØÖÆÆ÷\0","06",Msg_Statu);
+	 //ÅäÖÃGPIO(SCL)
+   AFIO_GPxConfig(IIC_SCL_IOB,IIC_SCL_IOP, AFIO_FUN_GPIO);//I2C SCL(ÓÃÀ´×öÊ±ÖÓ)
+   GPIO_DirectionConfig(IIC_SCL_IOG,IIC_SCL_IOP,GPIO_DIR_OUT);//ÅäÖÃÎªÊä³ö
+   GPIO_SetOutBits(IIC_SCL_IOG,IIC_SCL_IOP);//Êä³öÉèÖÃÎª1
+	 GPIO_PullResistorConfig(IIC_SCL_IOG,IIC_SCL_IOP,GPIO_PR_UP);//ÆôÓÃÉÏÀ­
+	 //ÅäÖÃGPIO(SDA)
+   AFIO_GPxConfig(IIC_SDA_IOB,IIC_SDA_IOP, AFIO_FUN_GPIO);//I2C SDA(ÓÃÀ´×öÊý¾Ý)
+   GPIO_DirectionConfig(IIC_SDA_IOG,IIC_SDA_IOP,GPIO_DIR_OUT);//ÅäÖÃÎªÊä³ö
+   GPIO_SetOutBits(IIC_SDA_IOG,IIC_SDA_IOP);//Êä³öÉèÖÃÎª1	 
+	 GPIO_PullResistorConfig(IIC_SDA_IOG,IIC_SDA_IOP,GPIO_PR_UP);//ÆôÓÃÉÏÀ­
+	 //²âÊÔslave
 	 for(i=0;i<sizeof(I2CSlaveADDR);i++)
 			{
 			IIC_Start();
@@ -55,16 +55,16 @@ void SMBUS_Init(void)
 			IIC_Stop();
 			delay_ms(1);
 			}
-	//å°è¯•å’Œ8bitçš„GPIOæ‰©å±•å™¨è¿›è¡Œæ¡æ‰‹
+	//³¢ÊÔºÍ8bitµÄGPIOÀ©Õ¹Æ÷½øÐÐÎÕÊÖ
 	IIC_Start();
 	IIC_Send_Byte(ADVSMIOADDR);
 	if(!IIC_Wait_Ack())SMIOADDR=ADVSMIOADDR;
 	delay_us(60);
 	IIC_Stop();
-	if(SMIOADDR==ADVSMIOADDR)return; //é«˜çº§æ‰©å±•å™¨å­˜åœ¨ä¸”åå•†æˆåŠŸï¼Œè¿›å…¥å¤„ç†		
-	//é«˜çº§æ‰©å±•å™¨åå•†å¤±è´¥ï¼Œæ£€æŸ¥4bitçš„æ‰©å±•å™¨æ˜¯å¦å­˜åœ¨
+	if(SMIOADDR==ADVSMIOADDR)return; //¸ß¼¶À©Õ¹Æ÷´æÔÚÇÒÐ­ÉÌ³É¹¦£¬½øÈë´¦Àí		
+	//¸ß¼¶À©Õ¹Æ÷Ð­ÉÌÊ§°Ü£¬¼ì²é4bitµÄÀ©Õ¹Æ÷ÊÇ·ñ´æÔÚ
 	delay_ms(1);
-	SMIOADDR=OLDSMIOADDR; //è®¾ç½®IOæ‰©å±•å™¨çš„åœ°å€æ•°æ®
+	SMIOADDR=OLDSMIOADDR; //ÉèÖÃIOÀ©Õ¹Æ÷µÄµØÖ·Êý¾Ý
 	IIC_Start();
 	IIC_Send_Byte(OLDSMIOADDR);	
 	if(!IIC_Wait_Ack())ReportFailedSlave(OLDSMIOADDR);	
@@ -72,46 +72,46 @@ void SMBUS_Init(void)
 	IIC_Stop();
 	}
 
-//è®¾ç½®ä¼ è¾“æ–¹å‘
+//ÉèÖÃ´«Êä·½Ïò
 static void SetTransferDir(BDIR DIR)
   {
-	GPIO_DirectionConfig(IIC_SDA_IOG,IIC_SDA_IOP,(DIR==SMBUS_DIR_MOTS)?GPIO_DIR_OUT:GPIO_DIR_IN);//é…ç½®IOæ–¹å‘
-	GPIO_InputConfig(IIC_SDA_IOG,IIC_SDA_IOP,(DIR==SMBUS_DIR_MOTS)?DISABLE:ENABLE);//å¯ç”¨æˆ–ç¦ç”¨IDR
+	GPIO_DirectionConfig(IIC_SDA_IOG,IIC_SDA_IOP,(DIR==SMBUS_DIR_MOTS)?GPIO_DIR_OUT:GPIO_DIR_IN);//ÅäÖÃIO·½Ïò
+	GPIO_InputConfig(IIC_SDA_IOG,IIC_SDA_IOP,(DIR==SMBUS_DIR_MOTS)?DISABLE:ENABLE);//ÆôÓÃ»ò½ûÓÃIDR
 	}
-//äº§ç”ŸIICèµ·å§‹ä¿¡å·
+//²úÉúIICÆðÊ¼ÐÅºÅ
 void IIC_Start(void)
 {
-	SetTransferDir(SMBUS_DIR_MOTS);//ä¸»æœº->ä»Žæœº
+	SetTransferDir(SMBUS_DIR_MOTS);//Ö÷»ú->´Ó»ú
 	IIC_SDA_Set();	  	  
 	IIC_SCL_Set();
 	IIC_delay();
  	IIC_SDA_Clr();//START:when CLK is high,DATA change form high to low 
 	IIC_delay();
-	IIC_SCL_Clr();//é’³ä½I2Cæ€»çº¿ï¼Œå‡†å¤‡å‘é€æˆ–æŽ¥æ”¶æ•°æ® 
+	IIC_SCL_Clr();//Ç¯×¡I2C×ÜÏß£¬×¼±¸·¢ËÍ»ò½ÓÊÕÊý¾Ý 
 }	  
-//äº§ç”ŸIICåœæ­¢ä¿¡å·
+//²úÉúIICÍ£Ö¹ÐÅºÅ
 void IIC_Stop(void)
 {
-	SetTransferDir(SMBUS_DIR_MOTS);//ä¸»æœº->ä»Žæœº
+	SetTransferDir(SMBUS_DIR_MOTS);//Ö÷»ú->´Ó»ú
 	IIC_SCL_Clr();
 	IIC_SDA_Clr();//STOP:when CLK is high DATA change form low to high
  	IIC_delay();
 	IIC_SCL_Set(); 
 	IIC_delay();
-	IIC_SDA_Set();//å‘é€I2Cæ€»çº¿ç»“æŸä¿¡å·
+	IIC_SDA_Set();//·¢ËÍI2C×ÜÏß½áÊøÐÅºÅ
 	IIC_delay();							   	
 }
-//ç­‰å¾…åº”ç­”ä¿¡å·åˆ°æ¥
-//è¿”å›žå€¼ï¼š1ï¼ŒæŽ¥æ”¶åº”ç­”å¤±è´¥
-//        0ï¼ŒæŽ¥æ”¶åº”ç­”æˆåŠŸ
+//µÈ´ýÓ¦´ðÐÅºÅµ½À´
+//·µ»ØÖµ£º1£¬½ÓÊÕÓ¦´ðÊ§°Ü
+//        0£¬½ÓÊÕÓ¦´ð³É¹¦
 char IIC_Wait_Ack(void)
 {
 	u8 ucErrTime=0;
-	IIC_SDA_Set();//é‡Šæ”¾æ•°æ®çº¿
+	IIC_SDA_Set();//ÊÍ·ÅÊý¾ÝÏß
 	IIC_delay();	   
-	IIC_SCL_Set();//æ—¶é’Ÿæ‹‰é«˜
+	IIC_SCL_Set();//Ê±ÖÓÀ­¸ß
 	IIC_delay();	
-	SetTransferDir(SMBUS_DIR_SOTM);//ä»Žæœº->ä¸»æœº
+	SetTransferDir(SMBUS_DIR_SOTM);//´Ó»ú->Ö÷»ú
 	while(READ_SDA)
 	{
 		ucErrTime++;
@@ -122,13 +122,13 @@ char IIC_Wait_Ack(void)
 			return 1;
 		}
 	}
-	IIC_SCL_Clr();//æ—¶é’Ÿè¾“å‡º0 	   
+	IIC_SCL_Clr();//Ê±ÖÓÊä³ö0 	   
 	return 0;  
 } 
-//äº§ç”ŸACKåº”ç­”
+//²úÉúACKÓ¦´ð
 void IIC_Ack(void)
 {
-	SetTransferDir(SMBUS_DIR_MOTS);//ä¸»æœº->ä»Žæœº
+	SetTransferDir(SMBUS_DIR_MOTS);//Ö÷»ú->´Ó»ú
 	IIC_SCL_Clr();
 	IIC_SDA_Clr();
 	IIC_delay();
@@ -136,10 +136,10 @@ void IIC_Ack(void)
 	IIC_delay();
 	IIC_SCL_Clr();
 }
-//ä¸äº§ç”ŸACKåº”ç­”		    
+//²»²úÉúACKÓ¦´ð		    
 void IIC_NAck(void)
 {
-	SetTransferDir(SMBUS_DIR_MOTS);//ä¸»æœº->ä»Žæœº
+	SetTransferDir(SMBUS_DIR_MOTS);//Ö÷»ú->´Ó»ú
 	IIC_SCL_Clr();
 	IIC_SDA_Set();
 	IIC_delay();
@@ -147,31 +147,31 @@ void IIC_NAck(void)
 	IIC_delay();
 	IIC_SCL_Clr();
 }					 				     
-//IICå‘é€ä¸€ä¸ªå­—èŠ‚	  
+//IIC·¢ËÍÒ»¸ö×Ö½Ú	  
 void IIC_Send_Byte(unsigned char txd)
 {                        
     u8 t;      
-	  SetTransferDir(SMBUS_DIR_MOTS);//ä¸»æœº->ä»Žæœº
-    IIC_SCL_Clr();//æ‹‰ä½Žæ—¶é’Ÿå¼€å§‹æ•°æ®ä¼ è¾“
-    IIC_delay();//ç­‰ä¸€ç­‰å†å¼€å§‹ä¼ è¾“
+	  SetTransferDir(SMBUS_DIR_MOTS);//Ö÷»ú->´Ó»ú
+    IIC_SCL_Clr();//À­µÍÊ±ÖÓ¿ªÊ¼Êý¾Ý´«Êä
+    IIC_delay();//µÈÒ»µÈÔÙ¿ªÊ¼´«Êä
     for(t=0;t<8;t++)
     {              
     if(txd&0x80)IIC_SDA_Set();
 		else IIC_SDA_Clr();
     txd<<=1; 	  
-		IIC_delay();   //å¯¹TEA5767è¿™ä¸‰ä¸ªå»¶æ—¶éƒ½æ˜¯å¿…é¡»çš„
+		IIC_delay();   //¶ÔTEA5767ÕâÈý¸öÑÓÊ±¶¼ÊÇ±ØÐëµÄ
 		IIC_SCL_Set();
 		IIC_delay(); 
 		IIC_SCL_Clr();	
 		IIC_delay();
     }	 
 } 	    
-//è¯»1ä¸ªå­—èŠ‚ï¼Œack=1æ—¶ï¼Œå‘é€ACKï¼Œack=0ï¼Œå‘é€nACK   
+//¶Á1¸ö×Ö½Ú£¬ack=1Ê±£¬·¢ËÍACK£¬ack=0£¬·¢ËÍnACK   
 unsigned char IIC_Read_Byte(unsigned char ack)
 {
 	unsigned char i,receive=0;
-	  IIC_SDA_Set();//é‡Šæ”¾æ€»çº¿
-	  SetTransferDir(SMBUS_DIR_SOTM);//ä»Žæœº->ä¸»æœº
+	  IIC_SDA_Set();//ÊÍ·Å×ÜÏß
+	  SetTransferDir(SMBUS_DIR_SOTM);//´Ó»ú->Ö÷»ú
     for(i=0;i<8;i++ )
 	{
         IIC_SCL_Clr(); 
@@ -182,8 +182,8 @@ unsigned char IIC_Read_Byte(unsigned char ack)
 		    IIC_delay(); 
     }					 
     if (!ack)
-        IIC_NAck();//å‘é€nACK
+        IIC_NAck();//·¢ËÍnACK
     else
-        IIC_Ack(); //å‘é€ACK   
+        IIC_Ack(); //·¢ËÍACK   
     return receive;
 }

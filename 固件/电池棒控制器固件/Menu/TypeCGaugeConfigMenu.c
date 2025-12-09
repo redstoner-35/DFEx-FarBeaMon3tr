@@ -33,8 +33,13 @@ void EnterTCChgICal(void)
 	SwitchingMenu(&TypeCChgICALMenu);
 	}
 	
+void EnterSysTCal(void)
+	{
+	SwitchingMenu(&SysTCALMenu);
+	}
+	
 //菜单项参数
-const SetupMenuSelDef TCGaugeSetup[7]=
+const SetupMenuSelDef TCGaugeSetup[8]=
 	{
 		{
 		"TypeC功率数据源",
@@ -71,6 +76,12 @@ const SetupMenuSelDef TCGaugeSetup[7]=
 		false,
 		&AlwaysTrue,
 		&EnterBattICAL
+		},
+		{
+		"系统温度校准",
+		false,
+		&AlwaysTrue,
+		&EnterSysTCal
 		},
 		{
 		"\0",
