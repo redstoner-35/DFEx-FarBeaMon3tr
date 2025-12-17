@@ -88,6 +88,11 @@ void ReturnToMainMenu(void)
 	if(IsConfigSaved||!CheckIfConfigIsSame())
 		{
 		IsConfigModified=true;
+		//显示设置应用中
+		RenderMenuBG();
+		LCD_ShowChinese(20,33,"正在应用系统设置…",WHITE,LGRAY,0);
+		LCD_ShowChinese(46,47,"请稍后……",WHITE,LGRAY,0);	
+		//初始化设置
 		IP2366_ReInitBasedOnConfig(); //设置芯片配置
 		if(IsSinkPowerChanged)UpdateSinkPower(true);           //退出菜单时强制更新Sink功率
 		IP2366_SetIBatLIMBaseOnSysCfg(); //设置动态限流
@@ -99,6 +104,7 @@ void ReturnToMainMenu(void)
 		{
 		//配置发生更改，重新初始化后弹出拔掉C口的提示
 		IsCPortConnected=true;
+		IP2366_EnableDCDC(false,false);
 		SwitchingMenu(&InfoUserRemoveCCableMenu);
 		}
 	else

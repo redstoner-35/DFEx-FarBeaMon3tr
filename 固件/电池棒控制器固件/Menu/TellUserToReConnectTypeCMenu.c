@@ -4,6 +4,9 @@
 //内部变量
 static bool INFOUIIsRendered=false;
 
+//函数声明
+bool SetSystemDischargeState(void);
+
 //提示页面的显示处理
 void InfoUserToRemoveCPort(void)
 	{
@@ -26,6 +29,7 @@ void InfoUserRMTCKeyHandler(void)
 	if(!IsCPortConnected||KeyState.KeyEvent==KeyEvent_BothEnt)
 		{
 		ClearScreen(); //清屏
+		SetSystemDischargeState(); //重新使能DCDC
 		SwitchingMenu(&MainMenu);
 		}
 	//清除按键事件处理

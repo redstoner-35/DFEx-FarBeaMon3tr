@@ -8,6 +8,7 @@
 #include <string.h>
 #include <math.h>
 #include "AUXPSU.h"
+#include "WatchDog.h"
 #include "LogSystem.h"
 
 bool IsEnableDischargeAtStor=true;
@@ -512,18 +513,13 @@ void IP2366_ReInitBasedOnConfig(void)
 	if(CfgData.MaxSnkPower<CurrentSinkPower)CurrentSinkPower=CfgData.MaxSnkPower; //检测充电系统是否下调功率
 	IP2366_UpdateSinkPower(CurrentSinkPower);  //根据当前的充电功率，更新Sink功率到额定值
 	ICFG.ChargeCurrent=OCFG.IsEnableOutput?CurrentIP2366FW->IP2366ICCMAX:CfgData.InputConfig.ChargeCurrent; //初始化时如果开启输出则按照固件能力填写
-	IP2366_SetInputState(&ICFG,IsBootFromVBUS?false:true);
-	//设置Type-C模式
-	if(!IsBootFromVBUS&&!OCState) //如果是在过充阶段或者是单独插着Type-C，那就不能发送TCRST命令不然单片机直接断电了
-		{
-		IP2366_SetTypeCRole(TypeC_NoConnect);
-		delay_ms(200);	
-		IP2366_SetTypeCRole(Role);
-		}
+	IP2366_SetInputState(&ICFG,IsBootFromVBUS?false:true);	
 	//设置PPS和fixed PDO参数
 	IP2366_SetDeepSleepModeEnabled(CfgData.SleepCfg==System_Sleep_Deep?true:false);
 	IP2366_SetFixedPDO(&CfgData.FixedPDOCfg);
 	IP2366_SetPPSCurrent(&CfgData.PPSConfig);
+	//设置Type-C模式
+	if(!IsBootFromVBUS&&!OCState)IP2366_SetTypeCRole(Role); //如果是在过充阶段或者是单独插着Type-C，那就不能发送TCRST命令不然单片机直接断电了
   //设置OCP和清除OC Flag		
 	IP2366_SetOTPSign();
 	IP2366_ClearOCFlag(); //移除OC Flag
