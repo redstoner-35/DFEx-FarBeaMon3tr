@@ -1,16 +1,25 @@
+/************************************************************************************/
+/** \file TurboICCMAX.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 
+						 这个文件是驱动固件的极亮和爆闪电流自动配置系统。该文件会根据预定义的LED
+						 类型自动配置LED的电流参数。
+/** \Note 
+						 如果你看到编译失败报错指向这个文件，请勿直接修改这个文件！您可以对照输
+             出的错误信息在工程设置（左上角魔术棒，找到C51选项卡，在Define这一栏里
+						 面）内补上对应的宏定义条目设置好目标的极亮输出电流后报错信息会自行消失。
+							
+**	History: Initial Release
+**	
+/*************************************************************************************/
 #ifndef _TURBOICCMAX_
 #define _TURBOICCMAX_
+/*************************************************************************************/
+/*  Automatic definition Systems - Determinant LED Current at turbo based on config  */
+/*************************************************************************************/	
 
-/*************************************************************
-这个文件是新增的驱动固件的极亮和爆闪电流自动配置系统。如果你看
-到编译失败报错指向这个文件，请勿直接修改这个文件！您可以对照输
-出的错误信息在工程设置（左上角魔术棒，找到C51选项卡，在Define
-这一栏里面）内补上对应的宏定义条目设置好目标的极亮输出电流后报
-错信息会自行消失。
-*************************************************************/
-
-//使用自定义LED
-#ifdef Custom_LED_ICCMAX
+#ifdef Custom_LED_ICCMAX	//使用自定义LED
 
 	//判断电流是否合法
 	#if (Custom_LED_ICCMAX < 22000 | Custom_LED_ICCMAX > 36000)
@@ -24,38 +33,32 @@
 //FV7212D灯珠
 #elif defined(USING_LED_FV7212D)
 
-	#message "Currently Selected LED is DFEx_SuperLED+ FV7212D,Turbo ICC=30.3A."
 	#define TurboICCMAX 30300
 
 //FL7022D灯珠
 #elif defined(USING_LED_FL7022D)|defined(USING_LED_N7175HE)
 
-	#message "Currently Selected LED is DFEx_SuperLED+ FL7022D(NightWatch N7-175HE),Turbo ICC=33.0A."
 	#define TurboICCMAX 33000
-
-
-#elif defined(USING_LED_FL7018I_PRO9)
-	
-	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I with 0.9mR Shunt,Turbo ICC=36.6A."
-	#define TurboICCMAX 36600  
 
 //FL7018I灯珠
 #elif defined(USING_LED_FL7018I)
 	
-	#message "Currently Selected LED is DFEx_SuperLED+ FL7018I,Turbo ICC=35A."
 	#define TurboICCMAX 35000
 
 //Luminus SFT-90X
 #elif defined(USING_LED_SFT90X)
 	
-	#message "Currently Selected LED is Luminus SFT-90X-WS65M,Turbo ICC=20A."
 	#define TurboICCMAX 20000
 
-
+//旧版12金线NBT160
 #elif defined(USING_LED_NBT160)
 
-	#message "Currently Selected LED is NBT160.3(7070 Package),Turbo ICC=34A."
-	#define TurboICCMAX 34500
+	#define TurboICCMAX 28000
+
+//专属定制版本加强NBT160
+#elif defined(USING_LED_FV7011I)
+
+	#define TurboICCMAX 35500
 
 //安全保护机制，请勿修改！！！！
 #else
@@ -66,12 +69,17 @@
 
 #endif
 
+/*************************************************************************************/
+/*  Automatic definition Systems - Determinant LED Current at Strobe based on config */
+/*************************************************************************************/	
 
-/********  爆闪和信标（脉冲）模式以及ECO模式电流定义区域 ********/  
 #ifdef TurboICCMAX
   
-  //竞技模式下的电流定义
-  #if (TurboICCMAX < 32000UL)
+	#if defined(USING_LED_FV7011I)
+	   //使用FV7011I灯珠，ECO模式限制为25A
+      #define ECOTurboICCMAX 25000
+  #elif (TurboICCMAX < 32000UL)
+	   //极亮电流小于32A模式下的电流定义
      #define ECOTurboICCMAX TurboICCMAX-7500
   #else
 	   //经济模式极亮限制在26A
@@ -80,9 +88,14 @@
 	
 	
 	//爆闪电流定义
-	#ifdef FullPowerStrobe
+	#ifdef FullPowerStrobe	
+			//使用NBT160灯珠，为了保护金线避免金线被炸断，限制爆闪功率至每灯珠120W		
+	    #if (defined(USING_LED_FV7011I)|defined(USING_LED_NBT160))
+			  
+				#define StrobeICCMAX 34000
+				
 	    //全功率爆闪，极亮电流等于爆闪电流或者爆闪电流使用自定义
-	    #ifdef CustomStrobeCurrent
+	    #elif defined(CustomStrobeCurrent)
 				
 				#if(CustomStrobeCurrent > 40000 | CustomStrobeCurrent < TurboICCMAX)
 			  //非法的自定义爆闪电流
@@ -92,17 +105,14 @@
 				
 				//合法的自定义爆闪电流，使用设置值
 				#define StrobeICCMAX CustomStrobeCurrent
-				#message "Customized Strobe Current has been set.System will use Customized Strobe Current instead of turbo current."
 				
 				#endif
+
+				
 			#else
 			  //没有自定义爆闪电流，使用极亮电流
 				#define StrobeICCMAX TurboICCMAX
-	 
-				#if (TurboICCMAX < 22000UL)
-				#warning "Tips:Strobe Current has been limited due to Turbo ICCMAX is less than 22A."
-				#endif
-			
+				
 	   #endif
 		
 	#else
@@ -110,11 +120,10 @@
 	 #if (TurboICCMAX < 22000UL)
 				
 			#define StrobeICCMAX TurboICCMAX
-			#warning "Tips:Strobe Current has been limited due to Turbo ICCMAX is less than 22A."
+			#define StrobeIsLessThanTurbo
 			
 	 #else
 			
-			#message "Low Power Strobe mode Enabled.Strobe ICC will limit to 22Amps."
 			#define StrobeICCMAX 22000UL
 			
 	 #endif	
@@ -122,23 +131,26 @@
 	#endif
 	//信标（脉冲）模式电流定义
 	#ifdef FullPowerBeacon
-   //全功率信标（脉冲）模式，极亮电流等于信标（脉冲）模式电流
-	 #define BeaconICCMAX TurboICCMAX
-	 
-			#if (TurboICCMAX < 22000UL)
-			#warning "Tips:Beacon/Pulsing mode Current has been limited due to Turbo ICCMAX is less than 22A."
-			#endif
+	
+	  //使用NBT160灯珠，为了保护金线避免金线被炸断，限制爆闪功率至每灯珠120W		
+		#if (defined(USING_LED_FV7011I)|defined(USING_LED_NBT160))
+	    #define StrobeLimitedByVTLED
+			#define BeaconICCMAX 34000
+	
+	  #else
+			//全功率信标（脉冲）模式，极亮电流等于信标（脉冲）模式电流
+			#define BeaconICCMAX TurboICCMAX
+	 			
+		#endif
 	 
 	#else
    //启用低功率信标（脉冲）模式
 	 #if (TurboICCMAX < 22000UL)
 				
 			#define BeaconICCMAX TurboICCMAX
-			#warning "Tips:Beacon/Pulsing mode Current has been limited due to Turbo ICCMAX is less than 22A."
-			
+			#define BeaconIsLessThanTurbo
 	 #else
 			
-			#message "Low Power Beacon/Pulsing mode Enabled.Beacon/Pulsing mode ICC will limit to 22Amps."
 			#define BeaconICCMAX 22000UL
 			
 	 #endif	
@@ -150,11 +162,16 @@
 	#define BeaconICCMAX 0
   #define StrobeICCMAX 0
 
-#endif
+#endif  /* TurboICCMAX */
 
+/*************************************************************************************/
+/*    Automatic definition Systems - Fail-Safe to Pre-Define a current when fault   */
+/*************************************************************************************/	
 //定义一个0值避免系统的实际代码部分报错
 #ifndef TurboICCMAX
 	#define TurboICCMAX 0
 #endif
 
-#endif
+#endif  /* _TURBOICCMAX_ */
+
+/***********************************  End Of File  ***********************************/

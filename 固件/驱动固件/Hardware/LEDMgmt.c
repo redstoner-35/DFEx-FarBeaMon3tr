@@ -1,23 +1,68 @@
+/****************************************************************************/
+/** \file LEDMgmt.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件负责实现侧按电子开关的红绿双色电量指示灯的初始化、驱动
+和多种闪烁模式以及亮度控制的实现
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "delay.h"
 #include "LEDMgmt.h"
 #include "GPIO.h"
 #include "PinDefs.h"
 #include "cms8s6990.h"
 
-//全局变量
-volatile LEDStateDef LEDMode; 
-static unsigned char timer;    //内部使用的定时器
-bit IsHalfBrightness;					 //标志位，是否使能指示灯半亮度模式
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter definition ('#define')
+****************************************************************************/
 
-//函数
-bit ShowThermalStepDown(void);	//显示温度控制启动	
-bit DisplayTacModeEnabled(void); //显示战术模式启动
+#define LEDBrightnessFull 1400 //设置侧按LED的半亮度模式的亮度，范围1-2399对应1-100%	
+#define LEDBrightnessHalf 250 //设置侧按LED的半亮度模式的亮度，范围1-2399对应1-100%	
 
-//内部寄存器宏定义
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter Processing ('#define')
+****************************************************************************/
+
 #define LEDBrightnessHalfMSB (LEDBrightnessHalf>>8)&0xFF
 #define LEDBrightnessHalfLSB LEDBrightnessHalf&0xFF         //亮度一半的LSB和MSB
 #define LEDBrightnessFullMSB (LEDBrightnessFull>>8)&0xFF
 #define LEDBrightnessFullLSB LEDBrightnessFull&0xFF         //亮度开满的LSB和MSB
+
+/****************************************************************************/
+/*	Local type definitions('typedef')
+****************************************************************************/
+typedef enum
+	{
+	LED_BothOFF=0x0C,  //Mask位=11，关闭所有LED
+	LED_ROnly=0x08,   //Mask位=10，打开红灯
+	LED_GOnly=0x04,   //Mask位=01，打开绿灯
+	LED_RPlusG=0x00   //Mask位=00，打开所有LED
+	}LEDCommandDef;
+/****************************************************************************/
+/*	Local variable definitions('static')
+****************************************************************************/
+static unsigned char timer;    //内部使用的定时器
+
+/****************************************************************************/
+/*	Global variable definitions(decleared in header files with 'extern')
+****************************************************************************/
+volatile LEDStateDef LEDMode; 
+bit IsHalfBrightness;					 //标志位，是否使能指示灯半亮度模式
+
+/****************************************************************************/
+/*	external function prototypes
+****************************************************************************/
+bit ShowThermalStepDown(void);	//显示温度控制启动	
+bit DisplayTacModeEnabled(void); //显示战术模式启动
+
+/****************************************************************************/
+/*	Function implementation - local('static')
+****************************************************************************/
 
 //设置LED亮度
 static void SetLEDBrightNess(void)
@@ -40,40 +85,6 @@ static void SetLEDBrightNess(void)
   //应用占空比
 	PWMLOADEN|=0x0C; //加载通道0的PWM值
 	}
-	
-//LED配置函数
-void LED_Init(void)
-	{
-	GPIOCfgDef LEDInitCfg;
-	//设置结构体
-	LEDInitCfg.Mode=GPIO_Out_PP;
-  LEDInitCfg.Slew=GPIO_Slow_Slew;		
-	LEDInitCfg.DRVCurrent=GPIO_High_Current; //配置为低斜率大电流的推挽输出
-	//初始化模式设置
-	LEDMode=LED_OFF;
-	//配置PWM发生器
-	PWM23PSC=0x01;  //打开预分频器和计数器时钟 
-  PWM2DIV=0xff;   
-	PWM3DIV=0xff;   //令Fpwmcnt=Fsys=48MHz(不分频)	
-	//配置周期数据
-	PWMP2H=0x09; 
-	PWMP3H=0x09;
-	PWMP2L=0x5F;
-	PWMP3L=0x5F; //CNT=(48MHz/20Khz)-1=2399
-  //启用PWM
-	PWMCNTE|=0x0C; //使能通道2 3的计数器，PWM开始运作
-	//配置占空比数据
-	SetLEDBrightNess();
-  while(PWMLOADEN&0x0C); //等待PWM完成应用
-	//复位IO
-	GPIO_WriteBit(GreenLEDIOG,GreenLEDIOx,0);	
-	GPIO_WriteBit(RedLEDIOG,RedLEDIOx,0);	
-	//配置GPIO（将配置GPIO拉到最后是因为避免PWM发生器工作异常引起闪烁）
-	GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg); //红色LED(推挽输出)
-	GPIO_ConfigGPIOMode(GreenLEDIOG,GPIOMask(GreenLEDIOx),&LEDInitCfg); //绿色LED(推挽输出)
-	GPIO_SetMUXMode(RedLEDIOG,RedLEDIOx,GPIO_AF_PWMCH2);
-	GPIO_SetMUXMode(GreenLEDIOG,GreenLEDIOx,GPIO_AF_PWMCH3); //为了控制侧按LED的亮度改为PWM模式
-	}	
 	
 //根据传入的指令，设置PWM寄存器控制侧按LED开启与否
 static void SetLEDONOFF(LEDCommandDef Command)
@@ -109,6 +120,44 @@ static LEDCommandDef ConvertLEDModeToCmd(LEDStateDef Mode)
 	return (LEDCommandDef)buf;
 	}
 	
+/****************************************************************************/
+/*	Function implementation - Global(decleared in header files with 'extern')
+*****************************************************************************/
+	
+//LED配置函数
+void LED_Init(void)
+	{
+	GPIOCfgDef LEDInitCfg;
+	//设置结构体
+	LEDInitCfg.Mode=GPIO_Out_PP;
+  LEDInitCfg.Slew=GPIO_Slow_Slew;		
+	LEDInitCfg.DRVCurrent=GPIO_High_Current; //配置为低斜率大电流的推挽输出
+	//初始化模式设置
+	LEDMode=LED_OFF;
+	//配置PWM发生器
+	PWM23PSC=0x01;  //打开预分频器和计数器时钟 
+  PWM2DIV=0xff;   
+	PWM3DIV=0xff;   //令Fpwmcnt=Fsys=48MHz(不分频)	
+	//配置周期数据
+	PWMP2H=0x09; 
+	PWMP3H=0x09;
+	PWMP2L=0x5F;
+	PWMP3L=0x5F; //CNT=(48MHz/20Khz)-1=2399
+  //启用PWM
+	PWMCNTE|=0x0C; //使能通道2 3的计数器，PWM开始运作
+	//配置占空比数据
+	SetLEDBrightNess();
+  while(PWMLOADEN&0x0C); //等待PWM完成应用
+	//复位IO
+	GPIO_WriteBit(GreenLEDIOG,GreenLEDIOx,0);	
+	GPIO_WriteBit(RedLEDIOG,RedLEDIOx,0);	
+	//配置GPIO（将配置GPIO拉到最后是因为避免PWM发生器工作异常引起闪烁）
+	GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg); //红色LED(推挽输出)
+	GPIO_ConfigGPIOMode(GreenLEDIOG,GPIOMask(GreenLEDIOx),&LEDInitCfg); //绿色LED(推挽输出)
+	GPIO_SetMUXMode(RedLEDIOG,RedLEDIOx,GPIO_AF_PWMCH2);
+	GPIO_SetMUXMode(GreenLEDIOG,GreenLEDIOx,GPIO_AF_PWMCH3); //为了控制侧按LED的亮度改为PWM模式
+	}	
+
 //LED控制函数
 void LEDControlHandler(void)
 	{
@@ -172,3 +221,4 @@ void MakeFastStrobe(LEDStateDef Mode)
 	//关闭LED
 	SetLEDONOFF(LED_BothOFF);
 	}	
+/*********************************  End Of File  ************************************/

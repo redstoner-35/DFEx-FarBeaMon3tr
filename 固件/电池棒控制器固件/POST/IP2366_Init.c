@@ -607,9 +607,18 @@ void IP2366_ReConfigOutWhenTypeCOFF(void)
 		{
 		if(GetIfCapTestRunning())VBUSReConnectTimeCounter=80; 	//系统即将从安全模式切换到正常充电，置位消隐定时器避免容量测试误认为C口被拔出
 		IsBootFromVBUS=false;
+		//关闭充电DCDC，并且设置为sink only，延时150mS
+		IP2366_EnableDCDC(false,false);
+	  AUXPSU_SetTypeCFVoutState(false);
+		IP2366_SetTypeCRole(TypeC_SourceOnly);
+		delay_ms(150);
+		WatchDog_Feed();
+		//令IP2366把继电器切换过去，然后重新连接到C扣
 		AUXPSU_SetIPDState(true);
 		AUXPSU_ConnectTCtoIP2366();		//充电达到足够时长之后切换回IP2366进行高功率充电
+		delay_ms(150);
 		IP2366_ReInitBasedOnConfig(); //重新初始化2366
+		WatchDog_Feed();
 		IP2366_SetTypeCRole(CalcIfDCDCOutEnabled()?TypeC_Bidir:TypeC_SinkOnly);
 		}
 	}

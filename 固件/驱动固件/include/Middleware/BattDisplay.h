@@ -1,20 +1,23 @@
-#ifndef _BattDs_
-#define _BattDs_
+/************************************************************************************/
+/** \file BattDisplay.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统的电量测量和显示模块的外部声明文件。该文件声明了触发电量
+报告、执行运行时精确电池电压和系统温度以及大概的电量报告的所需的处理函数并且为上层逻辑提供
+电池信息的接口。
 
-//电池检测配置
-#define VBattAvgCount 40 //等效单节电池电压数据的平均次数(用于内部逻辑的低压保护,电量显示和电量不足跳档)
-#define LowVoltStrobeGap 15 //触发低电压提示之后每隔多久闪一次
-
-//电池电压平均计算结构体声明
-typedef struct
-	{
-	int Min;
-  int Max;
-	long AvgBuf;
-	unsigned char Count;
-	}AverageCalcDef;	
-
-//状态变量enum
+**	History: Initial Release
+**	
+/*************************************************************************************/
+#ifndef _BattDisplay_
+#define _BattDisplay_
+/*************************************************************************************/
+/*	Include Files
+**************************************************************************************/
+#include "LEDMgmt.h"
+/*************************************************************************************/
+/*	Global type definitions('typedef')
+**************************************************************************************/
 typedef enum
 	{
 	Battery_Plenty, //电池电量充足
@@ -39,20 +42,40 @@ typedef enum
 	BattVdis_ShowTempState	
 	}BattVshowFSMDef; //电池电量显示处理
 
+/************************************************************************************/
+/* Extern Flags and Variable definition - Battery Statu interface related */
+/************************************************************************************/
+extern bit IsBatteryAlert; 
+extern bit IsBatteryFault; 			//电池低电量警告和故障发生标志位
+extern BattStatusDef BattState; //电池当前大致的电量状态	
+	
+//滤波之后的电池组等效单节电压（LSB=1mV，不反应电池组在不平衡状态下的实际单节电压）	
+extern xdata int CellVoltage; 	
 
-//外部参考
-extern bit IsBatteryAlert; //电池低电警告发生
-extern bit IsBatteryFault; //电池低电量故障发生
-extern BattStatusDef BattState; //电池状态
-extern xdata int CellVoltage; //滤波之后的电池组等效单节电压（不反应电池组在不平衡状态下的实际单节电压）
+/************************************************************************************/
+/* Extern Flags and Variable definition - Voltage & Temperature Report FSM related  */
+/************************************************************************************/
 extern xdata BattVshowFSMDef VshowFSMState; //状态机状态	
 	
-//函数
-void TriggerTShowDisplay(void); //启动温度显示
-void BattDisplayTIM(void); //电池电量显示函数处理
-void TriggerVshowDisplay(void); //启动电池电压显示
-void DisplayVBattAtStart(bit IsPOR); //在启动时显示电池电压
-void BatteryTelemHandler(void);  //电池测量和指示灯控制
-bit LowPowerStrobe(void); //低电量提示闪
+/************************************************************************************/
+/* Extern Functions definition - Runtime Battery statu Report Handler */
+/************************************************************************************/	
+void BatteryTelemHandler(void);  //电池测量和指示灯控制	
+void BattDisplayTIM(void); //电池电量显示函数处理	
 	
-#endif
+/************************************************************************************/
+/* Extern Functions definition - Battery Voltage & Temperature Report Trigger */
+/************************************************************************************/		
+void TriggerTShowDisplay(void); //启动温度显示
+void TriggerVshowDisplay(void); //启动电池电压显示
+
+/************************************************************************************/
+/* Extern Functions definition - Battery Report Initialization & other stuff */
+/************************************************************************************/	
+void DisplayVBattAtStart(bit IsPOR); 		//在启动时显示电池电压
+bit LowPowerStrobe(void); 							//低电量提示闪
+LEDStateDef VshowEnter_ShowIndex(void);	//在特定情况下显示进入特殊模式的先导闪
+	
+#endif /* _BattDisplay_ */
+
+/*********************************  End Of File  ************************************/

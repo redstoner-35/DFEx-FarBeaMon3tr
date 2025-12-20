@@ -1,3 +1,16 @@
+/****************************************************************************/
+/** \file SetupMenu.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件为顶层应用层逻辑文件。该文件实现了系统中设置固件各个属性
+偏好的设置菜单功能。
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "SideKey.h"
 #include "ModeControl.h"
 #include "delay.h"
@@ -5,17 +18,36 @@
 #include "LEDMgmt.h"
 #include "SetupMenu.h"
 #include "LocateLED.h"
+#include "FastOp.h"
 #include "SysConfig.h"
+#include "BattDisplay.h"
 
-//外部变量和函数
-LEDStateDef VshowEnter_ShowIndex(void);
-extern xdata unsigned char CommonSysFSMTIM;
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter definition ('#define')
+****************************************************************************/
+#define TotalSetupNum 8	 //系统总共包含的设置项数量（不要随便改！会爆的！）
 
-//内部变量
-xdata SetupMenuFSMDef SetupFSMState;
+
+/****************************************************************************/
+/*	Local variable and Flag definitions('static')
+*****************************************************************************/
 static xdata unsigned char SetupMenuIdx;
 static xdata unsigned char SetupTimedOutTIM;
 static bit BitBuf;
+
+/****************************************************************************/
+/*	Global & Extern variable and Flag definitions('extern')
+*****************************************************************************/
+
+//通用软件计时变量
+extern xdata unsigned char CommonSysFSMTIM;
+
+//设置菜单FSM存储
+xdata SetupMenuFSMDef SetupFSMState;
+
+/****************************************************************************/
+/*	Function implementation - local('static')
+****************************************************************************/	
 
 //进行按键响应的函数
 static void KeyAddFluxProcess(void)
@@ -51,6 +83,10 @@ static void SetupMenuIdxAutoADD(void)
 	//进行菜单增减
   KeyAddFluxProcess();
 	}
+	
+/****************************************************************************/
+/*	Function implementation - Global(decleared in header files with 'extern')
+*****************************************************************************/	
 	
 //触发设置菜单选项
 void TriggerSetupMenuDisplay(void)
@@ -174,18 +210,21 @@ LEDStateDef SetupMenuFSM(void)
 					}						
 
 			 //返回bit位结果
-			 if(!CommonSysFSMTIM)
+			 if(IsLargerThanOneU8(CommonSysFSMTIM))return BitBuf?LED_Green:LED_Red; //计时器倒计时ing，显示状态
+			 else if(!CommonSysFSMTIM)
 				 {
-			   CommonSysFSMTIM=20;
+				 //一轮显示时间到，复位超时计时器并重置结果
+				 CommonSysFSMTIM=20;
 				 if(SetupTimedOutTIM)SetupTimedOutTIM--; //反复累减超时计时器
 				 }
-			 else return BitBuf?LED_Green:LED_Red;
+			 break;
 				 
 		case SetupMenu_InactiveExitWait:
 			 //等待用户放开按键
 	     if(CommonSysFSMTIM)return LED_RedBlinkFifth; //红色闪五次表示异常退出
        if(getSideKeyHoldEvent())break;
-		   SetupFSMState=SetupMenu_InACT;
+			 //用户已经松开按键，返回到未设置状态
+		   SetupFSMState=SetupMenu_InACT; 
 		   break;
 		}
 	//超时，异常退出
@@ -197,3 +236,4 @@ LEDStateDef SetupMenuFSM(void)
 	//默认情况下返回
 	return LED_OFF;
 	}
+/*********************************  End Of File  ************************************/

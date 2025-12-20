@@ -1,3 +1,16 @@
+/****************************************************************************/
+/** \file TempControl.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件为顶层应用层逻辑文件。负责实现系统的温度管理并在合适的
+条件下限制输出功率以及强制关机，以保护系统免受过度高温影响。
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "ADCCfg.h"
 #include "LEDMgmt.h"
 #include "delay.h"
@@ -10,76 +23,110 @@
 #include "SelfTest.h"
 #include "FastOp.h"
 
-//内部变量
+/****************************************************************************/
+/*	Local pre-processor symbols/macros - for Parameter Definition
+****************************************************************************/
+
+//PI环参数和最小电流限制
+#define ILEDRecoveryTime 120 //使用积分器缓慢升档的判断时长，如果积分器持续累加到这个时长，则执行一次调节(单位秒)
+#define SlowStepDownTime 60 //使用积分器缓慢降档的判断时长，如果积分器持续累加到这个时长，则执行一次调节(单位秒)
+#define IntegralCurrentTrimValue 2000 //积分器针对输出的电流修调的最大值(mA)
+#define IntegralFactor 16 //积分系数(每单位=1/8秒，越大时间常数越高，6=每分钟进行40mA的调整)
+#define ILEDStepDown 1500 //降档系统所能达到的最低电流(mA)
+
+//常亮电流配置
+#define ILEDConstantGlowMin 3450 //降档系统内的低温温控的常亮电流设置(mA)
+#define ILEDConstantGlowMinTurbo 5300 //降档系统内的极亮温控的常亮电流设置(mA)
+#define ILEDConstantGlowMinECOTurbo 3650 //降档系统内的极亮温控（ECO模式）的常亮电流设置(mA)
+
+//温度配置
+#define ForceOffTemp 80 //过热关机温度
+#define ForceDisableTurboTemp 65 //超过此温度无法进入极亮
+#define TurboConstantTemperature 58 //极亮挡位的PID维持温度
+#define ECOTurboConstantTemperature 52 //ECO模式下极亮挡位的PID维持温度
+#define ConstantTemperature 50 //非极亮挡位温控启动后维持的温度
+#define ReleaseTemperature 43 //温控释放的温度
+
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter Processing and Checking
+****************************************************************************/ 
+#define MinumumILED CalcIREFValue(ILEDStepDown)		//最小LED电流计算
+#define LeaveTurboTemperature ForceOffTemp-10   	//退出极亮温度计算
+
+/*   积分器满量程自动定义，切勿修改！    */
+#define IntegrateFullScale IntegralCurrentTrimValue*IntegralFactor
+
+#if (IntegrateFullScale > 32000)
+
+#error "Error 001:Invalid Integral Configuration,Trim Value or time-factor out of range!"
+
+#endif
+
+#if (IntegrateFullScale <= 0)
+
+#error "Error 002:Invalid Integral Configuration,Trim Value or time-factor must not be zero or less than zero!"
+
+#endif
+
+/*	温控数值监测，切勿修改！    	*/
+#if (ForceOffTemp > 85)
+#error "Error 003:Emergency Shutdown Temperature must not exceeded 85 Celsius!"
+#endif
+
+#if ((ForceOffTemp-15) < ForceDisableTurboTemp)
+#error "Error 004:Force Disble Turbo Temperature must less than Emergency Shutdown Temperature for at least 15 Celsius!"
+#endif
+
+#if (ForceOffTemp < (TurboConstantTemperature+8))
+#error "Error 005:Force Disble Turbo Temperature must higher than Constant Temperature of Turbo Mode for at least 8 Celsius!"
+#endif
+
+#if (TurboConstantTemperature <= ConstantTemperature)
+#error "Error 006:Constant Temperature of Turbo Mode must lagger than Constant Temperature of other mode!"
+#endif
+
+#if (ConstantTemperature < (ReleaseTemperature+5))
+#error "Error 007:Constant Temperature of other mode must lagger than Thermal Control Release Temp for 5 Celsius!"
+#endif
+
+#if (ReleaseTemperature < 38)
+#error "Error 008:Thermal Control Release Temp is too low and will not release at summer!"
+#elif (ReleaseTemperature < 41)
+#warning "Warning 001:Thermal Control Release Temp is too low and might not be able to release at summer."
+#endif
+
+/****************************************************************************/
+/*	Local variable and Flag definitions('static')
+****************************************************************************/
 static xdata int TempIntegral;
 static xdata int TempProtBuf;
 static xdata unsigned char StepDownTIM;  //降档显示计时
 static xdata unsigned char StepUpLockTIM; //计时器
 
-//内部状态位
 static bit IsNearThermalFoldBack; //标记位，是否接近于退出极亮温度
 static bit IsThermalStepDown; //标记位，是否降档
 static bit IsTempLIMActive;  //温控是否已经启动
 static bit IsSystemShutDown; //是否触发温控强制关机
 
-//外部状态位
+/****************************************************************************/
+/*	Global variable definitions(declared in header file with 'extern')
+****************************************************************************/
 bit IsDisableTurbo;  //禁止再度进入到极亮档
 bit IsForceLeaveTurbo; //是否强制离开极亮档
 
-//内部宏定义
-#define MinumumILED CalcIREFValue(ILEDStepDown)
-#define LeaveTurboTemperature ForceOffTemp-10   //退出极亮温度为关机保护温度-10
+/****************************************************************************/
+/*	Function implementation - local('static')
+****************************************************************************/
 
-//换挡的时候根据当前恒温的电流重新PI值
-void RecalcPILoop(int LastCurrent)	
+//负责温度使能控制的施密特触发实现函数（滞回控制）
+static bit TempSchmittTrigger(bit ValueIN,char HighThreshold,char LowThreshold)	
 	{
-	int buf,ModeCur;
-	//目标挡位不需要计算,复位比例缓存
-	if(!CurrentMode->IsNeedStepDown)TempProtBuf=0;
-	//需要复位，执行对应处理
-	else
-		{	
-		//获取当前挡位电流
-		ModeCur=QuerySystemFullScaleCurrent();
-		//计算P值缓存
-		buf=TempProtBuf+(TempIntegral/IntegralFactor); //计算电流扣减值
-		if(IsNegative16(buf))buf=0; //电流扣减值不能小于0
-		buf=LastCurrent-buf; //旧挡位电流减去扣减值得到实际电流(mA)
-		TempProtBuf=ModeCur-LastCurrent; //P值缓存等于新挡位的电流-旧挡位实际电流(mA)
-		if(IsNegative16(TempProtBuf))TempProtBuf=0; //不允许比例缓存小于0
-		}
-	//清除积分器缓存
-	TempIntegral=0;
+	if(Data.Systemp>HighThreshold)return 1;
+	if(Data.Systemp<LowThreshold)return 0;
+	//数值保持，没有改变
+	return ValueIN;
 	}
-	
-//输出当前温控的限流值
-int ThermalILIMCalc(void)
-	{
-	int result;
-	//判断温控是否需要进行计算
-	if(!IsTempLIMActive)
-		{
-		result=Current; 				//温控被关闭，电流限制进来多少返回去多少
-		IsThermalStepDown=0;  	//指示温控已被关闭
-		}
-	//开始温控计算
-	else
-		{
-		result=TempProtBuf+(TempIntegral/IntegralFactor); //根据缓存计算结果
-		if(IsNegative16(result))result=0; //不允许负值出现
-		result=Current-result; //计算限流值结果
-		if(result<MinumumILED) //已经调到底了，禁止PID继续累加
-			{
-		  TempProtBuf=Current-MinumumILED; //将比例输出结果限幅为最小电流
-		  TempIntegral=0;
-		  result=MinumumILED; //电流限制不允许小于最低电流
-			}
-    //判断温控是否已经触发			
-		if(result<(Current-CalcIREFValue(1000)))IsThermalStepDown=1;	//温控已经让输出电流下调1000mA，提示温控触发
-		}
-	//返回结果	                               
-	return result; 
-	}
+
 //获取温控环路的恒温值
 static int QueryConstantTemp(void)	
 	{
@@ -112,6 +159,7 @@ static void ThermalIntegralHandler(bool IsStepDown,bool IsEnableFastAdj)
 	#undef IsEnableQuickItg            //这个宏定义只是该函数的局部定义，需要在函数末尾禁用掉避免后续意外使用到导致问题
 	}
 	
+//在积分缓慢调整模式下，如果积分器发生溢出，则将积分器对应的调整量映射到比例项内
 static void ThermalIntegralCommitToProtHandler(void)	
 	{
 	//当前积分器累计的参数小于复位时间，退出
@@ -120,6 +168,99 @@ static void ThermalIntegralCommitToProtHandler(void)
 	TempProtBuf+=TempIntegral/IntegralFactor;
 	TempIntegral=0;						
 	}
+	
+/********************************************************************************/
+/* Global Function implementation - PI Controller Init and Result Export
+*********************************************************************************/		
+	
+//换挡的时候根据当前恒温的电流重新PI值
+void RecalcPILoop(int LastCurrent)	
+	{
+	int buf,ModeCur;
+	//目标挡位不需要计算,复位比例缓存
+	if(!CurrentMode->IsNeedStepDown)TempProtBuf=0;
+	//需要复位，执行对应处理
+	else
+		{	
+		//获取当前挡位电流
+		ModeCur=QuerySystemFullScaleCurrent();
+		//计算P值缓存
+		buf=TempProtBuf+(TempIntegral/IntegralFactor); //计算电流扣减值
+		if(IsNegative16(buf))buf=0; //电流扣减值不能小于0
+		buf=LastCurrent-buf; //旧挡位电流减去扣减值得到实际电流(mA)
+		TempProtBuf=ModeCur-LastCurrent; //P值缓存等于新挡位的电流-旧挡位实际电流(mA)
+		if(IsNegative16(TempProtBuf))TempProtBuf=0; //不允许比例缓存小于0
+		}
+	//清除积分器缓存
+	TempIntegral=0;
+	}
+	
+//执行温控计算并根据缓存输出当前的LED限流值
+int ThermalILIMCalc(void)
+	{
+	int result;
+	//判断温控是否需要进行计算
+	if(!IsTempLIMActive)
+		{
+		result=Current; 				//温控被关闭，电流限制进来多少返回去多少
+		IsThermalStepDown=0;  	//指示温控已被关闭
+		}
+	//开始温控计算
+	else
+		{
+		result=TempProtBuf+(TempIntegral/IntegralFactor); //根据缓存计算结果
+		if(IsNegative16(result))result=0; //不允许负值出现
+		result=Current-result; //计算限流值结果
+		if(result<MinumumILED) //已经调到底了，禁止PID继续累加
+			{
+		  TempProtBuf=Current-MinumumILED; //将比例输出结果限幅为最小电流
+		  TempIntegral=0;
+		  result=MinumumILED; //电流限制不允许小于最低电流
+			}
+    //判断温控是否已经触发			
+		if(result<(Current-CalcIREFValue(1000)))IsThermalStepDown=1;	//温控已经让输出电流下调1000mA，提示温控触发
+		}
+	//返回结果	                               
+	return result; 
+	}
+	
+//显示温度控制启动
+bit ShowThermalStepDown(void)	
+	{
+	StepDownReasonDef Reason;
+	//判断系统是否在降档
+	if(VshowFSMState!=BattVdis_Waiting)Reason=StepDown_OFF; //当前处于电量显示状态不允许打断
+	else if(IsThermalStepDown)Reason=StepDown_Thermal; //温控降档触发
+	else Reason=QuerySystemTurboILIMState(); //其余情况，根据状态显示温控降档状态
+	//进行降档处理
+  switch(Reason)		
+		{
+		case StepDown_OFF:StepDownTIM=0;break; //提示未触发	
+    case StepDown_ECOModeEnabled:
+		case StepDown_BattAlert: //电池警报
+		  //当计时器=13和10时多闪一次制造出两次闪烁(ECO模式下)
+			if(StepDownTIM==13||(Reason==StepDown_ECOModeEnabled&&StepDownTIM==10))
+				{
+				StepDownTIM++;
+				return 1;
+				}
+		case StepDown_Thermal: //过热
+			StepDownTIM++;
+			if(StepDownTIM==16)
+				{
+				StepDownTIM=0;
+				return 1;
+				}
+			break;
+		}
+	//返回0
+	return 0;
+	}	
+	
+/********************************************************************************/
+/* Global Function implementation - PI Loop Controller Calculation And Thermal 
+	 Management Logic Handler
+*********************************************************************************/	
 	
 //温控PI环计算
 void ThermalPILoopCalc(void)	
@@ -225,47 +366,6 @@ void ThermalPILoopCalc(void)
 			}
 		}
 	}
-//显示温度控制启动
-bit ShowThermalStepDown(void)	
-	{
-	StepDownReasonDef Reason;
-	//判断系统是否在降档
-	if(VshowFSMState!=BattVdis_Waiting)Reason=StepDown_OFF; //当前处于电量显示状态不允许打断
-	else if(IsThermalStepDown)Reason=StepDown_Thermal; //温控降档触发
-	else Reason=QuerySystemTurboILIMState(); //其余情况，根据状态显示温控降档状态
-	//进行降档处理
-  switch(Reason)		
-		{
-		case StepDown_OFF:StepDownTIM=0;break; //提示未触发	
-    case StepDown_ECOModeEnabled:
-		case StepDown_BattAlert: //电池警报
-		  //当计时器=13和10时多闪一次制造出两次闪烁(ECO模式下)
-			if(StepDownTIM==13||(Reason==StepDown_ECOModeEnabled&&StepDownTIM==10))
-				{
-				StepDownTIM++;
-				return 1;
-				}
-		case StepDown_Thermal: //过热
-			StepDownTIM++;
-			if(StepDownTIM==16)
-				{
-				StepDownTIM=0;
-				return 1;
-				}
-			break;
-		}
-	//返回0
-	return 0;
-	}
-
-//负责温度使能控制的施密特触发器
-static bit TempSchmittTrigger(bit ValueIN,char HighThreshold,char LowThreshold)	
-	{
-	if(Data.Systemp>HighThreshold)return 1;
-	if(Data.Systemp<LowThreshold)return 0;
-	//数值保持，没有改变
-	return ValueIN;
-	}
 
 //温度管理函数
 void ThermalMgmtProcess(void)
@@ -293,3 +393,4 @@ void ThermalMgmtProcess(void)
 	//温度传感器故障，返回错误
 	else ReportError(Fault_NTCFailed);
 	}	
+/*********************************  End Of File  ************************************/

@@ -1,19 +1,50 @@
+/****************************************************************************/
+/** \file VersionCheck.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件为顶层应用层逻辑文件。该文件实现了查询系统固件编译日期
+以确定build版本的功能。
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "ModeControl.h"
 #include "VersionCheck.h"
 #include "SideKey.h"
+
+/****************************************************************************/
+/*	Local constant definitions('static const')
+****************************************************************************/	
 
 /*********** 固件时间戳 ***********
 固件时间戳包含固件编译的年，月，日以
 及24小时制时间和分钟。
 **********************************/
-static code char TimeStamp[]={"25 08 21-11 20"};
+static code char TimeStamp[]={"25 12 19-13 35"};
 
-//变量
-extern xdata unsigned char CommonSysFSMTIM;
-static xdata unsigned char VersionIndex=0; //版本号字符串index
+/****************************************************************************/
+/*	Local variable definitions('static')
+****************************************************************************/	
+static xdata unsigned char VersionIndex=0; 						//版本号字符串index
 static xdata unsigned char VersionShowFastStrobeTIM;  //快速闪烁提示计时器
+
+/****************************************************************************/
+/*	Global & Extern variable and Flag definitions('extern')
+*****************************************************************************/
+
+//通用软件计时变量
+extern xdata unsigned char CommonSysFSMTIM;
+
+//版本检查系统状态变量
 xdata VersionChkFSMDef VChkFSMState=VersionCheck_InAct;
-	
+
+/****************************************************************************/
+/* Global Function implementation - Logic & Timing Handler
+*****************************************************************************/
+
 //启动显示流程
 void VersionCheck_Trigger(void)
 	{
@@ -95,3 +126,4 @@ char VersionCheckFSM(void)
 	//默认使灯珠熄灭，返回0
 	return 0;
 	}
+/*********************************  End Of File  ************************************/

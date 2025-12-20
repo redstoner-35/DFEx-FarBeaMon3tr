@@ -1,3 +1,16 @@
+/****************************************************************************/
+/** \file SpecialMode.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件为顶层应用层逻辑文件。该文件负责实现系统的非常规挡位
+的进入以及退出逻辑，并且实现系统特殊模式（战术点亮、锁定等）的逻辑切换和显示
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "ModeControl.h"
 #include "LEDMgmt.h"
 #include "SideKey.h"
@@ -8,10 +21,20 @@
 #include "SideKey.h"
 #include "LowVoltProt.h"
 
-//全局变量
-static xdata unsigned char ShowTacModeTIM;
-bit IsDisplayLocked;
-SpecialOperationDef SysMode; //系统模式
+/****************************************************************************/
+/*	Local variable and Flag definitions('static')
+****************************************************************************/
+static xdata unsigned char ShowTacModeTIM;  //显示极亮模式的计时器
+
+/****************************************************************************/
+/*	Global variable definitions(declared in header file with 'extern')
+****************************************************************************/
+bit IsDisplayLocked;							//标志位，指示系统锁定的时候按下按钮的动作
+SpecialOperationDef SysMode; 			//系统模式
+
+/****************************************************************************/
+/*	Function implementation - local('static')
+****************************************************************************/	
 
 //进入退出锁定切换
 static void EnterExitLock(void)
@@ -28,6 +51,11 @@ static void EnterExitTac(void)
 	SysMode=!SysMode?Operation_TacTurbo:Operation_Normal;
 	}	
 
+/****************************************************************************/
+/* Global	Function implementation - Logic Handler for entering 
+	 Normal and Special Mode
+****************************************************************************/		
+	
 //进入月光处理
 void EnterMoonProcess(void)
 	{
@@ -86,6 +114,11 @@ void TryEnterTurboStrobeProcess(char Count)
 		}
 	}
 
+/****************************************************************************/
+/* Global	Function implementation - Logic Handler & Mode Display for Special
+	 Operating Mode(Tac or Lock Mode)
+****************************************************************************/	
+	
 //显示战术模式启用
 bit DisplayTacModeEnabled(void)
 	{
@@ -147,3 +180,4 @@ SpecialOperationDef SpecialModeOperation(char Click)
 	//所有运算完毕，返回系统状态（直接返回enum就行，因为非0值的话系统就是特殊模式，此时可以让条件成立）
 	return SysMode;
 	}	
+/*********************************  End Of File  ************************************/

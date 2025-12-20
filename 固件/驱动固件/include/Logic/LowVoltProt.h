@@ -1,26 +1,54 @@
+/************************************************************************************/
+/** \file LowVoltProt.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统的低电流保护模块的外部声明文件。该模块声明了实现极亮输入
+自适应MPPT、常规挡位和无极调光低电量保护所需的处理函数，以及极亮MPPT所需要的部分接口。
+
+**	History: Initial Release
+**	
+/*************************************************************************************/
 #ifndef _LVProt_
 #define _LvProt_
-
+/*************************************************************************************/
+/*	Include Files
+**************************************************************************************/
 #include "stdbool.h"
 #include "TempControl.h"
 
-//参数配置
-#define BatteryMaximumTurboVdroop 1.4  //极亮启动过程中，电池最大允许的和运行前的压差(V)
-#define BatteryAlertDelay 10 //电池警报延迟	
-#define BatteryFaultDelay 2 //电池故障强制跳档/关机的延迟
-#define TurboILIMTryCDTime 4 //每次极亮尝试下调电流的冷却时间（单位是1/8秒）
+/************************************************************************************/
+/* Extern Flags and Variable definition - Battery Statu interface related */
+/************************************************************************************/
+extern xdata int TurboILIM; 						//极亮电流限制
+extern xdata float BeforeRawBattVolt; 	//极亮前电池电压的采样(V)
 
-//外部引用
-extern xdata int TurboILIM; //极亮电流限制
-extern xdata float BeforeRawBattVolt; //极亮前电压的采样
+/************************************************************************************/
+/* Extern Functions definition - Low Voltage Protect Logic handler and timing 
+	 handler for Other Mode */
+/************************************************************************************/	
+void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump); 
+void BattAlertTIMHandler(void);
 
-//函数
-void BatteryLowAlertProcess(bool IsNeedToShutOff,ModeIdxDef ModeJump); //普通挡位的警报函数
-void RampLowVoltHandler(void); //无极调光的专属处理
-void BattAlertTIMHandler(void); //电池低电量报警处理函数
+/************************************************************************************/
+/* Extern Functions definition - Low Voltage Protect Logic handler and Input 
+	 Auto MPPT Tracking handler for Turbo Mode */
+/************************************************************************************/	
+void CalcTurboILIM(void); 
 void TurboLVILIMProcess(void); //极亮专属的电流运行值的功能
-void RampRestoreLVProtToMax(void); //每次开机进入无级模式时尝试恢复限流
-void CalcTurboILIM(void); //计算极亮电流挡位的限流值
-StepDownReasonDef QuerySystemTurboILIMState(void); //获取系统在极亮模式开启时的功率限制状态
 
-#endif
+/************************************************************************************/
+/* Extern Functions definition - Low Voltage Protect Logic handler and timing 
+	 handler for Ramp(StepLess Adjustment) Mode */
+/************************************************************************************/	
+void RampRestoreLVProtToMax(void); //每次开机进入无级模式时尝试恢复限流
+void RampLowVoltHandler(void); 			//无极调光的专属处理
+
+/************************************************************************************/
+/*  Extern Functions definition - Query System Step down state  */
+/************************************************************************************/	
+StepDownReasonDef QuerySystemTurboILIMState(void); 
+
+#endif /* _LvProt_ */
+
+/*********************************  End Of File  ************************************/
+

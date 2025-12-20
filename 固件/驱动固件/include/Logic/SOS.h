@@ -1,27 +1,27 @@
+/************************************************************************************/
+/** \file SOS.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统顶层逻辑模块的声明文件。该模块声明了SOS处理模块相关的初
+始化和逻辑处理函数。
+
+**	History: Initial Release
+**	
+/************************************************************************************/
 #ifndef _SOS_
 #define _SOS_
-
-//SOS状态枚举
-typedef enum
-	{
-	SOSState_Prepare,
-	SOSState_3Dot,
-	SOSState_3DotWait,
-	SOSState_3Dash,
-	SOSState_3DashWait,
-	SOSState_3DotAgain,
-	SOSState_Wait,
-	}SOSStateDef;	
-
-//SOS时序配置
-#define SOSDotTime 2 //SOS信号(.)的时间	
-#define SOSDashTime 6 //SOS信号(-)的时间	
-#define SOSGapTime 7 //SOS信号在每次显示途中等待的时间
-#define SOSFinishGapTime 35 //每轮SOS发出结束后的等待时间	
-
-//函数
-char SOSFSM(void);	//SOS状态机处理模块
-void SOSTIMHandler(void);//SOS状态机的时序处理
+/************************************************************************************/
+/* Extern Function definition - Initialization
+*************************************************************************************/
 void ResetSOSModule(void);	//复位整个SOS模块
+
+/************************************************************************************/
+/* Extern Function definition - SOS Logic Handler
+*************************************************************************************/
+char SOSFSM(void);					//SOS状态机处理模块
+void SOSTIMHandler(void);		//SOS状态机的计时处理
+
 	
-#endif
+#endif /* _SOS_ */
+
+/*********************************  End Of File  ************************************/

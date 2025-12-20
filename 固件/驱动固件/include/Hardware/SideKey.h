@@ -1,51 +1,44 @@
+/************************************************************************************/
+/** \file SideKey.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统多模态按键识别模块的外部声明文件，负责声明按键控制器的初
+始化、特殊配置以及获取按键事件的函数。
+
+**	History: Initial Release
+**	
+/************************************************************************************/
 #ifndef _SideKey_
 #define _SideKey_
-
-//按键检测延时(每个单位=0.125秒)
-#define LongPressTimeForTac 2 //开启战术模式后的长按按键检测延时(按下时间超过这个数值则判定为长按)
-#define LongPressTime 5 //长按按键检测延时(按下时间超过这个数值则判定为长按)
-#define ContShortPressWindow 4 //连续多次按下时侧按的检测释抑时间(在该时间以内按下的短按才算入短按次数内)
-#define KeyReleaseDetectMask 0xFF //按键按下的监测Mask
-
-typedef enum
-{
-HoldEvent_None=0,
-HoldEvent_H=1, //长按
-HoldEvent_1H=2, //单击+长按
-HoldEvent_2H //双击+长按
-}HoldEventDef;
-
-//按键事件结构体定义
-typedef struct
-{
-char LongPressDetected;
-char ShortPressCount;
-char ShortPressEvent;
-HoldEventDef HoldStat;
-}KeyEventStrDef;
-
-typedef union
-{
-KeyEventStrDef EventStor;
-char Buf[sizeof(KeyEventStrDef)];
-}KeyEventUnionDef;
-
-//函数
-bit GetSideKeyRawGPIOState(void); //复位计时器
-void SideKey_SetIntOFF(void);		//关闭侧按的GPIO中断
+/************************************************************************************/
+/* Extern Functions definition - Initialization */
+/************************************************************************************/
 void SideKeyInit(void);
-char getSideKeyShortPressCount(void);//获取侧按按键的单击和连击次数
-bit getSideKeyLongPressEvent(void);//获得侧按按钮长按的事件
-bit getSideKeyHoldEvent(void);//获得侧按按钮一直按住的事件
-bit IsKeyEventOccurred(void); //检测是否有事件发生
-char getSideKeyNClickAndHoldEvent(void); //获取侧按按下N次+长按的按键数
-void MarkAsKeyPressed(void); //标记按键按下
-void ClearShortPressEvent(void); //清除累计的短按事件
-bit getSideKey1HEvent(void); //获取侧按按键单击
 
-//回调处理
-void SideKey_Int_Callback(void);//侧按中断的处理
+/************************************************************************************/
+/* Extern Functions definition - Specialized Key Controller Operation */
+/************************************************************************************/
+void MarkAsKeyPressed(void); //标记按键按下
+void SideKey_SetIntOFF(void);		//关闭侧按的GPIO中断
+
+/************************************************************************************/
+/* Extern Functions definition - Event Management and Query */
+/************************************************************************************/
+bit GetSideKeyRawGPIOState(void); //复位计时器
+char getSideKeyShortPressCount(void);//获取侧按按键的单击和连击次数
+bit getSideKeyLongPressEvent(void);//获得侧按按钮长按2秒的事件
+bit getSideKeyHoldEvent(void);//获得侧按按钮是否在保持一直按住的事件
+bit IsKeyEventOccurred(void); //检测是否有按键事件发生
+char getSideKeyNClickAndHoldEvent(void); //获取侧按按下N次+长按的按键数
+void ClearShortPressEvent(void); //清除累计的短按事件
+bit getSideKey1HEvent(void); //获取侧按按键是否执行了单击+长按事件
+
+/************************************************************************************/
+/* Extern Functions definition - Call Back For KeyEvent Handler */
+/************************************************************************************/
 void SideKey_TIM_Callback(void);//连按检测计时的回调处理
 void SideKey_LogicHandler(void);//逻辑处理
 
-#endif
+#endif /* _SideKey_ */
+
+/*********************************  End Of File  ************************************/

@@ -1,43 +1,37 @@
+/************************************************************************************/
+/** \file delay.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统计时模块外部声明文件，负责为系统提供心跳定时器的控制函数
+并提供各种心跳计时以及高低频率爆闪的Flag。
+
+**	History: Initial Release
+**	
+/************************************************************************************/
 #ifndef Delay
 #define Delay
+/************************************************************************************/
+/* Extern Flags and Variable definition */
+/************************************************************************************/
 
-//宏定义
-//#define EnableMicroSecDelay //是否启用微秒延时
-//#define EnableHBCheck //是否开启心跳检查
-#define UseUnifiedSystemTimeBase   //启用统一的系统初始化函数
+extern volatile bit SysHFBitFlag; //高频心跳Flag(每62.5mS置1)
+extern volatile bit LFStrobeFlag; //低频爆闪Flag(125mS)
+extern volatile bit StrobeFlag; //高频爆闪Flag(62.5mS交替切换)
 
-//系统心跳定时除能和flag
-extern volatile bit SysHFBitFlag;
-#define DisableSysHBTIM() T2CON=0x00;IE&=~0x20; //禁用系统心跳定时器，直接关闭定时器并除能中断
+/************************************************************************************/
+/* Extern Functions definition */
+/************************************************************************************/
 
-//检查心跳定时器是否启动
-#ifdef EnableHBCheck
-void CheckIfHBTIMIsReady(void);
-#endif
+void StartSystemTimeBase(void); //启动心跳定时器
+void delay_ms(int ms);					//阻塞延时
 
+/************************************************************************************/
+/* Extern Fast Operation Macro definition */
+/************************************************************************************/
 
+//禁用系统心跳定时器，直接关闭定时器并除能中断
+#define DisableSysHBTIM() do{T2CON=0x00;IE&=~0x20;}while(0) 
 
-//启动系统心跳计时器和延时计时器的初始化
-#ifdef UseUnifiedSystemTimeBase
-  
-	//使用统一初始化函数
-	void StartSystemTimeBase(void);
+#endif /* Delay */
 
-#else
-
-	//使用独立初始化函数
-	void EnableSysHBTIM(void);
-	void delay_init();
-
-#endif
-
-//较长的延时
-void delay_ms(int ms);
-void delay_sec(int sec);
-
-//微秒级别短延时
-#ifdef EnableMicroSecDelay
-void delay_us(int us);
-#endif
-
-#endif
+/*********************************  End Of File  ************************************/

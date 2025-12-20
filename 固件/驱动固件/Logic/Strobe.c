@@ -1,28 +1,56 @@
+/****************************************************************************/
+/** \file Strobe.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件为顶层应用层逻辑文件。该文件实现了系统中三击爆闪挡位的
+高频爆闪和随机变频脉冲闪的功能。
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "ModeControl.h"
-#include "Strobe.h"
+#include "OutputChannel.h"
 #include "ADCCfg.h"
+#include "delay.h"
 
-//外部频闪Flag
-extern volatile bit StrobeFlag;
-extern volatile bit LFStrobeFlag;
-
-//内部变量
-bit EnableRandomStrobe;                  //开启随机变频爆闪
-static xdata char StrobeFlagSel;
-static xdata unsigned char StrobeSelIdx; //爆闪选择index
-static xdata unsigned char StrobeCounter; //爆闪次数计时
-
-//内部爆闪事件顺序
+/****************************************************************************/
+/*	Local pre-processor symbols/macros - for Parameter Definition
+****************************************************************************/
+//内部爆闪事件顺序(这个千万不能乱改，会炸的！)
 #define RandomCodeDataAddr (volatile unsigned char code *)0x2E80
 
-//爆闪控制器复位
-void ResetStrobeModule(void)
+
+/****************************************************************************/
+/*	Global variable definitions(declared in header file with 'extern')
+****************************************************************************/
+bit EnableRandomStrobe;                  //系统配置位，是否开启随机变频爆闪
+
+/****************************************************************************/
+/*	Local variable and Flag definitions('static')
+*****************************************************************************/
+static xdata char StrobeFlagSel;
+static xdata unsigned char StrobeSelIdx; 	//爆闪选择index
+static xdata unsigned char StrobeCounter; //爆闪次数计时
+
+
+/****************************************************************************/
+/* Global Function implementation - Initialization
+*****************************************************************************/	
+
+void ResetStrobeModule(void)	//爆闪控制器复位函数
 	{
 	StrobeFlagSel=0;
 	StrobeSelIdx=0;
 	StrobeCounter=0;
 	}
 
+/****************************************************************************/
+/* Global Function implementation - Logic & Strobe Output Handler
+*****************************************************************************/		
+	
 //爆闪状态机处理
 void RandStrobeHandler(void)
 	{
@@ -52,6 +80,8 @@ void RandStrobeHandler(void)
 //爆闪Flag输出处理
 bit StrobeOutputHandler(void)
 	{
+	//系统还未完成启动，此时禁止爆闪模块运行确保系统已经完成LED预偏置再启动
+	if(!IsOutputStarted)return 1;	
 	//根据爆闪flag选择一组频率		
 	if(EnableRandomStrobe)switch(StrobeFlagSel)
 		{
@@ -63,3 +93,4 @@ bit StrobeOutputHandler(void)
 	//默认情况
 	return StrobeFlag;
 	}
+/*********************************  End Of File  ************************************/

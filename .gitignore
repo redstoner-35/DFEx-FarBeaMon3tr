@@ -6,7 +6,10 @@ MainPCB/History
 MainPCB/__Previews
 SideKeyPCB/History
 SideKeyPCB/__Previews
-*.uvproj
+*.PcbDocPreview
+*.SchDocPreview
 *.uvopt
+*.uvoptx
 *.uvgui
+*.uvguix
 *.redstoner_35

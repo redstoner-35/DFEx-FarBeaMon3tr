@@ -1,6 +1,21 @@
+/****************************************************************************/
+/** \file OutputChannel.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96 
+/** \Description 这个文件为中层设备驱动文件，负责根据上层逻辑层反馈的目标输出电流
+值计算并操控PWMDAC输出指定的LED电流并完成LED的0电流冲击软起动保护、以及Current-
+Pause功能。同时该文件负责完成DCDC输出模块的配置和自我测试。
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "cms8s6990.h"
 #include "PinDefs.h"
 #include "GPIO.h"
+#include "LEDMgmt.h"
 #include "PWMCfg.h"
 #include "delay.h"
 #include "SpecialMode.h"
@@ -9,25 +24,116 @@
 #include "ADCCfg.h"
 #include "SelfTest.h"
 
-//内部SFR
-sbit AUXEN=AUXENIOP^AUXENIOx; //辅助6V DCDC使能
-sbit PWMDACEN=PWMDACENIOP^PWMDACENIOx; //PWMDAC使能
-sbit SYSHBLED=SYSHBLEDIOP^SYSHBLEDIOx; //心跳LED
-sbit BOOSTRUN=BOOSTRUNIOP^BOOSTRUNIOx; //LTC3787的EN
-sbit LEDMOS=LEDNegMOSIOP^LEDNegMOSIOx; //LEDMOSFET
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter definition ('#define')
+****************************************************************************/ 
 
-//外部电流配置参考
+//输出电流环VREF基准配置
+#define MainChannelShuntmOhm 1.00 //主通道的检流电阻阻值(mR)
+#define CurrentSenseOpAmpGain 100 //电流检测放大器的增益
+
+//极亮挡位MPPT缓升参数配置
+#define TurboLowCurrentMPPTStep 5
+#define TurboMPPTILEDStep 10 			//极亮在电流小于18A和大于18A时，输入MPPT进行电流尝试的步进值，单位1.5mA per Step
+
+//输出PWMDAC预充电压配置
+#define PWMDACPreCharge 142 	//PWMDAC在正常启动流程下的预充电压(LSB=0.1V，默认系统设置为14.2V)
+
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter Processing and Fast Op-
+/*  eration with Register Operation('#define')
+****************************************************************************/ 
+#define GracefulShutThres ((float)(1+OneLumenOut)/(float)10)			//自动计算系统输出放电和启动模块的阈值(单位V)
+#define CalcPWMDACDuty(x) (((1129000UL-(4815UL*x))*24UL)/5000UL)  //使用整数方式计算PWMDAC预充电压
+
+//根据LED特性计算PWMDAC在1LM挡位运行时的输出整定
+#if defined(USING_LED_FV7011I)	
+	//PWMDAC在1流明挡位下的预充电压(LSB=0.1V，NBT160特殊判定，需要提高输出电压)
+	#define OneLumenOut 148
+#elif ( defined(USING_LED_FV7212D) | defined(USING_LED_SFT90X) )
+	//PWMDAC在1流明挡位下的预充电压(LSB=0.1V，垂直核心因为Vf高需要14700mV才能有足够的亮度)
+	#define OneLumenOut 147 
+#else 
+	//PWMDAC在1流明挡位下的预充电压(LSB=0.1V，其余灯珠默认使用14500mV)
+  #define OneLumenOut 145 	
+#endif
+	
+/*自动计算系统PWMDAC的预充配置数值，请勿修改！！！！*/	
+#define CVPreChargeDACVal CalcPWMDACDuty(PWMDACPreCharge)
+#define OneLumenCVDACVal CalcPWMDACDuty(OneLumenOut)
+	
+#if (OneLumenCVDACVal>CVPreChargeDACVal)
+	 //1LM挡位的目标输出电压所需要的PWMDAC数值高于预启动所需的数值，会引起闪烁故最终偏置的结果使用1LM的DAC值
+	 #define CVPreStartDACVal OneLumenCVDACVal
+	 #define OneLMDACVal OneLumenCVDACVal
+#else
+   //1LM挡位的目标输出电压所需要的PWMDAC数值低于预启动所需的数值，可以分开使用
+	 #define CVPreStartDACVal CVPreChargeDACVal
+	 #define OneLMDACVal OneLumenCVDACVal
+#endif
+
+#if (OneLumenCVDACVal < 0 | OneLumenCVDACVal > 2399)
+   #error "Error 009: Invalid CV PWMDAC Output Config Value for One Lumen(Ultra Low mode)Output!"
+#endif
+
+#if (CVPreChargeDACVal < 0 | CVPreChargeDACVal > 2399)
+   #error "Error 00A: Invalid CV PWMDAC Output Config Value for System StartUp!"
+#endif
+
+/****************************************************************************/
+/*	Local type definitions('typedef')
+****************************************************************************/
+typedef enum  //输出通道状态机
+	{
+	//输出通道彻底关闭，待机状态
+	OutCH_Standby=0,
+	//输出通道正常启动流程
+	OutCH_PWMDACPreCharge=1,  //PWMDAC预偏置
+	OutCH_StartAUXPSU=2, //启动辅助PSU
+	OutCH_EnableBoost=3, //启动主Boost
+	OutCH_ReleasePreCharge=4, //逐步复位PreCharge DAC让输出电压慢慢爬升，从CV状态过渡到FB注入的CC状态
+	OutCH_SubmitDuty=5, //应用占空比，LED爬升到目标电流
+	//输出通道正常运行阶段
+	OutCH_OutputEnabled=6,
+	OutCH_1LumenOpenRun=7,
+	//安全关闭阶段
+	OutCH_GracefulShut=8,
+	OutCH_WaitVOUTDecay=9,
+	//输出通道在爆闪等阶段进入idle(LED断开，输出配置为14.7V)
+	OutCH_EnterIdle=10,	
+	OutCH_OutputIdle=11,
+  //输出通道启动失败
+	OutCH_PreChargeFailed=12
+	}OutChFSMStateDef;
+
+/****************************************************************************/
+/*	Local SFR definitions('sfr' and 'sbit')
+****************************************************************************/
+sbit AUXEN=AUXENIOP^AUXENIOx; 					//辅助6V DCDC使能
+sbit PWMDACEN=PWMDACENIOP^PWMDACENIOx;  //PWMDAC使能
+sbit SYSHBLED=SYSHBLEDIOP^SYSHBLEDIOx;  //心跳LED
+sbit BOOSTRUN=BOOSTRUNIOP^BOOSTRUNIOx;  //LTC3787的EN
+sbit LEDMOS=LEDNegMOSIOP^LEDNegMOSIOx;  //LEDMOSFET
+
+/****************************************************************************/
+/*	Global variable definitions(declared in header file with 'extern')
+****************************************************************************/
 xdata volatile int Current; //目标电流(mA)
 xdata int CurrentBuf; //存储当前已经上传的电流值 
 bit IsCurrentRampUp;  //电流正在上升过程中的标记位（用于和MPPT试探联动）
+bit IsOutputStarted;  //输出通道是否已经启动成功的标志位（特殊功能挡位下用于确保系统已启动再执行特殊功能）
 
-//内部变量
+/****************************************************************************/
+/*	Local variable definitions('static')
+****************************************************************************/	
 static bit IsEnableSlowILEDRamp; //标志位，是否启用慢速电流斜率控制
 static xdata unsigned char PreChargeFSMTimer; //预充电状态机计时器
 static xdata OutChFSMStateDef OutputFSMState; //输出控制状态机
 static xdata unsigned char HBTimer; //心跳计时器
 
-//内部状态表
+/****************************************************************************/
+/*	Local constant definitions('static const')
+****************************************************************************/	
 static code OutChFSMStateDef NeedsOFFStateTable[]=
 	{
 	//该状态表记录了可以通过把目标电流设置为0实现关机的状态
@@ -38,9 +144,9 @@ static code OutChFSMStateDef NeedsOFFStateTable[]=
 	OutCH_OutputIdle
 	};
 
-/*********************************************************************************************************************
-输出通道控制器所使用的内部函数，仅能在该文件内调用。
-*********************************************************************************************************************/
+/****************************************************************************/
+/*	Function implementation - local('static')
+****************************************************************************/
 
 //内部用于计算PWMDAC占空比的函数	
 static float Duty_Calc(int CurrentInput)
@@ -56,9 +162,37 @@ static float Duty_Calc(int CurrentInput)
 	return buf;
 	}
 	
-/*********************************************************************************************************************
-输出通道控制器所使用的外部函数，可以在其他地方调用。
-*********************************************************************************************************************/
+//输出通道停止主DCDC	
+static void OutputChannel_StopDCDC(void)
+	{
+	BOOSTRUN=0;
+	LEDMOS=0;
+	AUXEN=0;
+	}	
+	
+//复位PWMDAC并关闭输出
+static void OutputChannel_ClearPWMDAC(void)
+	{
+	PWMDACEN=0;
+	if(PreChargeDACDuty||PWMDuty>0)
+		{
+		PreChargeDACDuty=0;
+		PWMDuty=0;
+		IsNeedToUploadPWM=1;
+		}
+	}
+	
+//获取判断电压的保护值
+static float QueryOutputHaltVolt(void)
+	{
+	if(CurrentMode->ModeIdx==Mode_Strobe)return 17;
+	//非爆闪模式返回16V
+	return 16;
+	}	
+
+/****************************************************************************/
+/*	Global Function implementation - Initialization
+****************************************************************************/
 
 //初始化函数
 void OutputChannel_Init(void)
@@ -78,33 +212,6 @@ void OutputChannel_Init(void)
   GPIO_ConfigGPIOMode(SYSHBLEDIOG,GPIOMask(SYSHBLEDIOx),&OCInitCfg);		
 	}
 
-//预充电状态机计时器
-void OCFSM_TIMHandler(void)
-	{
-	//心跳LED控制	
-	if(CurrentMode->ModeIdx==Mode_1Lumen)SYSHBLED=0; //极低亮禁用心跳LED省电
-	else if(GetIfOutputEnabled())SYSHBLED=1;//输出已启用，LED配置为1		
-	else //待机状态下慢闪,发生故障时禁用定时器持续快闪
-		{
-	  if(CurrentMode->ModeIdx!=Mode_Fault&&HBTimer<4)HBTimer++;
-	  else
-			{
-			SYSHBLED=~SYSHBLED; //翻转LED
-			HBTimer=0;
-			}
-		}
-	//状态机计时器
-	if(PreChargeFSMTimer)PreChargeFSMTimer--;
-	}	
-	
-//输出通道停止主DCDC	
-static void OutputChannel_StopDCDC(void)
-	{
-	BOOSTRUN=0;
-	LEDMOS=0;
-	AUXEN=0;
-	}	
-	
 //输出通道复位
 void OutputChannel_DeInit(void)
 	{
@@ -121,108 +228,28 @@ void OutputChannel_DeInit(void)
 	HBTimer=0;
 	OutputFSMState=OutCH_Standby;
 	}	
-
-//复位PWMDAC并关闭输出
-void OutputChannel_ClearPWMDAC(void)
-	{
-	PWMDACEN=0;
-	if(PreChargeDACDuty||PWMDuty>0)
-		{
-		PreChargeDACDuty=0;
-		PWMDuty=0;
-		IsNeedToUploadPWM=1;
-		}
-	}
 	
-//外部获取输出是否正常启用的函数
-bit GetIfOutputEnabled(void)	
-	{
-	/**********************************************	
-	系统在开环运行、应用占空比和输出已正常启用的时
-	候，返回启用状态。这里为什么不用三个if或者查表
-	是利用了三种状态处于连续的位置：
-	OutCH_SubmitDuty为ID5
-	OutCH_OutputEnabled为ID6
-	OutCH_1LumenOpenRun为ID7
-	这样子比三个If或者switch要省很多空间。
-	**********************************************/
-	if(OutputFSMState>4&&OutputFSMState<8)return 1;
-	//否则返回0
-	return 0;
-	}
-
-//获取系统是否在安全关机阶段
-bit GetIfSystemInPOFFSeq(void)
-	{
-	/************************************************
-	如果系统处在软关机的等待阶段则返回1，不允许系统接
-	受任何新的用户操作，直到输出已经完成放电，输出电
-	容里面没有多余的电能后才允许继续接收用户操作。
-	************************************************/
-	if(OutputFSMState==OutCH_GracefulShut||
-		 OutputFSMState==OutCH_WaitVOUTDecay)return 1;
-	//系统已经关闭，返回0
-	return 0;
-	}	
+/****************************************************************************/
+/*	Global Function implementation - Logic Handler
+****************************************************************************/	
 	
-//输出通道初始化之后，等待电池就绪的函数
-void OutputChannel_WaitVBattReady(void)
+//输出通道状态机的计时处理函数
+void OCFSM_TIMHandler(void)
 	{
-	unsigned char retry=200;
-	do
+	//心跳LED控制	
+	if(CurrentMode->ModeIdx==Mode_1Lumen)SYSHBLED=0; //极低亮禁用心跳LED省电
+	else if(GetIfOutputEnabled())SYSHBLED=1;//输出已启用，LED配置为1		
+	else //待机状态下慢闪,发生故障时禁用定时器持续快闪
 		{
-		//等待电池电压就绪
-		delay_ms(10);
-		SystemTelemHandler();
-		if(Data.RawBattVolt>7.20)return;	
-		}
-	while(--retry);
-	//等待2秒后电池电压仍然异常，系统无法工作，亮红灯锁死
-	LEDMode=LED_Red;
-	IsHalfBrightness=0;
-	while(1)LEDControlHandler();
-	}
-	
-//输出通道试运行
-void OutputChannel_TestRun(void)
-	{
-	unsigned char retry=100;
-	//打开辅助电源和PWMDAC
-	AUXEN=1;
-	PWMDACEN=1;
-	PWM_ForceEnableOut(1);
-	//延迟50mS后，令3787EN=1，启动输出
-	delay_ms(50);
-	BOOSTRUN=1; 
-	//启动输出后循环读取DCDC的输出电压检查DCDC模块，预充系统是否正常
-	do
-		{
-		SystemTelemHandler();
-		//DCDC输出过压，立即关闭系统并报错
-		if(Data.OutputVoltage>15.0)
+	  if(CurrentMode->ModeIdx!=Mode_Fault&&HBTimer<4)HBTimer++;
+	  else
 			{
-			ReportError(Fault_DCDCPreChargeFailed);
-			break;
+			SYSHBLED=~SYSHBLED; //翻转LED
+			HBTimer=0;
 			}
-		//DCDC输出正常建立，退出
-		else if(Data.OutputVoltage>14.0)break;
-		//检查失败，延时5mS后再试
-		delay_ms(5);
 		}
-	while(--retry);		
-	//检查结束，关闭DCDC并复位PWMDAC
-	PWM_ForceEnableOut(0);
-	OutputChannel_DeInit();
-	//根据超时结果判断是否异常
-	if(!retry)ReportError(Fault_DCDCFailedToStart);
-	}
-	
-//获取判断电压的保护值
-static float QueryOutputHaltVolt(void)
-	{
-	if(CurrentMode->ModeIdx==Mode_Strobe)return 17;
-	//非爆闪模式返回16V
-	return 16;
+	//状态机计时器
+	if(PreChargeFSMTimer)PreChargeFSMTimer--;
 	}	
 	
 //输出通道计算
@@ -266,6 +293,7 @@ void OutputChannel_Calc(void)
 	     //复位DCDC控制和电流上升标记位
 	     OutputChannel_StopDCDC();
 	     IsCurrentRampUp=0;
+	     IsOutputStarted=0;
 			 //复位PWMDAC
        OutputChannel_ClearPWMDAC();
 			 //如果电流发生变更则进入启动状态
@@ -387,6 +415,9 @@ void OutputChannel_Calc(void)
 		  break;
 		//输出通道正常运行阶段
 		case OutCH_OutputEnabled:
+			//系统启动结束，标志位置1
+			IsOutputStarted=1;
+		  //输入2，进入1LM模式
 			if(TargetCurrent==2)
  				{
  				#define OneLMEnterPreDACVal (OneLMDACVal+20)
@@ -446,3 +477,95 @@ void OutputChannel_Calc(void)
 		default:OutputFSMState=OutCH_PreChargeFailed;
 		}
 	}
+
+/****************************************************************************/
+/*	Global Function implementation - Output Controller Status Query
+****************************************************************************/		
+
+//外部获取输出是否正常启用的函数
+bit GetIfOutputEnabled(void)	
+	{
+	/**********************************************	
+	系统在开环运行、应用占空比和输出已正常启用的时
+	候，返回启用状态。这里为什么不用三个if或者查表
+	是利用了三种状态处于连续的位置：
+	OutCH_SubmitDuty为ID5
+	OutCH_OutputEnabled为ID6
+	OutCH_1LumenOpenRun为ID7
+	这样子比三个If或者switch要省很多空间。
+	**********************************************/
+	if(OutputFSMState>4&&OutputFSMState<8)return 1;
+	//否则返回0
+	return 0;
+	}
+
+//获取系统是否在安全关机阶段
+bit GetIfSystemInPOFFSeq(void)
+	{
+	/************************************************
+	如果系统处在软关机的等待阶段则返回1，不允许系统接
+	受任何新的用户操作，直到输出已经完成放电，输出电
+	容里面没有多余的电能后才允许继续接收用户操作。
+	************************************************/
+	if(OutputFSMState==OutCH_GracefulShut||
+		 OutputFSMState==OutCH_WaitVOUTDecay)return 1;
+	//系统已经关闭，返回0
+	return 0;
+	}	
+	
+/****************************************************************************/
+/*	Global Function implementation - Power-On Self Test Handler
+****************************************************************************/			
+
+//输出通道初始化之后，等待电池就绪的函数
+void OutputChannel_WaitVBattReady(void)
+	{
+	unsigned char retry=200;
+	do
+		{
+		//等待电池电压就绪
+		delay_ms(10);
+		SystemTelemHandler();
+		if(Data.RawBattVolt>7.20)return;	
+		}
+	while(--retry);
+	//等待2秒后电池电压仍然异常，系统无法工作，亮红灯锁死
+	LEDMode=LED_Red;
+	IsHalfBrightness=0;
+	while(1)LEDControlHandler();
+	}
+	
+//输出通道试运行
+void OutputChannel_TestRun(void)
+	{
+	unsigned char retry=100;
+	//打开辅助电源和PWMDAC
+	AUXEN=1;
+	PWMDACEN=1;
+	PWM_ForceEnableOut(1);
+	//延迟50mS后，令3787EN=1，启动输出
+	delay_ms(50);
+	BOOSTRUN=1; 
+	//启动输出后循环读取DCDC的输出电压检查DCDC模块，预充系统是否正常
+	do
+		{
+		SystemTelemHandler();
+		//DCDC输出过压，立即关闭系统并报错
+		if(Data.OutputVoltage>15.0)
+			{
+			ReportError(Fault_DCDCPreChargeFailed);
+			break;
+			}
+		//DCDC输出正常建立，退出
+		else if(Data.OutputVoltage>14.0)break;
+		//检查失败，延时5mS后再试
+		delay_ms(5);
+		}
+	while(--retry);		
+	//检查结束，关闭DCDC并复位PWMDAC
+	PWM_ForceEnableOut(0);
+	OutputChannel_DeInit();
+	//根据超时结果判断是否异常
+	if(!retry)ReportError(Fault_DCDCFailedToStart);
+	}
+/*********************************  End Of File  ************************************/

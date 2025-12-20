@@ -1,22 +1,26 @@
-#ifndef _BCON_
-#define _BCON_
+/************************************************************************************/
+/** \file Beacon.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统顶层逻辑模块的声明文件。该模块声明了脉冲信标闪的处理模块
+相关的初始化和逻辑处理函数。
 
-typedef enum
-	{
-	BeaconState_Init,
-	BeaconState_InfoUser,
-	BeaconState_ONStrobe,
-	BeaconState_OFFWait,
-	}BeaconStateDef;
+**	History: Initial Release
+**	
+/************************************************************************************/
+#ifndef _Beacon_
+#define _Beacon_
+/************************************************************************************/
+/* Extern Function definition - Initialization
+*************************************************************************************/
+void BeaconFSM_Reset(void); 
 
-//参数
-#define BeaconOnTime 60 //信标闪烁时间
-#define BeaconOFFTime 3 //信标关闭时间
-#define BeaconInfoTime 3 //信标在开始之前低亮提示用户的时间
-	
-//函数
-void BeaconFSM_Reset(void); //复位状态机
+/************************************************************************************/
+/* Extern Function definition - Timing and logic handler
+*************************************************************************************/
 void BeaconFSM_TIMHandler(void); //关闭时间计时
 char BeaconFSM(void); //信标模式状态机
 
-#endif
+#endif /* _Beacon_ */
+
+/*********************************  End Of File  ************************************/

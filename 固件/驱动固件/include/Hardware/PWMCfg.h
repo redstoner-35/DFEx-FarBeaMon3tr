@@ -1,27 +1,39 @@
+/************************************************************************************/
+/** \file PWMCfg.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统ePWM模块硬件驱动的外部声明文件，负责声明按键控制器的初
+始化、特殊操作和事件处理函数，并声明PWM控制器控制参数的外部变量。
+
+**	History: Initial Release
+**	
+/************************************************************************************/
 #ifndef _PWM_
 #define _PWM_
 
-//PWM参数设置
-#define SysFreq 48000000 //系统时钟频率(单位Hz)
-#define PWMFreq 6000 //PWM频率(单位Hz)	
-	
-//PWM计数器配置	
-#define PWMStepConstant (SysFreq/PWMFreq)-1 //PWM周期自动定义
-#define iabsf(x) x>0?x:-x //整数绝对值
-
-//PWM使能操作
-#define PWM_Enable() 	PWMFBKC=0x00;PWMCNTE=0x1D //使能通道0的计数器，PWM开始运行
-	 
-	
-//PWM输出配置结构体
-extern xdata float PWMDuty;	
-extern bit IsNeedToUploadPWM; //需要更新PWM寄存器应用输出
-extern xdata unsigned int PreChargeDACDuty; //预充电PWMDAC的输出
-	
-//函数
+/************************************************************************************/
+/* Extern Functions definition - Initialization */
+/************************************************************************************/
 void PWM_Init(void);
-void PWM_DeInit(void);
-void PWM_OutputCtrlHandler(void);	
+void PWM_DeInit(void);	
+
+/************************************************************************************/
+/* Extern Functions definition - Specialized PWM Controller Operation */
+/************************************************************************************/
 void PWM_ForceEnableOut(bit IsEnable);	
-	
-#endif
+
+/************************************************************************************/
+/* Extern Functions definition - PWM Controller Logic Handler */
+/************************************************************************************/
+void PWM_OutputCtrlHandler(void);
+
+/************************************************************************************/
+/* Extern Flags and Variable definition */
+/************************************************************************************/
+extern xdata float PWMDuty;									//恒流环路基准的PWMDAC输出
+extern xdata unsigned int PreChargeDACDuty; //预充电PWMDAC的输出
+extern bit IsNeedToUploadPWM; 							//指令bit,置位该bit以更新PWM寄存器应用输出	
+
+#endif /* _PWM_ */
+
+/*********************************  End Of File  ************************************/

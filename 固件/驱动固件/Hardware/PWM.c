@@ -1,19 +1,72 @@
+/****************************************************************************/
+/** \file PWM.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件负责实现系统对外输出PWM的配置以实现PWMDAC功能控制LED的
+的电流和亮度，并且实现输出FSM所需的预偏置受控斜率启动功能。
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "cms8s6990.h"
 #include "PinDefs.h"
 #include "GPIO.h"
-#include "PWMCfg.h"
 
-//全局变量
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter definition ('#define')
+****************************************************************************/ 
+#define SysFreq 48000000 //系统时钟频率(单位Hz)
+#define PWMFreq 6000 //PWM频率(单位Hz)	
+
+/****************************************************************************/
+/*	Local pre-processor symbols/macros for Parameter Processing and Fast Op-
+/*  eration with Register Operation('#define')
+****************************************************************************/ 
+#define PWMStepConstant (SysFreq/PWMFreq)-1 				//主输出PWM周期自动定义
+#define PWM_Enable() 	do{PWMCNTE=0x1D;}while(0) 		//PWM运行使能
+#define iabsf(x) (x>0?x:-x) 												//整数绝对值
+
+#if (PWMStepConstant > 0xFFFE)
+  //自动检测PWM的数值是否合法
+	#error "PWM Frequency is too low which causing PWM Counter to overflow!"
+#endif
+/****************************************************************************/
+/*	Global variable definitions(declared in header file with 'extern')
+****************************************************************************/
 xdata float PWMDuty;
 xdata unsigned int PreChargeDACDuty; //预充电PWMDAC的输出
+bit IsNeedToUploadPWM; //是否需要更新PWM
+
+/****************************************************************************/
+/*	Local variable definitions('static')
+****************************************************************************/
 static bit IsPWMLoading; //PWM正在加载中
 static bit IsNeedToEnableOutput; //是否需要启用输出
 static bit IsNeedToEnableMOS; //是否需要使能MOS管
-bit IsNeedToUploadPWM; //是否需要更新PWM
 
-//内部Sbit
+/****************************************************************************/
+/*	Local Special Register definitions('sfr' and 'sbit')
+****************************************************************************/
 sbit PWMDACPin=PWMDACIOP^PWMDACIOx;
 sbit PreChargeDACPin=PreChargeDACIOP^PreChargeDACIOx;
+
+/****************************************************************************/
+/*	Local Function implementation ('static')
+****************************************************************************/	
+
+//上传PWM值（阻塞等待处理）
+static void UploadPWMValue(void)	
+	{
+	PWMLOADEN=0x11; //加载通道0的PWM值
+	while(PWMLOADEN&0x11); //等待加载结束
+	}
+
+/****************************************************************************/
+/*	Global Function implementation - Initialization and De-Initialization
+****************************************************************************/	
 
 //关闭PWM定时器
 void PWM_DeInit(void)
@@ -28,13 +81,6 @@ void PWM_DeInit(void)
 	PWM01PSC=0x00;  //关闭PWM分频器时钟
 	}
 
-//上传PWM值
-static void UploadPWMValue(void)	
-	{
-	PWMLOADEN=0x11; //加载通道0的PWM值
-	while(PWMLOADEN&0x11); //等待加载结束
-	}
-		
 //PWM定时器初始化
 void PWM_Init(void)
 	{
@@ -84,7 +130,11 @@ void PWM_Init(void)
   GPIO_SetMUXMode(PreChargeDACIOG,PreChargeDACIOx,GPIO_AF_PWMCH4);
 	}
 
-//短时间启用PWM输出的功能
+/****************************************************************************/
+/*	Global Function implementation - Special Control
+****************************************************************************/		
+	
+//在特定场景下（例如硬件初始化自我测试时）强制启用PWM输出的功能
 void PWM_ForceEnableOut(bit IsEnable)	
 	{
 	PWMD0L=IsEnable?0xFF:0;	
@@ -95,6 +145,10 @@ void PWM_ForceEnableOut(bit IsEnable)
 	else PWMMASKE|=0x11;   //更新PWMMASKE寄存器根据输出状态启用对应的通道
 	}
 
+/****************************************************************************/
+/*	Global Function implementation - Logic Handler
+****************************************************************************/		
+	
 //根据PWM结构体内的配置进行输出
 void PWM_OutputCtrlHandler(void)	
 	{
@@ -137,3 +191,4 @@ void PWM_OutputCtrlHandler(void)
 		PWMLOADEN|=0x11; //开始加载
 		}
 	}
+/*********************************  End Of File  ************************************/

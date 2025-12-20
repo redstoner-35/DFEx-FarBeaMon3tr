@@ -421,6 +421,7 @@ bool IP2366_SetInputState(IP2366InputDef * Cfg,bool IsSetChargePower)
 	else if(Cfg->PreChargeCurrent<100)Current=100;
 	else Current=Cfg->PreChargeCurrent;
 	Current/=50; //LSB=50mA
+	buf=(char)(Current&0xFF);
 	if(!IP2366_WriteReg(buf,REG_SYSCTL6))return false;
 	//设置最大充电电压
 	if(!IP2366_UpdateFullVoltage(Cfg->FullVoltage))return false;

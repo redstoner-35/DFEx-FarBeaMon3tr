@@ -1,3 +1,16 @@
+/****************************************************************************/
+/** \file ModeControl.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个文件为顶层应用层逻辑文件。负责实现系统所有的挡位切换的换挡
+功能，并且实现系统中无极调光功能的具体逻辑模块。
+
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "SpecialMode.h"
 #include "LEDMgmt.h"
 #include "SideKey.h"
@@ -7,6 +20,7 @@
 #include "SysConfig.h"
 #include "ADCCfg.h"
 #include "TempControl.h"
+#include "FastOp.h"
 #include "LowVoltProt.h"
 #include "SelfTest.h"
 #include "SOS.h"
@@ -15,6 +29,96 @@
 #include "TurboICCMAX.h"
 #include "SetupMenu.h"
 #include "VersionCheck.h"
+
+/****************************************************************************/
+/*	Local pre-processor symbols/macros - for Parameter Definition
+****************************************************************************/
+#define RampAdjustDividingFactor 3 	//无极调光模式下控制调光速度的分频比例，越大则调光速度越慢
+#define HoldSwitchDelay 6 					//长按换挡延迟	
+#define ModeTotalDepth 14 					//系统一共有几个挡位(不能随便调，会炸！)
+
+/****************************************************************************/
+/*	Local pre-processor symbols/macros - for Gear System Abstract Layer
+****************************************************************************/
+#define PauseSwitchGearFlag (HoldChangeGearTIM&0x40) //暂停换挡配置的Flag
+#define PosSwitchGearFlag (HoldChangeGearTIM&0x80)  //换挡系统需要顺向往上走一个挡位的Flag
+#define InvSwitchGearFlag (HoldChangeGearTIM&0x20)  //换挡系统需要逆序往下走一个挡位的Flag
+
+#define PauseHoldSwitchGear() HoldChangeGearTIM|=0x40 //给换挡系统上Flag，直到用户松开按钮后长按换挡系统才会恢复
+#define ClearPosSwitchGearFlag()	HoldChangeGearTIM&=0x7F
+#define ClearInvSwitchGearFlag()	HoldChangeGearTIM&=0xDF  //清除逆序和顺序换挡的Flag
+
+/****************************************************************************/
+/*	Local pre-processor symbols/macros - for Parameter Display
+****************************************************************************/
+#message " ****************************************************************************"
+#message " *          LED Electrical Parameter & Special Mode Configuration           *"
+#message " ****************************************************************************"
+
+//显示爆闪功率是否小于极亮所以被限制
+#ifdef StrobeIsLessThanTurbo
+  #message " Strobe Mode : Limited to Turbo mode Current due to Turbo Less Than 22Amps"
+#elif (StrobeICCMAX < TurboICCMAX)
+  #ifdef StrobeLimitedByVTLED
+		#message " Strobe Mode : Limited due to protect bonding wire on VT LED."
+	#else
+	  #message " Strobe Mode : Limited to 22 Amps"
+	#endif
+#else
+  #message " Strobe Mode : Full Power"
+#endif
+
+//显示信标功率是否小于极亮所以被限制
+#ifdef BeaconIsLessThanTurbo
+  #message " Pulse Mode : Limited to Turbo mode Current due to Turbo Less Than 22Amps"
+#elif (BeaconICCMAX < TurboICCMAX)
+  #ifdef StrobeLimitedByVTLED
+		#message " Pulse Mode : Limited due to protect bonding wire on VT LED."
+	#else
+	  #message " Pulse Mode : Limited to 22 Amps"
+	#endif
+#else
+  #message " Pulse Mode : Full Power"
+#endif
+
+//根据LED类型打印极亮电流参数
+#if defined(Custom_LED_ICCMAX)
+  #message "LED Type : DFEx-Super LED+ FV7212D"
+	#message "LED Current : N/A (defined by project Configuration)"
+
+#elif defined(USING_LED_FV7212D)
+	#message "LED Type : DFEx-Super LED+ FV7212D"
+  #message "LED Current : 30.3A"
+	
+#elif defined(USING_LED_FL7022D)|defined(USING_LED_N7175HE)	
+	#message "LED Type : DFEx-Super LED+ FL7022D/NightWatch N7-175HE"
+  #message "LED Current : 33.0A"
+	
+#elif defined(USING_LED_FL7018I)
+	#message "LED Type : DFEx-Super LED+ FL7018I"
+  #message "LED Current : 35.0A"
+
+#elif defined(USING_LED_SFT90X)
+	#message "LED Type : Luminus SFT-90-X with 6500K CCT"
+  #message "LED Current : 20.0A"
+	
+#elif defined(USING_LED_NBT160)
+	#message "LED Type : NBT160 with 7070 Package"
+  #message "LED Current : 28.0A"	
+
+#elif defined(USING_LED_FV7011I)
+	#message "LED Type : DFEx-Super LED+ FV7011I"
+	#message "LED Current : 35.5A"	
+	
+#else
+	#message "LED Type : Unknown LED"
+	#message "LED Current : Undefined"	 
+
+#endif
+#message " ****************************************************************************"
+/****************************************************************************/
+/*	Local constant variable definitions('static const 'or 'code')
+****************************************************************************/
 
 //挡位结构体
 code ModeStrDef ModeSettings[ModeTotalDepth]=
@@ -82,7 +186,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		false,
 		//低电量保护设置
 		Mode_1Lumen,							 //低电量触发保护之后，如果不执行关机则自动跳转的挡位
-		LVPROT_Enable_OFF,        //低电量保护机制的类型
+		LVPROT_Disable,        		 //低电量保护机制的类型
 		//挡位切换设置
 		Mode_Moon,
 		Mode_OFF	 //模式挡位切换设置，长按和单击+长按切换到的目标挡位(输入OFF表示不进行切换)			
@@ -158,7 +262,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
     //高亮
 		{
 		Mode_High,
-		CalcIREFValue(8000),  //8000mA电流
+		CalcIREFValue(8500),  //8500mA电流
 		0,   //最小电流没用到，无视
 		3250,  //3.2V关断
 		true,
@@ -259,123 +363,47 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		}, 
 	};
 
-//全局变量(挡位)
-ModeStrDef *CurrentMode; //挡位结构体指针
-xdata ModeIdxDef LastMode; //挡位记忆存储
+/****************************************************************************/
+/*	Global variable definitions - System Gear Switching Related
+****************************************************************************/	
+ModeStrDef *CurrentMode; 					//当前挡位数据（指针，指向挡位结构体）
+xdata ModeIdxDef LastMode; 				//挡位记忆存储
 xdata ModeIdxDef LastSpecialMode; //特殊功能挡位存储
-SysConfigDef SysCfg; //系统配置	
-
-//全局变量(状态位)
+SysConfigDef SysCfg; 							//系统配置	
+bit IsStrobePoweredFromOFF; 			//是否为关机模式下进入到一键爆闪
+	
+/****************************************************************************/
+/*	Global Flag definitions - System Configuration
+****************************************************************************/		
 bit IsRampEnabled; //是否开启无极调光
 bit IsMainMemEnabled; //是否开启主挡位记忆
 bit IsSpecMemEnabled; //是否开启特殊挡位记忆
-bit IsStrobePoweredFromOFF; //是否为关机模式下进入到一键爆闪
 bit IsPowerModeEnabled; //0=ECO MODE 1=POWER MODE		
 	
-//全局软件计时变量
-xdata unsigned char HoldChangeGearTIM; //挡位模式下长按换挡
-xdata unsigned char DisplayLockedTIM; //锁定和战术模式进入退出显示
-
-//内部变量和标志位
+/****************************************************************************/
+/*	Global variable definitions - Special Timers
+****************************************************************************/		
+xdata unsigned char DisplayLockedTIM; //锁定和战术模式进入退出显示	
+	
+	
+/****************************************************************************/
+/*	Local variable definitions('static') for Ramp Systems
+****************************************************************************/		
 static xdata unsigned char RampDIVCNT; //无极调光降低调光速度的分频计时器		
 static bit IsRampKeyPressed;  //标志位，用户是否按下按键对无极调光进行调节
 static bit IsNotifyMaxRampLimitReached; //标记无极调光达到最大电流	
+
+/****************************************************************************/
+/*	Local variable definitions('static') for Other Usage
+****************************************************************************/		
+static xdata unsigned char HoldChangeGearTIM; //挡位模式下长按换挡
 static bit IsSlowFading; //关机渐暗特效
 static bit IsSwitchingKeyStillHold; //按键是否仍然按住
-	
-//获取系统挡位在没有任何外部影响情况下的全部电流
-int QuerySystemFullScaleCurrent(void)
-	{
-	//极亮且开启ECO模式，电流按照ECO模式的ICCMAX取
-	if(CurrentMode->ModeIdx==Mode_Turbo&&IsPowerModeEnabled)
-		return CalcIREFValue(ECOTurboICCMAX);
-	//其他情况按照极亮当前电流取
-  return QueryCurrentGearILED();	
-	}	
-	
-//输入指定的Index，从index里面找到目标模式结构体并返回指针
-ModeStrDef *FindTargetMode(ModeIdxDef Mode,bool *IsResultOK)
-	{
-	unsigned char i;
-	*IsResultOK=false;
-	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode)
-		{
-		*IsResultOK=true;
-		break;
-		}
-	//返回对应的index
-	return &ModeSettings[i];
-	}
-	
-//初始化模式状态机
-void ModeFSMInit(void)
-	{
-	bool Result;
-  //复位故障码和挡位模式配置系统
-  ResetSOSModule(); 							//复位SOS模块
-	LastMode=Mode_ExtremelyLow;
-	LastSpecialMode=Mode_Strobe;
-	ErrCode=Fault_None; 					//没有故障
-	//初始化无极调光
-	SysCfg.RampLimitReachDisplayTIM=0;
-  ReadSysConfig(); //从EEPROM内读取无极调光配置
-	
-	CurrentMode=FindTargetMode(Mode_Ramp,&Result);//遍历挡位设置结构体寻找无极调光的挡位并读取配置
-	if(Result)
-		{
-		SysCfg.RampBattThres=CurrentMode->LowVoltThres; //低压检测上限恢复
-		SysCfg.RampCurrentLimit=CurrentMode->Current; //找到挡位数据中无极调光的挡位，电流上限恢复
-		if(SysCfg.RampCurrent<CurrentMode->MinCurrent)SysCfg.RampCurrent=CurrentMode->MinCurrent;
-		if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;		//读取数据结束后，检查读入的数据是否合法，不合法就直接修正
-		CurrentMode=&ModeSettings[0]; 					//记忆重置为第一个档
-		}
-	//无法找到无极调光数值，挡位数据损毁，报错
-  else ReportError(Fault_RampConfigError);
-	//复位变量和一部分模块
-	DisplayLockedTIM=0;
-	IsSlowFading=0;
-	SetupFSMState=SetupMenu_InACT;            //复位设置状态机
-	ResetStrobeModule(); 											//复位爆闪控制器
-	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器	
-	}	
 
-//挡位状态机所需的软件定时器处理
-void ModeFSMTIMHandler(void)
-{
-	//无极调光相关的定时器
-	if(IsLargerThanOneU8(SysCfg.CfgSavedTIM))SysCfg.CfgSavedTIM--;
-	if(SysCfg.RampLimitReachDisplayTIM)
-		{
-		SysCfg.RampLimitReachDisplayTIM--;
-		if(!SysCfg.RampLimitReachDisplayTIM)IsNotifyMaxRampLimitReached=0;
-		}
-	//锁定操作提示计时器
-  if(DisplayLockedTIM)DisplayLockedTIM--;
-}
+/********************************************************************************/
+/* local Function implementation - Mode Memory Related
+*********************************************************************************/
 
-//挡位跳转
-void SwitchToGear(ModeIdxDef TargetMode)
-	{
-	bool IsLastModeNeedStepDown,Result;
-	ModeStrDef *ModeBuf;
-	//当前挡位已经是目标值，不执行
-	if(TargetMode==CurrentMode->ModeIdx)return;
-	//记录换档前的结果	
-	IsLastModeNeedStepDown=CurrentMode->IsNeedStepDown; //存下是否需要降档
-	//开始寻找
-	ModeBuf=FindTargetMode(TargetMode,&Result);
-	if(!Result)return;                    //找不到对应的挡位，退出
-	//应用挡位结果并重新计算极亮电流	
-	CurrentMode=ModeBuf;	
-	CalcTurboILIM();
-	//复位特殊功能挡位至初始状态
-	ResetSOSModule();						//复位整个SOS模块
-	BeaconFSM_Reset(); 					//复位整个信标模块	
-			
-	//如果新老挡位都是常亮挡，则重新设置PI环避免电流过调
-	if(TargetMode>1&&TargetMode<11&&IsLastModeNeedStepDown)RecalcPILoop(Current); 	
-	}
-	
 //特殊功能挡位独立记忆的处理函数
 static void SpecialModeMemoryHandler(void)	
 	{
@@ -386,75 +414,76 @@ static void SpecialModeMemoryHandler(void)
 	//非关机状态下一键爆闪和战术模式，存储下离开或者关机之前的特殊功能挡位
 	else if(!SysMode)LastSpecialMode=CurrentMode->ModeIdx;
 	}
-
-//长按关机函数	
-void ReturnToOFFState(void)
-	{
-	switch(CurrentMode->ModeIdx)
-		{
-		case Mode_Fault:
-		case Mode_OFF:return;  //非法状态，直接打断整个函数的执行
-		case Mode_Beacon:
-		case Mode_Strobe:	//特殊挡位执行记忆函数，且不启用慢速关闭
-		case Mode_SOS:
-			  SpecialModeMemoryHandler();
-			  break; 
-
-		//其余挡位如果非特殊模式，则执行判断
-		default:
-			if(SysMode)break;
-			if(CurrentMode->IsNeedStepDown)Current=CurrentBuf; //如果当前挡位需要温控，则在关机的时候直接取目前已执行的电流结果
-			IsSlowFading=1;	//非战术模式的常亮挡位触发渐暗特效
-		}
-  //执行挡位记忆并跳回到关机状态
-	if(IsMainMemEnabled) //挡位记忆开启
-		{
-		//该挡位有记忆，存下关机前的状态
-		if(CurrentMode->IsModeHasMemory)LastMode=CurrentMode->ModeIdx;
-		}
-	//无级调光模式下关闭挡位记忆，强制恢复到初始电流
-	else if(IsRampEnabled)
-		{
-		LoadMinimumRampCurrentToRAM();
-		SaveSysConfig(0);                //保存一遍配置，确保写入到EEPROM里面的数据一定是最低电流
-		}
-	//执行关机处理，强制跳回到关机挡位
-	SwitchToGear(Mode_OFF); 
-	}	
 	
-//长按换挡的间隔命令生成
-void HoldSwitchGearCmdHandler(void)
+/********************************************************************************/
+/* local Function implementation - Table Driver based Gear Switching System 
+	 related stuff
+*********************************************************************************/	
+
+//进行关机和开机状态执行N击+长按事件处理的函数
+static void ProcessNClickAndHoldHandler(void)
 	{
-	char buf;
-	if(SysMode||(!getSideKeyHoldEvent()&&!getSideKey1HEvent()))//按键松开或者系统处在非正常状态，计时器和Flag复位
+  //正常执行处理
+	switch(getSideKeyNClickAndHoldEvent())
 		{
-		IsSwitchingKeyStillHold=0;
-		HoldChangeGearTIM=0; 
+		case 1:	//单击+长按进入1流明挡位(仅系统处于关机后)
+			if(CurrentMode->ModeIdx!=Mode_OFF)break;
+			SwitchToGear(Mode_1Lumen);
+			break; 
+		case 2:TriggerVshowDisplay();break; //双击+长按查询电量
+		case 3:TriggerTShowDisplay();break;//三击+长按查询温度
+		//其余情况什么都不做
+		default:break;			
 		}
-	else //执行换挡程序
+	}		
+
+//进行模式状态机的表驱动模块处理	
+static void ModeSwitchFSMTableDriver(char ClickCount)
+	{
+	if(CurrentMode->IsEnterTurboStrobe)TryEnterTurboStrobeProcess(ClickCount);//读取当前的模式结构体，执行进入极亮或者爆闪的检测	
+  if(IsLargerThanOneU8(CurrentMode->ModeIdx)) //大于1的比较									
 		{
-		buf=HoldChangeGearTIM&0x1F; //取出TIM值
-		if(!buf&&!(HoldChangeGearTIM&0x40))//令换挡命令位1指示换挡可以继续
-			{
-			IsSwitchingKeyStillHold=1;
-			HoldChangeGearTIM|=getSideKey1HEvent()?0x20:0x80; 
-			}
-		HoldChangeGearTIM&=0xE0; //去除掉原始的TIM值
-		if(buf<HoldSwitchDelay&&!(HoldChangeGearTIM&0x40))buf++;
-		else buf=0;  //时间到，清零结果
-		HoldChangeGearTIM|=buf; //把数值写回去
+		//系统在开机状态，且标志位无效之后则执行电量显示启动检测
+		ProcessNClickAndHoldHandler();
+		//侧按单击或者在战术模式下松开按钮时关机	
+		if(!SysMode)
+				{
+				//非战术模式单击关闭
+				if(ClickCount==1)ReturnToOFFState();
+				}
+		else if(!getSideKeyHoldEvent())ReturnToOFFState();
+		}			
+	
+ 	if(PosSwitchGearFlag)	 
+		{
+		//当挡位数据库内的状态表使能长按换挡功能且条件满足时，执行顺向换挡
+		ClearPosSwitchGearFlag();
+		if(CurrentMode->ModeTargetWhenH!=Mode_OFF)SwitchToGear(CurrentMode->ModeTargetWhenH); 		
 		}
+	
+	if(InvSwitchGearFlag)  
+		{
+		//当挡位数据库内的状态表使能单击+长按换挡功能且条件满足时，执行逆向换挡
+		ClearInvSwitchGearFlag();
+		if(CurrentMode->ModeTargetWhen1H!=Mode_OFF)SwitchToGear(CurrentMode->ModeTargetWhen1H); 
+		}
+	
+	if(CurrentMode->LVConfig)BatteryLowAlertProcess(CurrentMode->LVConfig&0x02,CurrentMode->ModeWhenLVAutoFall); //执行低电量处理
 	}	
 
-//无极调光处理
-static void RampAdjHandler(void)
+/********************************************************************************/
+/* local Function implementation - Ramp Mode Logic Handler
+*********************************************************************************/	
+static void RampAdjHandler(void)	
 	{	
+	//无极调光处理
   int Limit;
 	bit IsPress;
   //计算出无极调光上限
 	IsPress=getSideKey1HEvent()|getSideKeyHoldEvent();
 	Limit=SysCfg.RampCurrentLimit<CurrentMode->Current?SysCfg.RampCurrentLimit:CurrentMode->Current;
-	if(Limit<CurrentMode->Current&&IsPress&&SysCfg.RampCurrent>Limit)SysCfg.RampCurrent=Limit; //在电流被限制的情况下用户按下按键尝试调整电流，立即限幅
+	//在电流被限制的情况下用户按下按键尝试调整电流，立即限幅
+	if(Limit<CurrentMode->Current&&IsPress&&SysCfg.RampCurrent>Limit)SysCfg.RampCurrent=Limit; 
 	//进行亮度调整
 	if(getSideKeyHoldEvent()&&!IsRampKeyPressed) //长按增加电流
 			{	
@@ -503,60 +532,136 @@ static void RampAdjHandler(void)
 		SysCfg.CfgSavedTIM--;
 		if(IsMainMemEnabled)SaveSysConfig(0);  //一段时间内没操作说明已经调节完毕，保存数据
 		}
+	}	
+	
+/********************************************************************************/
+/* Global Function implementation - Initialization
+*********************************************************************************/		
+
+//初始化模式状态机
+void ModeFSMInit(void)
+	{
+	bool Result;
+  //复位故障码和挡位模式配置系统
+  ResetSOSModule(); 							//复位SOS模块
+	LastMode=Mode_ExtremelyLow;
+	LastSpecialMode=Mode_Strobe;
+	ErrCode=Fault_None; 					//没有故障
+	//初始化无极调光
+	SysCfg.RampLimitReachDisplayTIM=0;
+  ReadSysConfig(); //从EEPROM内读取无极调光配置
+	
+	CurrentMode=FindTargetMode(Mode_Ramp,&Result);//遍历挡位设置结构体寻找无极调光的挡位并读取配置
+	if(Result)
+		{
+		SysCfg.RampBattThres=CurrentMode->LowVoltThres; //低压检测上限恢复
+		SysCfg.RampCurrentLimit=CurrentMode->Current; //找到挡位数据中无极调光的挡位，电流上限恢复
+		if(SysCfg.RampCurrent<CurrentMode->MinCurrent)SysCfg.RampCurrent=CurrentMode->MinCurrent;
+		if(SysCfg.RampCurrent>SysCfg.RampCurrentLimit)SysCfg.RampCurrent=SysCfg.RampCurrentLimit;		//读取数据结束后，检查读入的数据是否合法，不合法就直接修正
+		CurrentMode=&ModeSettings[0]; 					//记忆重置为第一个档
+		}
+	//无法找到无极调光数值，挡位数据损毁，报错
+  else ReportError(Fault_RampConfigError);
+	//复位变量和一部分模块
+	DisplayLockedTIM=0;
+	IsSlowFading=0;
+	SetupFSMState=SetupMenu_InACT;            //复位设置状态机
+	ResetStrobeModule(); 											//复位爆闪控制器
+	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器	
+	}	
+
+/********************************************************************************/
+/* Global Function implementation - Gear Switching Related
+*********************************************************************************/	
+
+//输入指定的Index，从index里面找到目标模式结构体并返回指针
+ModeStrDef *FindTargetMode(ModeIdxDef Mode,bool *IsResultOK)
+	{
+	unsigned char i;
+	*IsResultOK=false;
+	for(i=0;i<ModeTotalDepth;i++)if(ModeSettings[i].ModeIdx==Mode)
+		{
+		*IsResultOK=true;
+		break;
+		}
+	//返回对应的index
+	return &ModeSettings[i];
 	}
-//进行关机和开机状态执行N击+长按事件处理的函数
-static void ProcessNClickAndHoldHandler(void)
+	
+//挡位跳转
+void SwitchToGear(ModeIdxDef TargetMode)
 	{
-  //正常执行处理
-	switch(getSideKeyNClickAndHoldEvent())
-		{
-		case 1:	//单击+长按进入1流明挡位(仅系统处于关机后)
-			if(CurrentMode->ModeIdx!=Mode_OFF)break;
-			SwitchToGear(Mode_1Lumen);
-			break; 
-		case 2:TriggerVshowDisplay();break; //双击+长按查询电量
-		case 3:TriggerTShowDisplay();break;//三击+长按查询温度
-		//其余情况什么都不做
-		default:break;			
-		}
+	bool IsLastModeNeedStepDown,Result;
+	ModeStrDef *ModeBuf;
+	//当前挡位已经是目标值，不执行
+	if(TargetMode==CurrentMode->ModeIdx)return;
+	//记录换档前的结果	
+	IsLastModeNeedStepDown=CurrentMode->IsNeedStepDown; //存下是否需要降档
+	//开始寻找
+	ModeBuf=FindTargetMode(TargetMode,&Result);
+	if(!Result)return;                    //找不到对应的挡位，退出
+	//应用挡位结果并重新计算极亮电流	
+	CurrentMode=ModeBuf;	
+	CalcTurboILIM();
+	//复位特殊功能挡位至初始状态
+	ResetSOSModule();						//复位整个SOS模块
+	BeaconFSM_Reset(); 					//复位整个信标模块	
+			
+	//如果新老挡位都是常亮挡，则重新设置PI环避免电流过调
+	if(TargetMode>1&&TargetMode<11&&IsLastModeNeedStepDown)RecalcPILoop(Current); 	
 	}	
-	
-//进行模式状态机的表驱动模块处理	
-static void ModeSwitchFSMTableDriver(char ClickCount)
+
+//执行关机处理的函数	
+void ReturnToOFFState(void)
 	{
-	if(CurrentMode->IsEnterTurboStrobe)TryEnterTurboStrobeProcess(ClickCount);//读取当前的模式结构体，执行进入极亮或者爆闪的检测	
-  if(IsLargerThanOneU8(CurrentMode->ModeIdx)) //大于1的比较									
+	switch(CurrentMode->ModeIdx)
 		{
-		//系统在开机状态，且标志位无效之后则执行电量显示启动检测
-		ProcessNClickAndHoldHandler();
-		//侧按单击或者在战术模式下松开按钮时关机	
-		if(!SysMode)
-				{
-				//非战术模式单击关闭
-				if(ClickCount==1)ReturnToOFFState();
-				}
-		else if(!getSideKeyHoldEvent())ReturnToOFFState();
-		}			
-	
- 	if(HoldChangeGearTIM&0x80)	 
-		{
-		//当挡位数据库内的状态表使能长按换挡功能且条件满足时，执行顺向换挡
-		HoldChangeGearTIM&=0x7F; 
-		if(CurrentMode->ModeTargetWhenH!=Mode_OFF)SwitchToGear(CurrentMode->ModeTargetWhenH); 		
+		case Mode_Fault:
+		case Mode_OFF:return;  //非法状态，直接打断整个函数的执行
+		case Mode_Beacon:
+		case Mode_Strobe:	//特殊挡位执行记忆函数，且不启用慢速关闭
+		case Mode_SOS:
+			  SpecialModeMemoryHandler();
+			  break; 
+
+		//其余挡位如果非特殊模式，则执行判断
+		default:
+			if(SysMode)break;
+			if(CurrentMode->IsNeedStepDown)Current=CurrentBuf; //如果当前挡位需要温控，则在关机的时候直接取目前已执行的电流结果
+			IsSlowFading=1;	//非战术模式的常亮挡位触发渐暗特效
 		}
-	
-	if(HoldChangeGearTIM&0x20)  
+  //执行挡位记忆并跳回到关机状态
+	if(IsMainMemEnabled) //挡位记忆开启
 		{
-		//当挡位数据库内的状态表使能单击+长按换挡功能且条件满足时，执行逆向换挡
-		HoldChangeGearTIM&=0xDF; 
-		if(CurrentMode->ModeTargetWhen1H!=Mode_OFF)SwitchToGear(CurrentMode->ModeTargetWhen1H); 
+		//该挡位有记忆，存下关机前的状态
+		if(CurrentMode->IsModeHasMemory)LastMode=CurrentMode->ModeIdx;
 		}
+	//无级调光模式下关闭挡位记忆，强制恢复到初始电流
+	else if(IsRampEnabled)
+		{
+		LoadMinimumRampCurrentToRAM();
+		SaveSysConfig(0);                //保存一遍配置，确保写入到EEPROM里面的数据一定是最低电流
+		}
+	//执行关机处理，强制跳回到关机挡位
+	SwitchToGear(Mode_OFF); 
+	}		
 	
-	if(CurrentMode->LVConfig)BatteryLowAlertProcess(CurrentMode->LVConfig&0x02,CurrentMode->ModeWhenLVAutoFall); //执行低电量处理
-	}	
+/********************************************************************************/
+/* Global Function implementation - Output or Special Current Fetch
+*********************************************************************************/		
+
+//获取系统挡位在没有任何外部影响情况下的全部电流
+int QuerySystemFullScaleCurrent(void)
+	{
+	//极亮且开启ECO模式，电流按照ECO模式的ICCMAX取
+	if(CurrentMode->ModeIdx==Mode_Turbo&&IsPowerModeEnabled)
+		return CalcIREFValue(ECOTurboICCMAX);
+	//其他情况按照极亮当前电流取
+  return QueryCurrentGearILED();	
+	}
 	
 //特殊挡位电流处理
-static void SpecialModeCurrentFetch(void)
+void SpecialModeCurrentFetch(void)
 	{
 	switch(BattState)//取出挡位电流
 			{
@@ -565,7 +670,53 @@ static void SpecialModeCurrentFetch(void)
       case Battery_Low:Current=CalcIREFValue(10000);break;
 			case Battery_VeryLow:Current=CalcIREFValue(4000);break;
 			}
-	}
+	}	
+	
+/********************************************************************************/
+/* Global Function implementation - Gear Switching Timing Handler
+*********************************************************************************/		
+	
+//挡位状态机所需的软件定时器处理
+void ModeFSMTIMHandler(void)
+{
+	//无极调光相关的定时器
+	if(IsLargerThanOneU8(SysCfg.CfgSavedTIM))SysCfg.CfgSavedTIM--;
+	if(SysCfg.RampLimitReachDisplayTIM)
+		{
+		SysCfg.RampLimitReachDisplayTIM--;
+		if(!SysCfg.RampLimitReachDisplayTIM)IsNotifyMaxRampLimitReached=0;
+		}
+	//锁定操作提示计时器
+  if(DisplayLockedTIM)DisplayLockedTIM--;
+}	
+	
+//长按换挡的间隔命令生成
+void HoldSwitchGearCmdHandler(void)
+	{
+	char buf;
+	if(SysMode||(!getSideKeyHoldEvent()&&!getSideKey1HEvent()))//按键松开或者系统处在非正常状态，计时器和Flag复位
+		{
+		IsSwitchingKeyStillHold=0;
+		HoldChangeGearTIM=0; 
+		}
+	else //执行换挡程序
+		{
+		buf=HoldChangeGearTIM&0x1F; //取出TIM值
+		if(!buf&&!(HoldChangeGearTIM&0x40))//令换挡命令位1指示换挡可以继续
+			{
+			IsSwitchingKeyStillHold=1;
+			HoldChangeGearTIM|=getSideKey1HEvent()?0x20:0x80; 
+			}
+		HoldChangeGearTIM&=0xE0; //去除掉原始的TIM值
+		if(buf<HoldSwitchDelay&&!PauseSwitchGearFlag)buf++;
+		else buf=0;  //时间到，清零结果
+		HoldChangeGearTIM|=buf; //把数值写回去
+		}
+	}	
+	
+/********************************************************************************/
+/* Global Function implementation - Gear Switching Logic(FSM) Handler
+*********************************************************************************/		
 	
 //挡位状态机
 void ModeSwitchFSM(void)
@@ -635,7 +786,7 @@ void ModeSwitchFSM(void)
 					PowerToNormalMode(Mode_ExtremelyLow); //开机到极低亮模式
 					if(CurrentMode->ModeIdx==Mode_Moon)break;//换挡之后无法成功离开月光模式，不进行下面的复位操作
 					if(IsRampEnabled)LoadMinimumRampCurrentToRAM(); //如果是无极调光则恢复到最低电流
-					HoldChangeGearTIM|=0x40; //禁止换挡系统工作
+					PauseHoldSwitchGear(); //禁止换挡系统工作
 					}		    	
 		//1流明挡位						
 	  case Mode_1Lumen:
@@ -730,3 +881,4 @@ void ModeSwitchFSM(void)
 	//无极调光模式指示(无极调光模式在抵达上下限后短暂熄灭或者调到25%)
 	if(SysCfg.RampLimitReachDisplayTIM)Current=IsNotifyMaxRampLimitReached?Current>>2:-1;
 	}
+/*********************************  End Of File  ************************************/

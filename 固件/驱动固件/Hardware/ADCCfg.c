@@ -1,20 +1,109 @@
+/****************************************************************************/
+/** \file ADCCfg.c
+/** \Author redstoner_35
+/** \Project Xtern Ripper Laser Edition
+/** \Description 这个文件负责驱动系统的ADC完成系统的各项模拟量遥测任务，包含异步
+非阻塞转换ADC引擎的实现
+**
+**	History: Initial Release
+**	
+*****************************************************************************/
+/****************************************************************************/
+/*	include files
+*****************************************************************************/
 #include "cms8s6990.h"
 #include "PinDefs.h"
 #include "ADCCfg.h"
-#include "ADCAsync.h"
 #include "delay.h"
 
-/**********************************************************************
-以下函数为ADC异步转换引擎实现功能所需的内部处理函数以及所需的内部全局变
-量。请不要随意修改函数内容，或者在除了本文件内的其他任何地方调用，否则
-会导致ADC引擎工作异常！	
-**********************************************************************/
+/****************************************************************************/
+/*	Local pre-processor symbols/macros('#define')
+****************************************************************************/
+
+//ADC基准电压和特殊基准通道定义
+#define ADCVREF 2.00 //ADC片内基准LDO的电压
+#define ADC_INTVREFCh 31 //ADC连通到片内带隙基准的特殊通道定义	
+#define ADCBGVREF 1.20 //ADC特殊通道带隙基准的电压	
+#define ADCWaitChannelSelTime 160 //ADC等待通道选通的延时	
+	
+//ADC寄存器操作宏定义	
+#define ADC_StartConv() ADCON0|=0x02 //ADC启动转换
+#define ADC_GetIfStillConv()	ADCON0&0x02  //检查ADC是否仍然在转换需要继续等
+#define ADC_ReadConvResult()	(ADRESL|(ADRESH<<8)) //读取ADC转换的寄存器结果
+#define ADC_EnableCmd() ADCON1|=0x80  //使能ADC IP
+#define ADC_DisableCmd() ADCON1&=0x7F  //关闭ADC IP	
+#define ADC_SetVREFReg(IsVDD) ADCLDO=(!IsVDD?0xA0:0x00) //设置基准
+#define ADC_IsUsingIVREF() ADCLDO&0x80 //检测ADC是否在使用片内基准	
+#define ADC_CheckIfChInvalid(Ch) (Ch<0||(Ch>22&&Ch<ADC_INTVREFCh)) //检查通道参数是否合法	
+	
+//ADC外部采集的参数配置
+#define VoutUpperResK 680
+#define VoutLowerResK 56 //输出检测分压的上下拉电阻
+#define VBattUpperResK 680
+#define VBattLowerResK 100 //电池检测分压的上下拉电阻
+#define NTCUpperResValueK 330 //NTC热敏电阻的上拉阻值
+	
+//ADC异步引擎配置
+#define ADCConvertQueueDepth 5 //ADC转换任务队列深度	
+#define ADCAverageCount 10 //ADC对于每个转换任务的平均次数		
+	
+/****************************************************************************/
+/*	Local type definitions('typedef')
+****************************************************************************/
+
+//ADC异步引所需的枚举值
+typedef enum
+	{
+	ADC_SubmitQueue, //提交转换队列	
+  ADC_SubmitChFromQueue, //向ADC转换线程提交队列内的任务
+	ADC_WaitMissionDone, //等待任务完成
+	ADC_ConvertComplete //转换完毕	
+	}ADCAsyncStateDef; //ADC异步转换状态机处理
+
+typedef struct
+	{
+	long avgbuf;
+	int Count;
+	char Ch;
+	bool IsMissionProcessing; //是否正在处理任务
+	}ADCConvertTemp;
+
+/****************************************************************************/
+/*	Global variable definitions(declared in header file with 'extern')
+****************************************************************************/
+bit IsNotAllowAsync;	 //是否允许ADC引擎运行在异步模式
+ADCResultStrDef Data;	 //ADC结果输出
+
+/****************************************************************************/
+/*	Local variable and special Register definitions('static')
+
+Note: 以下函数为ADC异步转换引擎实现功能所需的内部处理函数以及所需的内部全局变
+量。请勿在除了本文件内的其他任何地方调用，否则会导致ADC引擎工作异常！	
+****************************************************************************/
 static xdata ADCConvertTemp ADCTemp;
 static ADCAsyncStateDef ADCState;	
 static xdata char ADCConvertQueue[ADCConvertQueueDepth];	
-bit IsNotAllowAsync;	 //是否允许ADC引擎运行在异步模式
+
 sbit NTCPullUpEN=NTCENIOP^NTCENIOx; //NTC Enable
 	
+/****************************************************************************/
+/*	Local constant value definitions('static')	
+****************************************************************************/
+
+//ADC异步转换引擎的转换队列声明
+code char ADCChQueue[ADCConvertQueueDepth]=
+	{
+	ADC_INTVREFCh, //先转换VREF
+	NTCInputAIN,//然后转换温度	
+	OPFBAIN, //FB注入恒流运放的输出电压
+	VBATInputAIN, //电池电压
+	VOUTFBAIN //最后转换输出电压
+	};	
+	
+/****************************************************************************/
+/*	Local function implantation('static')
+****************************************************************************/	
+
 //向ADC提交任务	
 static void ADC_SubmitMisson(char Ch)	
 	{
@@ -167,12 +256,13 @@ static void ADCEngineHandler(void)
 	while(IsNotAllowAsync&&ADCState!=ADC_ConvertComplete);
 	}	
 	
-/**********************************************************************
-以下函数为ADC异步转换引擎以及ADC的初始化和除能操作和驱动引擎获取外部通
+/****************************************************************************/
+/* Global Function implementation
+	
+注意：以下函数为ADC异步转换引擎以及ADC的初始化和除能操作和驱动引擎获取外部通
 道的电压数据所需的外部函数调用。您可以在初始化阶段和主函数内调用以下区
 域的函数对ADC进行初始化和除能操作，以及启动引擎对ADC进行异步采样。
-**********************************************************************/	
-ADCResultStrDef Data;	 //ADC结果输出
+****************************************************************************/	
 	
 //进行数据获取	
 void SystemTelemHandler(void)
@@ -261,4 +351,5 @@ void ADC_Init(void)
 	ResetADCAsyncEngine();
 	//ADC配置完毕，使能ADC模块
 	ADC_EnableCmd(); 
-	}	
+	}
+/*************************  End Of File  ***********************/

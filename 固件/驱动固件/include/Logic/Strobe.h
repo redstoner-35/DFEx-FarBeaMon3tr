@@ -1,12 +1,31 @@
+/************************************************************************************/
+/** \file Strobe.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统顶层逻辑模块的声明文件。该模块声明了实现高频爆闪以及随
+机变频混合爆闪的处理模块相关的初始化和逻辑处理函数。
+
+**	History: Initial Release
+**	
+/************************************************************************************/
 #ifndef _Strobe_
 #define _Strobe_
-
-//外部参考
+/************************************************************************************/
+/* Extern Flags and Variable definition */
+/************************************************************************************/
 extern bit EnableRandomStrobe;
 
-//函数
-void RandStrobeHandler(void);
-bit StrobeOutputHandler(void);
+/************************************************************************************/
+/* Extern Function definition - Initialization
+*************************************************************************************/
 void ResetStrobeModule(void);
 
-#endif
+/************************************************************************************/
+/* Extern Function definition - Logic & Strobe Output Handler
+*************************************************************************************/
+void RandStrobeHandler(void);
+bit StrobeOutputHandler(void);
+
+#endif /* _Strobe_ */
+
+/*********************************  End Of File  ************************************/

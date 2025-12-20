@@ -1,13 +1,19 @@
+/************************************************************************************/
+/** \file SelfTest.h
+/** \Author redstoner_35
+/** \Project Xtern Ripper Hyper Boost For GT96
+/** \Description 这个头文件为系统顶层逻辑模块的声明文件。该模块声明了系统错误管理和自我状
+态监视模块相关的函数以及错误报告系统的接口变量共其他模块使用。
+
+**	History: Initial Release
+**	
+/************************************************************************************/
 #ifndef _SelfTest_
 #define _SelfTest_
-
-#include "LEDMgmt.h"
-
-//参数
-#define FaultBlankingInterval 4
-
-//错误类型枚举
-typedef enum
+/*************************************************************************************/
+/*	Global type definitions('typedef')
+**************************************************************************************/
+typedef enum	//错误类型枚举
 	{
 	Fault_None,    //没有错误发生
 	Fault_DCDCFailedToStart, //DCDC无法启动 ID:1
@@ -20,16 +26,30 @@ typedef enum
 	Fault_RampConfigError,     //系统无法找到无极调光配置 ID:8
 	}FaultCodeDef;	
 
-//外部引用
-extern xdata FaultCodeDef ErrCode; //错误代码
-extern bit IsInputLimited; //输入限流激活	
+/************************************************************************************/
+/* Extern Functions definition - Error Management and Severe level query */
+/************************************************************************************/	
+void ReportError(FaultCodeDef Code); 	//报告错误
+void ClearError(void); 								//消除错误
+bit IsErrorFatal(void);								//查询错误是否致命
 	
-//函数
-void ReportError(FaultCodeDef Code); //报告错误
-void ClearError(void); //消除错误
+/************************************************************************************/
+/* Extern Functions definition - Visual(LED) based Error Reporting Logic Handler */
+/************************************************************************************/		
 void DisplayErrorTIMHandler(void); //显示错误时候用到的计时器处理
-void DisplayErrorIDHandler(void); //根据错误ID进行显示的处理
-void OutputFaultDetect(void); //输出故障监测函数	
-bit IsErrorFatal(void);	//查询错误是否致命
+void DisplayErrorIDHandler(void); //根据错误ID进行显示的处理	
+
+/************************************************************************************/
+/* Extern Functions definition - Self monitoring logic */
+/************************************************************************************/	
+void OutputFaultDetect(void); 
 	
-#endif
+/************************************************************************************/
+/* Extern Flags and Variable definition */
+/************************************************************************************/
+extern xdata FaultCodeDef ErrCode; 	//错误代码
+extern bit IsInputLimited; 					//输入限流激活标志位
+	
+#endif /* _SelfTest_ */
+
+/*********************************  End Of File  ************************************/
