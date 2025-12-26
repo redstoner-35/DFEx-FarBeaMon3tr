@@ -5,7 +5,12 @@
 /** \Description 这个文件负责实现系统对外输出PWM的配置以实现PWMDAC功能控制LED的
 的电流和亮度，并且实现输出FSM所需的预偏置受控斜率启动功能。
 
-**	History: Initial Release
+**	History:
+				2025年12月26日 10:05 新增根据目标的LTC3787自检输出电压计算PWMDAC预充占
+														 空比配置数据的宏定义，便于用户在需要的时候可以直接
+														 修改自检输出电压而不需要重新计算占空比。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -21,13 +26,25 @@
 #define SysFreq 48000000 //系统时钟频率(单位Hz)
 #define PWMFreq 6000 //PWM频率(单位Hz)	
 
+//系统在测试运行时LTC3787输出的电压，LSB=100mV（不要随便动！）
+#define PreRunDACVoltage 144 
+
 /****************************************************************************/
 /*	Local pre-processor symbols/macros for Parameter Processing and Fast Op-
 /*  eration with Register Operation('#define')
 ****************************************************************************/ 
+#define CalcPreDACDuty(x) (((1129000UL-(4815UL*x))*24UL)/5000UL)  //使用整数方式计算PWMDAC预充电压
+#define iabsf(x) (x>0?x:-x) 												//整数绝对值
+
+#define PreRunDACDutyMSB ((CalcPreDACDuty(PreRunDACVoltage)>>8)&0xFF)
+#define PreRunDACDutyLSB (CalcPreDACDuty(PreRunDACVoltage)&0xFF)  		//预充PWMDAC的PWM寄存器参数值计算
 #define PWMStepConstant (SysFreq/PWMFreq)-1 				//主输出PWM周期自动定义
 #define PWM_Enable() 	do{PWMCNTE=0x1D;}while(0) 		//PWM运行使能
-#define iabsf(x) (x>0?x:-x) 												//整数绝对值
+
+#if (CalcPreDACDuty(PreRunDACVoltage) > 2399 | CalcPreDACDuty(PreRunDACVoltage) < 0)
+   //自动检测预充DAC参数是否合法，如果不合法则禁止编译通过
+   #error "Pre-charge voltage level is illegal which causing PWM Counter to overflow!"
+#endif
 
 #if (PWMStepConstant > 0xFFFE)
   //自动检测PWM的数值是否合法
@@ -138,8 +155,8 @@ void PWM_Init(void)
 void PWM_ForceEnableOut(bit IsEnable)	
 	{
 	PWMD0L=IsEnable?0xFF:0;	
-	PWMD4H=IsEnable?0x08:0;
-	PWMD4L=IsEnable?0x2A:0x0;	  //0x82A=87.128%=11.29-0.4815*14.4->(0.87128*5)
+	PWMD4H=IsEnable?PreRunDACDutyMSB:0;
+	PWMD4L=IsEnable?PreRunDACDutyLSB:0;	  //填写算出来的参数
 	UploadPWMValue();
 	if(IsEnable)PWMMASKE&=0xEE;
 	else PWMMASKE|=0x11;   //更新PWMMASKE寄存器根据输出状态启用对应的通道

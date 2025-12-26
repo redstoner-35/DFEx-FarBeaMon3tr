@@ -5,7 +5,14 @@
 /** \Description 这个文件为顶层应用层逻辑文件。负责实现系统在长时间未使用时，自
 		动进入低功耗待机模式以节省电力的相关逻辑的处理。
 
-**	History: Initial Release
+**	History: 
+				2025年12月26日 10:05 1.重命名加载睡眠超时的函数至ResetSleepTimer()
+				                     2.修改自动define系统在睡眠时间错误时的报告entry的
+															 ID错误重复的问题。
+														 3.针对新增的可自行运行的紧急月光模式增加了阻止系统
+														   休眠的对应entry。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -27,6 +34,7 @@
 #include "SetupMenu.h"
 #include "Strobe.h"
 #include "VersionCheck.h"
+
 /****************************************************************************/
 /*	Local pre-processor symbols/macros - for Parameter Definition
 ****************************************************************************/
@@ -52,13 +60,13 @@
 
 #define SleepCNTVALWhenTac 480*SleepTimeOutForTac
 #if (SleepCNTVALWhenTac > 0xFFFE | SleepCNTVALWhenTac < 480)
-	#error "Error 014:Invalid Sleep timeout for tacital mode!"
+	#error "Error 015:Invalid Sleep timeout for tacital mode!"
 #endif
 
 /****************************************************************************/
 /*	Local variable and Flag definitions('static')
 ****************************************************************************/
-static volatile unsigned int SleepTimer;
+static unsigned int SleepTimer;
 
 /****************************************************************************/
 /*	Local Function implementation - Peripheral Management
@@ -92,8 +100,8 @@ static void EnableSysPeripheral(void)
 //检测系统是否允许进入睡眠的条件
 static char QueryIsSystemNotAllowToSleep(void)
 	{
-	//系统处于定位指示灯选择或者设置菜单状态，不允许睡眠
-	if(LocLEDState||SetupFSMState)return 1;
+	//系统处于定位指示灯选择或者设置菜单状态以及开启了应急月光，不允许睡眠
+	if(LocLEDState||SetupFSMState||IsDisplayLocked)return 1;
 	//系统在显示电池电压和版本号，不允许睡眠
 	if(VshowFSMState!=BattVdis_Waiting||VChkFSMState!=VersionCheck_InAct)return 1;
 	//系统开机了
@@ -106,8 +114,8 @@ static char QueryIsSystemNotAllowToSleep(void)
 /*	Function implementation - Global(decleared in header files with 'extern')
 *****************************************************************************/	
 	
-//加载定时器时间
-void LoadSleepTimer(void)	
+//复位进入睡眠的倒计时定时器
+void ResetSleepTimer(void)	
 	{
 	//加载睡眠时间
 	if(SysMode>Operation_Locked)SleepTimer=SleepCNTVALWhenTac;	//开启战术模式，睡眠时间延长
@@ -120,9 +128,9 @@ void SleepMgmt(void)
 	{
 	bit sleepsel;
 	//非关机且仍然在显示电池电压的时候定时器复位禁止睡眠
-	if(QueryIsSystemNotAllowToSleep())LoadSleepTimer();
+	if(QueryIsSystemNotAllowToSleep())ResetSleepTimer();
 	//允许睡眠开始倒计时
-	if(SleepTimer>0)SleepTimer--;
+	if(SleepTimer)SleepTimer--;
 	//立即进入睡眠阶段
 	else
 		{		

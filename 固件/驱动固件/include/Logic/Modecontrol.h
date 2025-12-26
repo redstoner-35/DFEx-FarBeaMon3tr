@@ -5,7 +5,14 @@
 /** \Description 这个头文件负责声明部分的配置参数、挡位切换系统的初始化和命令函数以及部分
 挡位系统输出给其余模块的状态全局变量。
 
-**	History: Initial Release
+**	History: 
+				2025年12月26日 10:05 1.新增走夜路模式的相关模式entry的声明。
+														 2.新增针对设置四击挡位功能的功能选择位的声明
+														 3.将输出状态机拆分为逻辑判断+电流执行后，新增电流执行部分
+															 逻辑handler函数的声明以便于主任务处理函数引用该处理模块。
+				    
+														 
+				2025年12月20日 Initial Release
 **	
 /*************************************************************************************/
 #ifndef _ModeControl_
@@ -74,6 +81,7 @@ typedef enum
   Mode_Beacon=11, //信标挡位 		
   Mode_Strobe=12, //爆闪		
 	Mode_SOS=13, //SOS挡位
+	Mode_FuckDog=14, //远光狗制裁模式
 	}ModeIdxDef;
 	
 
@@ -102,6 +110,7 @@ extern bit IsMainMemEnabled; //是否开启主挡位记忆
 extern bit IsSpecMemEnabled; //是否开启特殊挡位记忆	
 extern bit IsPowerModeEnabled; //功率模式是否开启	
 extern bit IsRampEnabled; //是否启用无极调光		
+extern bit QuadClickSel;  //四击动作选择，0=战术模式，1=走夜路+远光狗制裁模式		
 	
 /************************************************************************************/
 /* Extern Flags and Variable definition - Mode Switching Related */
@@ -133,6 +142,7 @@ void ReturnToOFFState(void);							//关机
 void ModeFSMTIMHandler(void);//挡位状态机所需的软件定时器处理
 void ModeSwitchFSM();//挡位状态机	
 void HoldSwitchGearCmdHandler(void); //换挡间隔生成	
+void ApplyOutputCurrent(void); //应用输出电流参数
 
 /************************************************************************************/
 /* Extern Functions definition - Current Query */

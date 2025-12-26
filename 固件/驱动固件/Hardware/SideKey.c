@@ -5,7 +5,13 @@
 /** \Description 这个文件负责实现系统的电子侧按按键的多模态按键操作的识别并自动
 输出对应的按键事件
 
-**	History: Initial Release
+**	History:				
+				2025年12月26日 10:05 对根据当前系统所在挡位计算按键长按阈值延时的逻辑进
+														 行重构，改为直接根据模式值赋值到局部变量进一步优化、
+														 数值计算和比较流程的空间占用和速度。
+
+				2025年12月23日 11:07 移除睡眠管理函数的直接外部声明，改为使用Sleep.h
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -17,6 +23,8 @@
 #include "PinDefs.h"
 #include "FastOp.h"
 #include "SpecialMode.h"
+#include "ModeControl.h"
+#include "Sleep.h"
 
 /****************************************************************************/
 /*	Local pre-processor symbols/macros('#define')
@@ -87,16 +95,12 @@ static xdata unsigned char KeyState; //按键去抖缓存
 static bit IsKeyPressed; //按键是否按下
 static unsigned char KeyTimer[2];//计时器0用于按键按下计时，计时器1用于连按检测计时
 static KeyEventUnionDef KeyeventStor; //按键事件存储
+static unsigned char KeyHoldTime; //按键长按检测时间 
 
 /****************************************************************************/
 /*	Local special Register definitions('sbit' or 'sfr')
 ****************************************************************************/
 sbit KeyPress=SideKeyGPIOP^SideKeyGPIOx;
-
-/****************************************************************************/
-/*	External function prototypes
-****************************************************************************/
-void LoadSleepTimer(void);
 
 /****************************************************************************/
 /*	Function implementation - Initialization
@@ -117,12 +121,13 @@ void SideKeyInit(void)
 	GPIO_SetExtIntMode(SideKeyGPIOG,SideKeyGPIOx,GPIO_Int_Falling);//设置为下降沿触发
 	EIP1|=SideKeyPriorityMsk; //将按键中断设置为高优先级
 	//初始化结构体内容和定时器
-	LoadSleepTimer();
+	ResetSleepTimer();
   for(i=0;i<sizeof(KeyEventStrDef);i++)
 		{
 		KeyeventStor.Buf[i]=0;
 		if(!IsLargerThanOneU8(i))KeyTimer[i]=0;
 		}
+	KeyHoldTime=(unsigned char)LongPressTime; //按键按下时间被初始设定为标准长按时间
 	KeyState=0xFF;  //默认按键是松开状态，去抖定时器=0xFF
 	}
 
@@ -146,6 +151,18 @@ void SideKey_SetIntOFF(void)
 	GPIO_DisableInt(SideKeyGPIOG,GPIOMask(SideKeyGPIOx)); //禁止中断功能
 	KeyState=0xAA; //复位检测模块
 	}	
+
+/****************************************************************************/
+/* Local Function implementation - Calculate Time Handle
+****************************************************************************/		
+static void GetherKeyHoldTime(void)
+	{
+		//战术模式激活或者处于欺负远光狗模式时降低操作延迟
+	if(SysMode||CurrentMode->ModeIdx==Mode_FuckDog)
+		KeyHoldTime=(unsigned char)LongPressTimeForTac;
+	else
+		KeyHoldTime=(unsigned char)LongPressTime;
+	}	
 	
 /****************************************************************************/
 /*	Function implementation - CallBack Handler for Key Event handle
@@ -160,7 +177,7 @@ void SideKey_TIM_Callback(void)
 	for(i=0;i<2;i++)if(KeyTimer[i]&0x80)
 		{
 		buf=KeyTimer[i]&0x7F;
-		if(!i)Time=SysMode?(unsigned char)LongPressTimeForTac:(unsigned char)LongPressTime;
+		if(!i)Time=KeyHoldTime;
 		else Time=(unsigned char)ContShortPressWindow;
 		if(buf<Time)buf++;
 		KeyTimer[i]&=0x80;
@@ -221,7 +238,7 @@ void SideKey_LogicHandler(void)
 		buf=KeyState&KeyReleaseDetectMask;	
 		if(buf==KeyReleaseDetectMask||buf==0x00)
 			{
-			LoadSleepTimer(); //加载定时器
+			ResetSleepTimer(); //有按键按下动作，重置休眠定时器
 			ClearKeyIntFlag();//清除按键响应的Flag
 			IsKeyPressed=buf==KeyReleaseDetectMask?0:1; //更新按键状态	
 				
@@ -233,7 +250,8 @@ void SideKey_LogicHandler(void)
 	//如果按键释放等待计时器在计时的话，则重置定时器
   if(IsKeyPressed&&(KeyTimer[1]&0x80))KeyTimer[1]=0x80;
 	//长按3秒的时间到
-	buf=!SysMode?0x80+(unsigned char)LongPressTime:0x80+(unsigned char)LongPressTimeForTac; //动态计算长按事件结束的时间
+	GetherKeyHoldTime();
+	buf=0x80|KeyHoldTime; 							//动态计算长按事件结束的时间
 	if(IsKeyPressed&&KeyTimer[0]==buf)
 		{
     //处理多击+长按事件

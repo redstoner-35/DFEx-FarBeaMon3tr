@@ -68,8 +68,8 @@ static void LoopAddSysIndex(void)
 	if(LocLEDState==LocateLED_SelFading)buf=SysCfg.FadingCfg;
 	else buf=SysCfg.LocatorCfg;
 	//循环自增(0-3)
-	if(buf<3)buf++;
-	else buf=0;
+	if(buf&0x04)buf=0;
+	else buf++;
 	//写回去
 	if(LocLEDState==LocateLED_SelFading)SysCfg.FadingCfg=(ShutdownFadingDef)buf;
 	else SysCfg.LocatorCfg=(LocLEDEditDef)buf;	

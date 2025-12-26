@@ -736,6 +736,8 @@ void ModeSwitchFSM(void)
 			if(CellVoltage>2850)DisplayUnlockTIM=12;  //电池电压足够时令风扇低速旋转1.5秒
 			SaveSysConfig(0);
 			}
+		//关机状态下双击+长按查看电压
+    else if(getSideKeyNClickAndHoldEvent()==2)TriggerVshowDisplay();			
 		//其余按键事件，红色闪五次提示已锁定
 		else if(IsKeyEventOccurred())LEDMode=LED_RedBlinkFifth;
 		//清除按键状态后跳过下面所有内容

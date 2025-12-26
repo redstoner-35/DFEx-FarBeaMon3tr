@@ -5,7 +5,11 @@
 /** \Description 这个头文件为底层的硬件定义文件，定义了整个工程内所有外设对应的硬件PIN和
 模拟输入ADC通道的映射关系。
 
-**	History: Initial Release
+**	History: 
+				2025年12月26日 10:05 新增电池电压检测引脚和输出检测引脚的GPIO Port SFR声明以便于
+				                     ADC驱动直接对相关引脚进行设置。
+														 
+				2025年12月20日 Initial Release
 **	
 /************************************************************************************/
 #ifndef PINDEFS
@@ -58,7 +62,7 @@
 #define NTCInputIOx GPIO_PIN_5 
 #define NTCInputAIN 5						//NTC输入(P0.5,AN5)
 
-
+#define VOUTFBIOP GPIO_PORT_3
 #define VOUTFBIOG 3
 #define VOUTFBIOx GPIO_PIN_1
 #define VOUTFBAIN 13						//输出电压反馈引脚(P3.1,AN13)
@@ -68,7 +72,7 @@
 #define OPFBIOx GPIO_PIN_1
 #define OPFBAIN 1								//运放恒流状态反馈引脚(P0.1,AN1)
 
-
+#define VBATInputIOP GPIO_PORT_3
 #define VBATInputIOG 3
 #define VBATInputIOx GPIO_PIN_0
 #define VBATInputAIN 22					//电池电压检测引脚(P3.0,AN22)

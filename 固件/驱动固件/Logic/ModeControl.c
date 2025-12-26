@@ -5,7 +5,20 @@
 /** \Description 这个文件为顶层应用层逻辑文件。负责实现系统所有的挡位切换的换挡
 功能，并且实现系统中无极调光功能的具体逻辑模块。
 
-**	History: Initial Release
+**	History: 
+				2025年12月26日 10:05 1.新增用于走夜路日常照明且具备瞬时爆发输出用来压制
+														 远光狗的走夜路挡位，并在挡位参数结构体内注册相关的
+														 挡位。
+														 2.针对系统多出的新挡位，调整挡位个数至15个。
+														 3.新增切换四击常用档功能的配置位QuadClickSel
+														 4.针对新挡位在系统关机状态挡位执行的事件处理模块的
+															 四击/六击entry处添加对应入口。
+														 5.将输出通道状态机负责进行输出电流设定的模块从原来
+														   的函数处拆分，改为独立的handler
+														 6.配合温控系统的改动根据挡位特性在输出电流合成的处
+														   理handler内新增使能\暂停温控计算的对应操作。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -35,7 +48,7 @@
 ****************************************************************************/
 #define RampAdjustDividingFactor 3 	//无极调光模式下控制调光速度的分频比例，越大则调光速度越慢
 #define HoldSwitchDelay 6 					//长按换挡延迟	
-#define ModeTotalDepth 14 					//系统一共有几个挡位(不能随便调，会炸！)
+#define ModeTotalDepth 15 					//系统一共有几个挡位(不能随便调，会炸！)
 
 /****************************************************************************/
 /*	Local pre-processor symbols/macros - for Gear System Abstract Layer
@@ -361,6 +374,23 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Beacon,
 		Mode_Strobe	 //模式挡位切换设置，长按和单击+长按切换到的目标挡位(输入OFF表示不进行切换)
 		}, 
+		//制裁远光狗模式
+		{
+		Mode_FuckDog,
+		CalcIREFValue(StrobeICCMAX),  //按下全功率爆闪
+		CalcIREFValue(1100),   //默认松手的电流（1.1A）
+		2900,  //2.90V关断
+		false,	//不能带记忆
+		true,
+		//配置是否允许进入爆闪
+		false,
+		//低电量保护设置
+		Mode_FuckDog,				 //低电量触发保护之后，如果不执行关机则自动跳转的挡位
+		LVPROT_Enable_OFF,        //低电量保护机制的类型
+		//挡位切换设置
+		Mode_OFF,
+		Mode_OFF	 //模式挡位切换设置，长按和单击+长按切换到的目标挡位(输入OFF表示不进行切换)
+		},		
 	};
 
 /****************************************************************************/
@@ -379,6 +409,7 @@ bit IsRampEnabled; //是否开启无极调光
 bit IsMainMemEnabled; //是否开启主挡位记忆
 bit IsSpecMemEnabled; //是否开启特殊挡位记忆
 bit IsPowerModeEnabled; //0=ECO MODE 1=POWER MODE		
+bit QuadClickSel;     //四击动作选择，0=战术模式，1=走夜路+远光狗制裁模式	
 	
 /****************************************************************************/
 /*	Global variable definitions - Special Timers
@@ -543,7 +574,7 @@ void ModeFSMInit(void)
 	{
 	bool Result;
   //复位故障码和挡位模式配置系统
-  ResetSOSModule(); 							//复位SOS模块
+	ResetStrobeModule(); 											//复位爆闪控制器
 	LastMode=Mode_ExtremelyLow;
 	LastSpecialMode=Mode_Strobe;
 	ErrCode=Fault_None; 					//没有故障
@@ -566,7 +597,6 @@ void ModeFSMInit(void)
 	DisplayLockedTIM=0;
 	IsSlowFading=0;
 	SetupFSMState=SetupMenu_InACT;            //复位设置状态机
-	ResetStrobeModule(); 											//复位爆闪控制器
 	RampDIVCNT=RampAdjustDividingFactor; 			//复位分频计数器	
 	}	
 
@@ -749,6 +779,14 @@ void ModeSwitchFSM(void)
 					//侧按单击开机，进入循环挡位上一次关闭的模式（仅在开启了记忆的条件下）
 					PowerToNormalMode(!IsMainMemEnabled?Mode_ExtremelyLow:LastMode);
 					break; 	
+				case 4:
+					//在开启夜行模式的时候四击进入。
+				  if(QuadClickSel)SwitchToGear(Mode_FuckDog);
+				  break;
+				case 6:
+				  //在四击没有配置为夜行模式的时候6击进入。
+				  if(!QuadClickSel)SwitchToGear(Mode_FuckDog);
+				  break;
 				case 7:
 					//7击进入设置菜单
 					TriggerSetupMenuDisplay();
@@ -829,8 +867,12 @@ void ModeSwitchFSM(void)
 		ModeSwitchFSMTableDriver(ClickCount); 
 		}
 	ClearShortPressEvent(); //表驱动事项响应完毕，清除按键状态
+  }
 
-  //应用输出电流
+//应用输出电流参数
+void ApplyOutputCurrent(void)
+	{
+	//应用输出电流
 	if(VChkFSMState!=VersionCheck_InAct)Current=VersionCheckFSM()?CalcIREFValue(50):-1;
 	else if(DisplayLockedTIM||IsDisplayLocked)Current=CalcIREFValue(50); //用户进入或者退出锁定，用50mA短暂点亮提示一下
 	else switch(CurrentMode->ModeIdx)	
@@ -839,6 +881,8 @@ void ModeSwitchFSM(void)
     case Mode_Turbo:
 		 Current=QuerySystemFullScaleCurrent();  //ECO模式开启时使用ECO电流，否则使用极亮电流
      if(TurboILIM<Current)Current=TurboILIM; //应用限流设置
+		 //极亮模式温控始终开启
+		 IsPauseThermalCalc=0;
 		 break;
 		//信标模式
 		case Mode_Beacon:
@@ -847,20 +891,58 @@ void ModeSwitchFSM(void)
 				 case 0:Current=-1;break; //0表示让电流关闭
 				 case 2:Current=CalcIREFValue(200);break; //用200mA低亮提示告知用户已进入信标模式
 				 default:SpecialModeCurrentFetch(); //其他值调用系统默认电流
-				 } 			
+				 } 	
+			 //信标模式下温控始终开启
+       IsPauseThermalCalc=0;		 
 			 break;
 		//SOS模式	
 		case Mode_SOS: 
-			 if(!SOSFSM())Current=-1;
-			 else SpecialModeCurrentFetch();
+			 if(!SOSFSM())
+				 {
+				 //SOS模式需要熄灭LED，温控关闭
+				 IsPauseThermalCalc=1;
+				 Current=-1;
+				 }
+			 else 
+				 {
+				 //点亮LED，温控开启
+				 IsPauseThermalCalc=0;
+				 SpecialModeCurrentFetch();
+				 }
 			 break;
+		//操远光狗模式		 
+	  case Mode_FuckDog:
+			 if(getSideKey1HEvent())
+				{
+				//单击+长按暂时熄灭手电避免晃到对面
+				IsPauseThermalCalc=1;
+				Current=-1;
+				break;
+				}
+			 else if(!getSideKeyHoldEvent())
+				{
+				//默认情况，手电取最小电流常亮
+				IsPauseThermalCalc=1;
+				Current=CurrentMode->MinCurrent;
+				
+				/***********************************************************
+				这里又利用了case的shoot through特性，如果按键持续按下，会跳过
+				这一段代码中的break然后直接shoot到下面执行爆闪逻辑，这样就起到
+				了长按爆闪的效果。
+				***********************************************************/
+				break;
+				}
 	  //爆闪模式
 		case Mode_Strobe:     
+			 //爆闪模式温控始终开启
+			 IsPauseThermalCalc=0;
        if(!StrobeOutputHandler())Current=-1; 
 		   else SpecialModeCurrentFetch();
 		   break;
 	  //关机状态下电流缓降
 		case Mode_OFF:	
+			 //关机状态电流缓降，停止温控计算
+			 IsPauseThermalCalc=1;
        //关机函数没有使能该功能或者拖尾被用户禁用，电流直接到0			
        if(!SysCfg.FadingCfg||!IsSlowFading)Current=0; 
 		   //逐渐变暗特效开启，缓慢减少电流
@@ -869,6 +951,9 @@ void ModeSwitchFSM(void)
 			 break;
 		//其余模式，电流取正常值
 		default:
+			//默认温控始终开启
+			IsPauseThermalCalc=0;
+		  //计算电流值
 		  if(LowPowerStrobe())Current=-1; //触发低压报警，闪烁
 			else if(CurrentMode->ModeIdx==Mode_Ramp)
 				{
@@ -880,5 +965,6 @@ void ModeSwitchFSM(void)
 		}				
 	//无极调光模式指示(无极调光模式在抵达上下限后短暂熄灭或者调到25%)
 	if(SysCfg.RampLimitReachDisplayTIM)Current=IsNotifyMaxRampLimitReached?Current>>2:-1;
-	}
+	}	
+
 /*********************************  End Of File  ************************************/

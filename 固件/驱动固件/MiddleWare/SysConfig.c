@@ -5,7 +5,13 @@
 /** \Description 这个文件为中层设备驱动文件，负责实现驱动的设置参数的非易失性存
 储并实现数据存储所需的安全功能（如校验、EEPROM磨损均衡等）
 
-**	History: Initial Release
+**	History:
+				2025年12月26日 10:05 1.针对新增的四击设置项在ROM内添加对应的entry和支持
+															 代码以便于实现四击功能选择的自动定义。
+														 2.针对新增的四击设置项增加设置该功能的自动宏定义系
+															 统便于处理参数。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -39,6 +45,7 @@
 #define IsEnableSpecMemory_MSK 0x08 //是否启用特殊挡位记忆 bit4
 #define PowerECOMode_MSK 0x10 //Power和ECO模式切换 bit5
 #define StrobeMode_MSK 0x20  //切换随机变频爆闪和高频爆闪 bit6
+#define QuadClickSel_MSK 0x40 //切换四击操作的选择bit bit7
 
 /****************************************************************************/
 /*	Local pre-processor symbols/macros('#define') for Parameter Parsing
@@ -159,6 +166,19 @@
 	#error "Error 013:Invalid Turbo Profile Configuration!"
 #endif
 
+//配置系统四击后进入的模式的参数自动定义（这个动了就炸！别手贱！）	
+#define QuadClickMode_TacMode 0x70
+#define QuadClickMode_FuckDogMode 0x71
+
+#if (Default_QuadClickMode == QuadClickMode_TacMode)
+    #define SetQuadClickMode() QuadClickSel=0
+		#message "Quad Click Config : Enter Tac Mode"
+#elif (Default_QuadClickMode == QuadClickMode_FuckDogMode)
+    #define SetQuadClickMode() QuadClickSel=1
+		#message "Quad Click Config : Enter NightWalk+FuckDog Mode"
+#else
+	#error "Error 016:Invalid Quad Click Operation Configuration!"
+#endif	
 
 #message "****************************************************************************"
 
@@ -259,6 +279,7 @@ static void PrepareFactoryDefaultCfg(void)
 	SetModeMem();
 	SetStrobeMode();
 	SetTurboProfile();
+	SetQuadClickMode();
 	}	
 	
 //显示系统数据存在错误
@@ -323,6 +344,7 @@ void ReadSysConfig(void)
 		IsSpecMemEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsEnableSpecMemory_MSK?1:0;
 		IsRampEnabled=ROMData.Data.SysConfig.Data.BitfieldMem1&IsRampEnabled_MSK?1:0;
 		EnableRandomStrobe=ROMData.Data.SysConfig.Data.BitfieldMem1&StrobeMode_MSK?1:0;
+		QuadClickSel=ROMData.Data.SysConfig.Data.BitfieldMem1&QuadClickSel_MSK?1:0;
 		SysMode=ROMData.Data.SysConfig.Data.BitfieldMem1&IsLocked_MSK?Operation_Locked:Operation_Normal;
 		
 		SysCfg.LocatorCfg=ROMData.Data.SysConfig.Data.LocatorCfg; 
@@ -368,10 +390,11 @@ void SaveSysConfig(bit IsForceSave)
   //开始进行数据构建
 	if(SysMode==Operation_Locked)BFBuf|=IsLocked_MSK;			//是否锁定
 	if(IsRampEnabled)BFBuf|=IsRampEnabled_MSK;						//是否开启无极调光
-	if(IsMainMemEnabled)BFBuf|=IsEnableMainMemory_MSK;	//是否启用主挡位记忆
+	if(IsMainMemEnabled)BFBuf|=IsEnableMainMemory_MSK;		//是否启用主挡位记忆
 	if(IsSpecMemEnabled)BFBuf|=IsEnableSpecMemory_MSK;    //是否启用特殊功能挡位记忆
 	if(IsPowerModeEnabled)BFBuf|=PowerECOMode_MSK;        //是否启用POWER模式
 	if(EnableRandomStrobe)BFBuf|=StrobeMode_MSK;          //是否启用随机变频爆闪	
+	if(QuadClickSel)BFBuf|=QuadClickSel_MSK;              //四击的模式选择
 		
 	SavedData.Data.SysConfig.Data.BitfieldMem1=BFBuf;
 	SavedData.Data.SysConfig.Data.FadingCfg=SysCfg.FadingCfg;

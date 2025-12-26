@@ -27,6 +27,8 @@
 ** 
 **
 **	History:
+				2025年12月26日 10:04 移除GPIO_WriteBit()函数以便节约ROM空间
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -256,33 +258,33 @@ void GPIO_DisableInt(uint8_t Port, uint8_t PinMSK)
  **  (3)P2的PinNum输入值范围：GPIO_PIN_1~GPIO_PIN_6
  **  (4)P3的PinNum输入值范围：GPIO_PIN_0~GPIO_PIN_2、GPIO_PIN_5、GPIO_PIN_6
  ******************************************************************************/
-void GPIO_WriteBit(uint8_t Port, uint8_t PinNum,bit Val)
-{
- switch(Port)
-		{
-		case GPIO0:
-			 if(PinNum>5)return;
-			 if(Val)P0|=0x01<<PinNum;
-		   else P0&=~(0x01<<PinNum);
-		   break;
-		case GPIO1:
-			 if(PinNum>7||PinNum<3)return;
-			 if(Val)P1|=0x01<<PinNum;
-		   else P1&=~(0x01<<PinNum);
-		   break;		
-		case GPIO2:
-			 if(PinNum>6||PinNum<1)return;
-			 if(Val)P2|=0x01<<PinNum;
-		   else P2&=~(0x01<<PinNum);
-		   break;
-		case GPIO3:
-			 if(PinNum>6)return;
-			 if(Val)P3|=0x01<<PinNum;
-		   else P3&=~(0x01<<PinNum);
-		   break;
-		default:return;	
-		}
-}
+//void GPIO_WriteBit(uint8_t Port, uint8_t PinNum,bit Val)
+//{
+// switch(Port)
+//		{
+//		case GPIO0:
+//			 if(PinNum>5)return;
+//			 if(Val)P0|=0x01<<PinNum;
+//		   else P0&=~(0x01<<PinNum);
+//		   break;
+//		case GPIO1:
+//			 if(PinNum>7||PinNum<3)return;
+//			 if(Val)P1|=0x01<<PinNum;
+//		   else P1&=~(0x01<<PinNum);
+//		   break;		
+//		case GPIO2:
+//			 if(PinNum>6||PinNum<1)return;
+//			 if(Val)P2|=0x01<<PinNum;
+//		   else P2&=~(0x01<<PinNum);
+//		   break;
+//		case GPIO3:
+//			 if(PinNum>6)return;
+//			 if(Val)P3|=0x01<<PinNum;
+//		   else P3&=~(0x01<<PinNum);
+//		   break;
+//		default:return;	
+//		}
+//}
  /******************************************************************************
  ** \brief	 GPIO_SetExtIntMode
  **			 设置外部中断的相应模式

@@ -87,8 +87,7 @@ bit StrobeOutputHandler(void)
 		{
 		case 1:return LFStrobeFlag;
 		case 2:return (bit)Data.RandADResult^StrobeFlag;
-		case 3:
-		return (bit)Data.RandADResult&LFStrobeFlag;
+		case 3:return (bit)Data.RandADResult&LFStrobeFlag;
 		}
 	//Ä¬ÈÏÇé¿ö
 	return StrobeFlag;

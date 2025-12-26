@@ -5,7 +5,11 @@
 /** \Description 这个文件负责实现侧按电子开关的红绿双色电量指示灯的初始化、驱动
 和多种闪烁模式以及亮度控制的实现
 
-**	History: Initial Release
+**	History:
+				2025年12月26日 10:05 移除掉浪费空间的GPIO_Writebit()函数实现的灯控GPIO
+														 置零流程，改为声明sfr直接写sbit节约ROM空间。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -52,8 +56,15 @@ static unsigned char timer;    //内部使用的定时器
 /*	Global variable definitions(decleared in header files with 'extern')
 ****************************************************************************/
 volatile LEDStateDef LEDMode; 
-bit IsHalfBrightness;					 //标志位，是否使能指示灯半亮度模式
+bit IsHalfBrightness=0;					 //标志位，是否使能指示灯半亮度模式
 
+	
+/****************************************************************************/
+/*	Local special function reg definitions('sbit' or 'sfr')
+****************************************************************************/	
+sbit GreenLED=GreenLEDIOP^GreenLEDIOx;
+sbit RedLED=RedLEDIOP^RedLEDIOx;	
+	
 /****************************************************************************/
 /*	external function prototypes
 ****************************************************************************/
@@ -149,8 +160,8 @@ void LED_Init(void)
 	SetLEDBrightNess();
   while(PWMLOADEN&0x0C); //等待PWM完成应用
 	//复位IO
-	GPIO_WriteBit(GreenLEDIOG,GreenLEDIOx,0);	
-	GPIO_WriteBit(RedLEDIOG,RedLEDIOx,0);	
+	GreenLED=0;
+	RedLED=0;
 	//配置GPIO（将配置GPIO拉到最后是因为避免PWM发生器工作异常引起闪烁）
 	GPIO_ConfigGPIOMode(RedLEDIOG,GPIOMask(RedLEDIOx),&LEDInitCfg); //红色LED(推挽输出)
 	GPIO_ConfigGPIOMode(GreenLEDIOG,GPIOMask(GreenLEDIOx),&LEDInitCfg); //绿色LED(推挽输出)

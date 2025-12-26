@@ -6,7 +6,12 @@
 灯发出微光指示手电开关位置的功能。同时该驱动文件实现了设置菜单子系统中针对待机指示
 的颜色设置和电流拖尾特效的配置功能。
 
-**	History: Initial Release
+**	History:
+				2025年12月26日 10:05 1.优化1LM睡眠定时器的赋值初始化方式节约ROM占用。
+														 2.针对新增的可自行运行的紧急月光模式增加了使能电量
+															 指示灯的功能，用于提示用户当前手电已被开启。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -17,6 +22,7 @@
 #include "ModeControl.h"
 #include "OutputChannel.h"
 #include "SideKey.h"
+#include "SpecialMode.h"
 #include "BattDisplay.h"
 #include "SelfTest.h"
 #include "LocateLED.h"
@@ -60,7 +66,7 @@ xdata BattVshowFSMDef VshowFSMState;
 /*	Local variable definitions('static')
 ****************************************************************************/
 static unsigned char BattShowTimer; //电池电量显示计时
-static unsigned char OneLMShowBattStateTimer=0; //1LM模式下显示电池状态的计时器
+static unsigned char OneLMShowBattStateTimer; //1LM模式下显示电池状态的计时器
 static xdata AverageCalcDef BattVolt;	
 static xdata unsigned char LowVoltStrobeTIM;
 static xdata int VbattSample; //取样的电池电压
@@ -386,7 +392,7 @@ void BatteryTelemHandler(void)
 	else if(VshowFSMState!=BattVdis_Waiting)BatVshowFSM();//电池电压显示启动，执行状态机
 	else if(LocLEDState&0x02)LEDMode=LocateLED_ShowType(); //系统进入LED编辑状态，显示编辑数据
 	else if(SetupFSMState!=SetupMenu_InACT)LEDMode=SetupMenuFSM(); //系统进入设置菜单编辑器，显示编辑数据
-	else if(CurrentMode->ModeIdx!=Mode_OFF||BattShowTimer)ShowBatteryState(); //用户查询电量或者手电开机，指示电量
+	else if(CurrentMode->ModeIdx!=Mode_OFF||BattShowTimer||IsDisplayLocked)ShowBatteryState(); //用户查询电量或者手电开机（包括应急月光和正常开启），指示电量
   else LEDMode=LED_OFF; //手电处于关闭状态，且没有按键按下的动静，故LED设置为关闭
 	}	
 	
@@ -428,6 +434,7 @@ void DisplayVBattAtStart(bit IsPOR)
 	unsigned char i=10;
 	//初始化平均值缓存,复位标志位
 	ResetBattAvg();
+	OneLMShowBattStateTimer=0;
   //复位电池电压状态和电池显示状态机
   VshowFSMState=BattVdis_Waiting;		
 	do

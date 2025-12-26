@@ -10,11 +10,17 @@
 		generator. DO NOT EDIT UNLESS YOU FULLY UNDERSTAND WHAT THIS
 		FILE ACTUALLY DOES!
 		NTC PARAMETER:100.00KΩ @ 25℃ B4250
-		Table temperature range:-19℃ to 90℃
+		Table temperature range:-19℃ to 85℃
 		Total ROM space for table:378 Bytes
 		Target MCU Architecture:8051 Based MCU
 
-**	History: Initial Release
+**	History: 
+				2025年12月26日 10:05 删除掉超出外壳理论温度上限的温度检测数值，将温度
+														 检测范围调整到-15至85℃节约ROM空间。同时修复在热
+														 敏电阻(NTC)短路或阻值异常偏低时系统报告的温度数
+														 值不正确的问题。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -46,7 +52,7 @@ code unsigned long NTCTableTop[54]={
 86762, 82802, 79048, 75487,   //28 到 31 摄氏度
 72108, 68901, 65857  };
 
-code unsigned int NTCTableBottom[61]={
+code unsigned int NTCTableBottom[56]={
 62965, 60218, 57607, 55125,   //35 到 38 摄氏度
 52765, 50520, 48384, 46350,   //39 到 42 摄氏度
 44415, 42572, 40816, 39143,   //43 到 46 摄氏度
@@ -59,8 +65,7 @@ code unsigned int NTCTableBottom[61]={
 14877, 14354, 13853, 13371,   //71 到 74 摄氏度
 12909, 12466, 12040, 11631,   //75 到 78 摄氏度
 11238, 10860, 10497, 10148,   //79 到 82 摄氏度
-9813, 9491, 9181, 8882,   //83 到 86 摄氏度
-8595, 8319, 8053, 7797   //87 到 90 摄氏度
+9813, 9491, 9181    //83 到 85 摄氏度
 };
 
 /****************************************************************************/
@@ -80,15 +85,15 @@ if(NTCRes>(unsigned long)1179691)
   return -19+TemperatureReportOffset;
   }
 //电阻值小于查找表阻值的阻值下限，温度异常
-if(NTCRes<(unsigned long)7797)
+if(NTCRes<(unsigned long)9181)
   {
   *IsNTCOK=false;
-  return 100+TemperatureReportOffset;
+  return 85+TemperatureReportOffset;
   }
 //温度正常，开始查表
 *IsNTCOK=true;
 if(NTCRes>(unsigned long)62965)for(i=0;i<54;i++)if(NTCTableTop[i]<=NTCRes)return (-19+TemperatureReportOffset)+i;
-for(i=0;i<61;i++)
+for(i=0;i<56;i++)
   {
   NTCTableValue=(unsigned long)NTCTableBottom[i];
   NTCTableValue&=0xFFFF;

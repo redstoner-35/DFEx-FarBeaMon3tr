@@ -4,7 +4,11 @@
 /** \Project Xtern Ripper Hyper Boost For GT96
 /** \Description 这个文件负责系统的主函数处理
 
-**	History: Initial Release
+**	History: 
+				2025年12月26日 10:05 配合模式管理状态机的函数改动，将电流计算独立为
+				                     ApplyOutputCurrent()函数并在主函数内引用。
+				2025年12月23日 11:07 移除睡眠管理函数的直接外部声明，改为使用Sleep.h
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -29,16 +33,12 @@
 #include "Strobe.h"
 #include "SysReset.h"
 #include "SetupMenu.h"
+#include "Sleep.h"
 
 /****************************************************************************/
 /*	Local variable  definitions('static')
 ****************************************************************************/
 bit TaskSel=0;  //选择处理的系统任务
-
-/****************************************************************************/
-/*	External function prototypes definition
-****************************************************************************/
-void SleepMgmt(void);
 
 /****************************************************************************/
 /*	Main function implantation('main')
@@ -68,6 +68,7 @@ void main(void)
 		BatteryTelemHandler(); //处理电池遥测
 		ModeSwitchFSM(); //挡位状态机
 		ThermalMgmtProcess(); //温度管理函数过热保护等
+		ApplyOutputCurrent(); //应用输出电流值
 		OutputChannel_Calc(); //根据电流进行输出通道控制
 		PWM_OutputCtrlHandler(); //处理PWM输出事务	
 		//8Hz定时处理

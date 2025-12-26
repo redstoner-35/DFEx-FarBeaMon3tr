@@ -5,7 +5,13 @@
 /** \Description 这个文件负责驱动系统的ADC完成系统的各项模拟量遥测任务，包含异步
 非阻塞转换ADC引擎的实现
 **
-**	History: Initial Release
+**	History:
+
+				2025年12月26日 10:05 移除掉浪费空间的GPIO_Writebit()函数实现的电池和输
+														 出检测GPIO置零流程，改为声明sfr直接写sbit节约ROM
+														 空间。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -84,7 +90,12 @@ static xdata ADCConvertTemp ADCTemp;
 static ADCAsyncStateDef ADCState;	
 static xdata char ADCConvertQueue[ADCConvertQueueDepth];	
 
+/****************************************************************************/
+/*	Local special function reg definitions('sbit' or 'sfr')
+****************************************************************************/	
 sbit NTCPullUpEN=NTCENIOP^NTCENIOx; //NTC Enable
+sbit VBATIN=VBATInputIOP^VBATInputIOx; //Battery Input Feedback
+sbit VOUTFB=VOUTFBIOP^VOUTFBIOx;  //VOUT FB	
 	
 /****************************************************************************/
 /*	Local constant value definitions('static')	
@@ -305,8 +316,8 @@ void ADC_DeInit(void)
   GPIO_ConfigGPIOMode(VOUTFBIOG,GPIOMask(VOUTFBIOG),&ADCDeInitCfg); 
 	GPIO_ConfigGPIOMode(VBATInputIOG,GPIOMask(VBATInputIOx),&ADCDeInitCfg); 
 	//将需要禁用的ADC输入GPIO全部输出0
-  GPIO_WriteBit(VBATInputIOG,VBATInputIOx,0);
-	GPIO_WriteBit(VOUTFBIOG,VOUTFBIOx,0);
+  VBATIN=0;
+	VOUTFB=0;
 	//令NTC偏压供电输出=0关闭NTC电源
 	NTCPullUpEN=0;
 	}

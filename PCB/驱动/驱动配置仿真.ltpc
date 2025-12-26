@@ -7,16 +7,13 @@
       <OutputNum>One</OutputNum>
       <FswPreferred>400</FswPreferred>
       <PartName>LTC3787</PartName>
-      <TopFetThermalImpedanceCH1>2.4</TopFetThermalImpedanceCH1>
-      <BotFetThermalImpedanceCH1>4</BotFetThermalImpedanceCH1>
-      <BotFetThermalImpedanceCH4>4</BotFetThermalImpedanceCH4>
       <IcTa>25</IcTa>
       <LastSavedFilesCultureInfo>zh-CN</LastSavedFilesCultureInfo>
-      <SolutionAreamm2>1283.1</SolutionAreamm2>
+      <SolutionAreamm2>1352</SolutionAreamm2>
       <SolutionComponentCount>40</SolutionComponentCount>
-      <SolutionMaxHeightmm>7.7</SolutionMaxHeightmm>
-      <TotalSolutionAreamm2>1283.1</TotalSolutionAreamm2>
-      <TotalSolutionPrice>20.5601</TotalSolutionPrice>
+      <SolutionMaxHeightmm>8</SolutionMaxHeightmm>
+      <TotalSolutionAreamm2>1352</TotalSolutionAreamm2>
+      <TotalSolutionPrice>11.6805</TotalSolutionPrice>
     </ConverterSpec>
   </ConverterSpecs>
   <ProgramUserInfos>
@@ -44,25 +41,25 @@
       <MinVin>9</MinVin>
       <SwitchingFreq>324000</SwitchingFreq>
       <OutputVol>21.56</OutputVol>
-      <OutputCur>35</OutputCur>
+      <OutputCur>35.5</OutputCur>
       <VoutNum>1</VoutNum>
       <NPh>2</NPh>
       <NIc>1</NIc>
       <VinD>10.4</VinD>
       <Ta>25</Ta>
       <InductorThetaWA>11.1</InductorThetaWA>
-      <InductorRipplePercentDesired>50</InductorRipplePercentDesired>
+      <InductorRipplePercentDesired>35</InductorRipplePercentDesired>
       <Lo>1.8E-06</Lo>
-      <DCR>0.00161</DCR>
-      <InductorManufacturer>COILCRAFT</InductorManufacturer>
+      <DCR>0.0016</DCR>
+      <InductorManufacturer>USER</InductorManufacturer>
       <InductorPartNumber>XAL1580-182MEB</InductorPartNumber>
-      <InductorLength>16.4</InductorLength>
-      <InductorWidth>15.4</InductorWidth>
-      <InductorHeight>7.7</InductorHeight>
+      <InductorLength>15.2</InductorLength>
+      <InductorWidth>16.2</InductorWidth>
+      <InductorHeight>8</InductorHeight>
       <InductorIsat>57</InductorIsat>
       <InductorIheat>43.8</InductorIheat>
       <InductorTheat>40</InductorTheat>
-      <TransformerLength>16.4</TransformerLength>
+      <TransformerLength>15.2</TransformerLength>
       <Cin>0.00068</Cin>
       <CinESR>0.015</CinESR>
       <NCin>2</NCin>
@@ -90,9 +87,9 @@
       <ESLb>1E-09</ESLb>
       <Numb>2</Numb>
       <BulkCapacitorPartNumber>SPZ1VM221E12O00RAXXX</BulkCapacitorPartNumber>
-      <CobAtNoVoltage>0.00022</CobAtNoVoltage>
+      <CobAtNoVoltage>0.00045</CobAtNoVoltage>
       <VoRipplePkPkMaxTargetPercent>1</VoRipplePkPkMaxTargetPercent>
-      <VoStepMaxTargetPercent>3.38507162134425</VoStepMaxTargetPercent>
+      <VoStepMaxTargetPercent>3.98832064810788</VoStepMaxTargetPercent>
       <TotalVoRippleMaxTargetPercent>4</TotalVoRippleMaxTargetPercent>
       <Coc>2.502448E-06</Coc>
       <ESRc>0.00214</ESRc>
@@ -127,7 +124,7 @@
       <HotSwapCurrentLimitThresholdFoldbackFactor>1</HotSwapCurrentLimitThresholdFoldbackFactor>
       <MarginIoLimit>120</MarginIoLimit>
       <RsensePartNumber>BVT-M-R001-1.0</RsensePartNumber>
-      <Rsense>0.0009</Rsense>
+      <Rsense>0.0009375</Rsense>
       <SenseC>4.7E-08</SenseC>
       <SenseRp>7150</SenseRp>
       <SenseRs>4020</SenseRs>
@@ -141,15 +138,18 @@
       <LoadStepHigh>32</LoadStepHigh>
       <LoadStepSlewRate>20000000</LoadStepSlewRate>
       <TonMin>9E-08</TonMin>
+      <ProjectName>XTR HyperBoost HV for GT96</ProjectName>
+      <ProjectDate>2025/12/23</ProjectDate>
+      <ProjectDesigner>redstoner_35</ProjectDesigner>
       <VinStartUp>9</VinStartUp>
       <VSD_Desired>9</VSD_Desired>
       <VOV_Latch_Desired>9</VOV_Latch_Desired>
       <VOV_NonLatch_Desired>9</VOV_NonLatch_Desired>
       <RailNumber>1</RailNumber>
-      <BW>7.94</BW>
-      <PM>63.89</PM>
-      <DeltaVoLoadStep>718.637718595641</DeltaVoLoadStep>
-      <TotalDeltaVoLoadStepPercent>3.26653508452564</TotalDeltaVoLoadStepPercent>
+      <BW>8.91</BW>
+      <PM>62.98</PM>
+      <DeltaVoLoadStep>545.787303472192</DeltaVoLoadStep>
+      <TotalDeltaVoLoadStepPercent>2.5314809994072</TotalDeltaVoLoadStepPercent>
       <FootprintClearanceFactor>1.5</FootprintClearanceFactor>
       <Mode>Boost</Mode>
       <ModeChanged>False</ModeChanged>
@@ -166,63 +166,69 @@
       <LTspiceTranEngineEnabled>False</LTspiceTranEngineEnabled>
       <LTspiceLoopEngineEnabled>False</LTspiceLoopEngineEnabled>
       <NumOfSchottky>1</NumOfSchottky>
-      <PartNameControlStage1>AOE6936</PartNameControlStage1>
+      <PartNameControlStage1>SIZF918DT-BOTTOM</PartNameControlStage1>
       <NumFetsControlStage1>2</NumFetsControlStage1>
-      <RdsonControlStage1>0.00131</RdsonControlStage1>
-      <Rdson1ControlStage1>0.00134</Rdson1ControlStage1>
+      <RdsonControlStage1>0.00175</RdsonControlStage1>
+      <Rdson1ControlStage1>0.0018</Rdson1ControlStage1>
       <Vgs1ControlStage1>4.5</Vgs1ControlStage1>
       <Vgs2ControlStage1>10</Vgs2ControlStage1>
-      <QgControlStage1>1.89E-08</QgControlStage1>
-      <QgsControlStage1>5.5E-09</QgsControlStage1>
-      <QgdControlStage1>4.5E-09</QgdControlStage1>
-      <CossControlStage1>6.5E-10</CossControlStage1>
-      <Rdson2ControlStage1>0.00104</Rdson2ControlStage1>
-      <Qg1ControlStage1>1.7E-08</Qg1ControlStage1>
-      <Qg2ControlStage1>3.75E-08</Qg2ControlStage1>
-      <VmillerControlStage1>2.5</VmillerControlStage1>
-      <VthControlStage1>1.6</VthControlStage1>
-      <RgControlStage1>1.4</RgControlStage1>
+      <QgControlStage1>1.92E-08</QgControlStage1>
+      <QgsControlStage1>6.5E-09</QgsControlStage1>
+      <QgdControlStage1>3.5E-09</QgdControlStage1>
+      <CossControlStage1>1.24E-09</CossControlStage1>
+      <Rdson2ControlStage1>0.0012</Rdson2ControlStage1>
+      <Qg1ControlStage1>1.74E-08</Qg1ControlStage1>
+      <Qg2ControlStage1>3.7E-08</Qg2ControlStage1>
+      <VmillerControlStage1>2.8</VmillerControlStage1>
+      <VthControlStage1>1.8</VthControlStage1>
+      <RgControlStage1>0.5</RgControlStage1>
+      <VendorControlStage1>VISHAY</VendorControlStage1>
       <VdssControlStage1>30</VdssControlStage1>
-      <VdiodeControlStage1>0.7</VdiodeControlStage1>
-      <LengthControlStage1>3.3</LengthControlStage1>
-      <WidthControlStage1>3.3</WidthControlStage1>
-      <HeightControlStage1>0.75</HeightControlStage1>
-      <PackageControlStage1>PQFN-8</PackageControlStage1>
-      <ThetaJXControlStage1>2.4</ThetaJXControlStage1>
-      <PartNameSyncStage1>AOE6936-T</PartNameSyncStage1>
+      <VdiodeControlStage1>0.4</VdiodeControlStage1>
+      <LengthControlStage1>6</LengthControlStage1>
+      <WidthControlStage1>5</WidthControlStage1>
+      <HeightControlStage1>1.1</HeightControlStage1>
+      <PackageControlStage1>PowerPAIR-6x5F</PackageControlStage1>
+      <PartNameSyncStage1>SIZF918DT-TOP</PartNameSyncStage1>
       <NumFetsSyncStage1>2</NumFetsSyncStage1>
-      <RdsonSyncStage1>0.00103</RdsonSyncStage1>
-      <Rdson1SyncStage1>0.00105</Rdson1SyncStage1>
+      <RdsonSyncStage1>0.00454</RdsonSyncStage1>
+      <Rdson1SyncStage1>0.0047</Rdson1SyncStage1>
       <Vgs1SyncStage1>4.5</Vgs1SyncStage1>
       <Vgs2SyncStage1>10</Vgs2SyncStage1>
-      <QgSyncStage1>1.85E-08</QgSyncStage1>
-      <RgSyncStage1>1.2</RgSyncStage1>
-      <VdiodeSyncStage1>0.7</VdiodeSyncStage1>
+      <QgSyncStage1>7.7E-09</QgSyncStage1>
+      <RgSyncStage1>1</RgSyncStage1>
+      <VdiodeSyncStage1>0.8</VdiodeSyncStage1>
+      <VendorSyncStage1>VISHAY</VendorSyncStage1>
       <VdssSyncStage1>30</VdssSyncStage1>
-      <QgdSyncStage1>3E-09</QgdSyncStage1>
-      <CossSyncStage1>3.8E-10</CossSyncStage1>
-      <Rdson2SyncStage1>0.0008</Rdson2SyncStage1>
-      <Qg1SyncStage1>1.7E-08</Qg1SyncStage1>
-      <Qg2SyncStage1>3.4E-08</Qg2SyncStage1>
-      <QgsSyncStage1>2.5E-09</QgsSyncStage1>
-      <VmillerSyncStage1>2.5</VmillerSyncStage1>
-      <VthSyncStage1>1.7</VthSyncStage1>
-      <LengthSyncStage1>6.35</LengthSyncStage1>
-      <WidthSyncStage1>5.35</WidthSyncStage1>
+      <QgdSyncStage1>1.5E-09</QgdSyncStage1>
+      <CossSyncStage1>6E-10</CossSyncStage1>
+      <Rdson2SyncStage1>0.0029</Rdson2SyncStage1>
+      <Qg1SyncStage1>7E-09</Qg1SyncStage1>
+      <Qg2SyncStage1>1.46E-08</Qg2SyncStage1>
+      <QgsSyncStage1>3E-09</QgsSyncStage1>
+      <VmillerSyncStage1>2.8</VmillerSyncStage1>
+      <VthSyncStage1>1.8</VthSyncStage1>
+      <LengthSyncStage1>6</LengthSyncStage1>
+      <WidthSyncStage1>5</WidthSyncStage1>
       <HeightSyncStage1>1.1</HeightSyncStage1>
-      <PackageSyncStage1>PG-TDSON-8</PackageSyncStage1>
-      <ThetaJXSyncStage1>4</ThetaJXSyncStage1>
-      <PriceSyncStage1>1.6698</PriceSyncStage1>
-      <CostSyncStage1>6.6792</CostSyncStage1>
-      <PartPriceSyncStage1>1.6698</PartPriceSyncStage1>
+      <PackageSyncStage1>PowerPAIR-6x5F</PackageSyncStage1>
       <NumFetsControlStage2>1</NumFetsControlStage2>
       <NumFetsSyncStage2>1</NumFetsSyncStage2>
-      <Efficiency>0.9808</Efficiency>
-      <VoutRipplePercent>0.0110691095</VoutRipplePercent>
-      <LossCurveA2>0.0051927243</LossCurveA2>
-      <LossCurveA1>0.2213279196</LossCurveA1>
-      <LossCurveA0>0.5854407078</LossCurveA0>
-      <LossCurveR2>0.9996183804</LossCurveR2>
+      <Efficiency>0.979</Efficiency>
+      <VoutRipplePercent>0.0112112709</VoutRipplePercent>
+      <LossCurveA2>0.0061713963</LossCurveA2>
+      <LossCurveA1>0.2272545058</LossCurveA1>
+      <LossCurveA0>0.4596318429</LossCurveA0>
+      <LossCurveR2>0.9988588742</LossCurveR2>
+      <LossCurveFit_CMatrix_RowB2A2>2.8794E-06,-0.0001083389,0.0010879704,0.3625183638;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB2A2>
+      <LossCurveFit_CMatrix_RowB1A2>-5.97688E-05,0.0020358291,-0.0199842544,0.5189104619;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB1A2>
+      <LossCurveFit_CMatrix_RowB0A2>0.0003373197,-0.0098252736,0.0941828284,0.7205830573;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB0A2>
+      <LossCurveFit_CMatrix_RowB2A1>2.22177E-05,-0.0008627923,0.0082503042,0.2229851204;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB2A1>
+      <LossCurveFit_CMatrix_RowB1A1>-0.0004435123,0.0155132775,-0.1486386192,0.3545183246;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB1A1>
+      <LossCurveFit_CMatrix_RowB0A1>0.0026019745,-0.0662153082,0.6658203717,0.6969515349;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB0A1>
+      <LossCurveFit_CMatrix_RowB2A0>4.65117E-05,-0.0018741356,0.0181372397,0.4052764326;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB2A0>
+      <LossCurveFit_CMatrix_RowB1A0>-0.0009228658,0.0351847804,-0.3364947328,0.5504848718;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB1A0>
+      <LossCurveFit_CMatrix_RowB0A0>0.0051428829,-0.1614872383,1.7258849307,0.8323516136;1,324000,14.3733,21.56,32.34,9,10.5,12.6,35.5</LossCurveFit_CMatrix_RowB0A0>
       <InputLCFilterEnabled>False</InputLCFilterEnabled>
       <NumCf_in>1</NumCf_in>
       <NumCd_in>1</NumCd_in>
@@ -232,10 +238,8 @@
       <Rd3>-1000000</Rd3>
       <PartPrice>3.95</PartPrice>
       <PartCost>3.95</PartCost>
-      <InductorPrice>2.77</InductorPrice>
       <CeramicCapacitorPrice>0.3932</CeramicCapacitorPrice>
       <CinCeramicPrice>0.2473</CinCeramicPrice>
-      <InductorCost>5.54</InductorCost>
       <CeramicCapacitorCost>5.5048</CeramicCapacitorCost>
       <CinCeramicCost>2.2257</CinCeramicCost>
       <PartFamily>Switching Regulator</PartFamily>

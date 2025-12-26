@@ -6,7 +6,13 @@
 值计算并操控PWMDAC输出指定的LED电流并完成LED的0电流冲击软起动保护、以及Current-
 Pause功能。同时该文件负责完成DCDC输出模块的配置和自我测试。
 
-**	History: Initial Release
+**	History:
+				2025年12月26日 10:05 1.修改爆闪模式下判定输出暂停成功的电压至18V，提高
+															 爆闪挡位的运行斜率。
+														 2.针对新增的走夜路照明模式加入对应的entry确保一键
+														   实时爆闪功能可以正常运行。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -185,7 +191,8 @@ static void OutputChannel_ClearPWMDAC(void)
 //获取判断电压的保护值
 static float QueryOutputHaltVolt(void)
 	{
-	if(CurrentMode->ModeIdx==Mode_Strobe)return 17;
+	//远光狗反击模式和爆闪改为18V
+	if(CurrentMode->ModeIdx==Mode_Strobe||CurrentMode->ModeIdx==Mode_FuckDog)return 18;
 	//非爆闪模式返回16V
 	return 16;
 	}	
@@ -377,6 +384,7 @@ void OutputChannel_Calc(void)
 					  if(CurrentBuf<CalcIREFValue(18000))CurrentBuf+=TurboLowCurrentMPPTStep;
 					  else CurrentBuf+=TurboMPPTILEDStep;
 					  break;  
+					case Mode_FuckDog:
 					case Mode_Beacon:
 					case Mode_Strobe:CurrentBuf+=4000;break;
 					case Mode_SOS:CurrentBuf+=800;break;
@@ -531,7 +539,6 @@ void OutputChannel_WaitVBattReady(void)
 	while(--retry);
 	//等待2秒后电池电压仍然异常，系统无法工作，亮红灯锁死
 	LEDMode=LED_Red;
-	IsHalfBrightness=0;
 	while(1)LEDControlHandler();
 	}
 	

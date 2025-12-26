@@ -5,7 +5,11 @@
 /** \Description 这个文件为顶层应用层逻辑文件。该文件实现了系统中设置固件各个属性
 偏好的设置菜单功能。
 
-**	History: Initial Release
+**	History:
+				2025年12月26日 10:05 1.修改系统包含的设置项至9个以容纳新增的四击功能选择
+				                     2.在系统设置的handler里面注册相关的功能选择bit
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -25,7 +29,7 @@
 /****************************************************************************/
 /*	Local pre-processor symbols/macros for Parameter definition ('#define')
 ****************************************************************************/
-#define TotalSetupNum 8	 //系统总共包含的设置项数量（不要随便改！会爆的！）
+#define TotalSetupNum 9	 //系统总共包含的设置项数量（不要随便改！会爆的！）
 
 
 /****************************************************************************/
@@ -169,8 +173,12 @@ LEDStateDef SetupMenuFSM(void)
 							//菜单项7：是否开启随机变频爆闪
 						  BitBuf=EnableRandomStrobe;
 						  break;
-						//菜单项8：恢复出厂设置
-						case 7:ResetSysConfigToDefault();	
+						case 7:
+							//菜单项8：设置系统四击的逻辑
+						  BitBuf=QuadClickSel;
+						  break;
+						//菜单项9：恢复出厂设置
+						case 8:ResetSysConfigToDefault();	
 						}
 					CommonSysFSMTIM=20;
 					SetupTimedOutTIM=50;
@@ -200,6 +208,7 @@ LEDStateDef SetupMenuFSM(void)
 						case 4:IsSpecMemEnabled=BitBuf;break;			//菜单项4：是否开启特殊挡位记忆
 						case 5:IsPowerModeEnabled=BitBuf;break;		//菜单项5：POWER-ECO模式
 						case 6:EnableRandomStrobe=BitBuf;break;		//菜单项6：开启随机变频爆闪
+						case 7:QuadClickSel=BitBuf;break;         //菜单项7：设置系统四击的逻辑
 						}
 					//保存数据并提示
 					DisplayLockedTIM=4; //锁定指示闪一下

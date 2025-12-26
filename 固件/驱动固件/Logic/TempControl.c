@@ -5,7 +5,11 @@
 /** \Description 这个文件为顶层应用层逻辑文件。负责实现系统的温度管理并在合适的
 条件下限制输出功率以及强制关机，以保护系统免受过度高温影响。
 
-**	History: Initial Release
+**	
+				2025年12月26日 10:05 针对新的远光狗模式挡位调整温控计算暂停逻辑，以便于
+														 优化系统逻辑。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -113,6 +117,7 @@ static bit IsSystemShutDown; //是否触发温控强制关机
 ****************************************************************************/
 bit IsDisableTurbo;  //禁止再度进入到极亮档
 bit IsForceLeaveTurbo; //是否强制离开极亮档
+bit IsPauseThermalCalc=0; //是否暂停温控计算
 
 /****************************************************************************/
 /*	Function implementation - local('static')
@@ -246,7 +251,8 @@ bit ShowThermalStepDown(void)
 				}
 		case StepDown_Thermal: //过热
 			StepDownTIM++;
-			if(StepDownTIM==16)
+		  //时间到，复位定时器重新开始计时
+			if(StepDownTIM&0x10)
 				{
 				StepDownTIM=0;
 				return 1;
@@ -275,8 +281,8 @@ void ThermalPILoopCalc(void)
 		TempProtBuf=0;
 		IsThermalStepDown=0;
 		}
-	//进行PI环的计算(仅在输出开启的时候进行或者爆闪模式运行过程中强制进行)
-	else if(GetIfOutputEnabled()||CurrentMode->ModeIdx==Mode_Strobe)
+	//进行PI环的计算(仅在系统需要的时候执行温控计算)
+	else if(!IsPauseThermalCalc)
 		{			
 		//获取恒温温度值和恒亮电流
 		if(CurrentMode->ModeIdx==Mode_Turbo)

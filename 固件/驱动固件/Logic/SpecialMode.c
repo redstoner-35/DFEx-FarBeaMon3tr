@@ -5,7 +5,15 @@
 /** \Description 这个文件为顶层应用层逻辑文件。该文件负责实现系统的非常规挡位
 的进入以及退出逻辑，并且实现系统特殊模式（战术点亮、锁定等）的逻辑切换和显示
 
-**	History: Initial Release
+**	History: 
+				2025年12月26日 10:05 1.针对新增的日常走夜路模式调整战术模式的准入连击数
+															 判定条件。改为根据配置文件自动判定。
+				                     2.修改系统在锁定模式下的紧急月光逻辑，改为可以松手
+															 持续运行，松手无操作后30秒自动熄灭。
+														 3.允许用户在锁定模式下双击+长按查看系统当前电池电
+															 压，便于长期放置时检查电量水平。
+														 
+				2025年12月20日 Initial Release
 **	
 *****************************************************************************/
 /****************************************************************************/
@@ -20,6 +28,11 @@
 #include "SysConfig.h"
 #include "SideKey.h"
 #include "LowVoltProt.h"
+
+/****************************************************************************/
+/*	Local pre-processor symbols/macros - for Parameter Definition
+****************************************************************************/
+#define EmergencyOFFModeTime 30
 
 /****************************************************************************/
 /*	Local variable and Flag definitions('static')
@@ -141,26 +154,68 @@ bit DisplayTacModeEnabled(void)
 //特殊功能切换处理（返回当前非0数值）
 SpecialOperationDef SpecialModeOperation(char Click)
 	{
-		//复位flag
-	  IsDisplayLocked=0;
 		//特殊操作模式切换
 		switch(SysMode)
 			{
 			//普通模式
 			case Operation_Normal:
 					if(Click==5)EnterExitLock(); //进入锁定模式
-				  if(Click==4)EnterExitTac(); //四击进入战术模式
+					if(Click==(QuadClickSel?6:4))EnterExitTac(); //系统开启四击进入战术模式
 					break;
 			//锁定模式
 			case Operation_Locked:
-				   if(Click==5)EnterExitLock();
-				   else if(getSideKeyHoldEvent())IsDisplayLocked=1;
-				   else if(IsKeyEventOccurred())LEDMode=LED_RedBlinkFifth; //指示手电已被锁定
+
+				   //五击按键解除锁定,绿灯闪3次主灯亮0.5秒
+				   if(Click==5)
+						 {
+						 LEDMode=LED_GreenBlinkThird;
+						 EnterExitLock();
+						 }
+			     //N击+长按事件
+		       else switch(getSideKeyNClickAndHoldEvent())
+							{			
+						  case 2: 
+								//锁定状态下允许双击+长按查看电压
+								TriggerVshowDisplay();
+								break; 
+							case 1:
+								//锁定状态且电池电量充足时单击+长按开启应急低亮
+								IsDisplayLocked=1;
+							  if(!IsBatteryFault)
+									{	
+									DisplayLockedTIM=8*EmergencyOFFModeTime;
+									break;    
+									}
+									
+							default:
+								//开启月光档之后的处理
+								if(IsDisplayLocked||DisplayLockedTIM)
+									{
+									//用户按下按键，或者电池出现问题手动关闭
+									if(Click==1||IsBatteryFault)
+										{
+										DisplayLockedTIM=0;
+										break;
+										}
+									//超时时间到，系统自动关闭
+									if(!DisplayLockedTIM)IsDisplayLocked=0;
+									}
+								//其余任何操作无效，指示手电已被锁定
+								if(IsKeyEventOccurred())LEDMode=LED_RedBlinkFifth; 
+							  break;
+							}				   
 				   break;
 			//战术模式
 			case Operation_TacTurbo:
 			case Operation_TacStrobe:
-				  if(Click==4)EnterExitTac();
+				  //用户四击，退出战术模式
+				  if(Click==4)
+						 {
+						 EnterExitTac();
+						 //这里是为了四击退出之后不进入照远光狗模式
+						 return Operation_TacTurbo;
+						 }
+			    //正常战术模式执行
 					if(Click==2) //切换模式
 						{
 						if(SysMode==Operation_TacTurbo)
@@ -177,6 +232,8 @@ SpecialOperationDef SpecialModeOperation(char Click)
 					if(getSideKeyHoldEvent())TryEnterTurboStrobeProcess(SysMode==Operation_TacStrobe?3:2); //调用进入函数尝试进极亮
 				break;
 			}
+	//非锁定模式下,或者是电池故障位置起，复位flag
+	if(SysMode!=Operation_Locked)IsDisplayLocked=0;
 	//所有运算完毕，返回系统状态（直接返回enum就行，因为非0值的话系统就是特殊模式，此时可以让条件成立）
 	return SysMode;
 	}	
