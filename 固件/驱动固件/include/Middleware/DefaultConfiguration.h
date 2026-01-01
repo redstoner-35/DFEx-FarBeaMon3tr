@@ -37,7 +37,7 @@
  ** \note   
          
 /*************************************************************************************/
-#define Default_IncandescentBulbEmu BulbEmu_OFF
+#define Default_IncandescentBulbEmu BulbEmu_Mid
 
 /*************************************************************************************
  ** \brief	 Default_RegMode
@@ -122,7 +122,7 @@
  ** \note   
          
 /*************************************************************************************/
-#define Default_QuadClickMode QuadClickMode_TacMode
+#define Default_QuadClickMode QuadClickMode_FuckDogMode
 
 #endif /* _DefaultCFG_ */
 

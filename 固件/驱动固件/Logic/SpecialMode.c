@@ -83,7 +83,7 @@ void EnterMoonProcess(void)
 //开启到普通模式
 void PowerToNormalMode(ModeIdxDef Mode)
 	{
-	if(CellVoltage>2950)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode); //正常开启
+	if(CellVoltage>2900)SwitchToGear(IsRampEnabled?Mode_Ramp:Mode); //正常开启
 	else if(CellVoltage>2650)EnterMoonProcess();  //电池电压大于2.7，执行进入月光判断    		
 	else if(CurrentMode->ModeIdx==Mode_OFF)LEDMode=LED_RedBlinkFifth;	//手电处于关机状态下且电池电量不足，闪烁五次提示进不去	
 	else ReturnToOFFState();	 //电池电量严重不足，且手电开着，直接关机
@@ -164,7 +164,9 @@ SpecialOperationDef SpecialModeOperation(char Click)
 					break;
 			//锁定模式
 			case Operation_Locked:
-
+				
+					 //系统在查询电压阶段，不做反应避免误操作打断显示
+			     if(VshowFSMState!=BattVdis_Waiting)break;
 				   //五击按键解除锁定,绿灯闪3次主灯亮0.5秒
 				   if(Click==5)
 						 {

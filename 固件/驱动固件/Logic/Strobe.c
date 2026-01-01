@@ -31,7 +31,7 @@ bit EnableRandomStrobe;                  //系统配置位，是否开启随机变频爆闪
 /****************************************************************************/
 /*	Local variable and Flag definitions('static')
 *****************************************************************************/
-static xdata char StrobeFlagSel;
+static xdata unsigned char StrobeFlagSel;
 static xdata unsigned char StrobeSelIdx; 	//爆闪选择index
 static xdata unsigned char StrobeCounter; //爆闪次数计时
 
@@ -54,24 +54,19 @@ void ResetStrobeModule(void)	//爆闪控制器复位函数
 //爆闪状态机处理
 void RandStrobeHandler(void)
 	{
-	int IdxCalc;
 	volatile unsigned char code *RandData=RandomCodeDataAddr;
 	//进行随机模块重装载
 	if(StrobeCounter)StrobeCounter--;
 	else
 		{
 		//装载计数值
-		RandData=RandomCodeDataAddr;                //取地址
+		RandData=RandomCodeDataAddr;                																					//取地址
 		StrobeCounter=RandData[StrobeSelIdx]&0x0F;
 		//调用ADC传过来的随机AD值进行处理
-		IdxCalc=Data.RandADResult^(int)StrobeCounter;
-		IdxCalc>>=(Data.RandADResult^StrobeSelIdx)&0x07;	
-		StrobeSelIdx=(unsigned char)(IdxCalc&0x7F);
+		StrobeSelIdx=((unsigned char)Data.RandADResult)^StrobeCounter;
 		//对爆闪flag的数值进行赋值
-		if(StrobeSelIdx&0x28)
-	     StrobeFlagSel=Data.RandADResult>>StrobeFlagSel;  //使用随机结果作为Strbobe Result
-		else 
-	    StrobeFlagSel++;                                  //线性递增结果
+		if(StrobeSelIdx&0x24)StrobeFlagSel=StrobeSelIdx^StrobeCounter;			 //使用随机结果作为Strbobe Result
+		else StrobeFlagSel++;                                  							 //线性递增结果
 		//因为爆闪flag允许的范围是0-3，进行限幅
 		StrobeFlagSel&=0x03;
 		}

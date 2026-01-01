@@ -728,8 +728,14 @@ void ModeSwitchFSM(void)
 	//系统已锁定，此时进行锁定判断	
 	if(IsSystemLocked)
 		{
+		//当前系统正在显示电池的电压状态值，不处理所有按键事件
+    if(VshowFSMState!=BattVdis_Waiting)			
+			{
+			ClearShortPressEvent();
+			getSideKeyLongPressEvent();  //清除所有按键事件
+			}
 		//五击解锁，绿灯闪三次并且保存状态
-		if(ClickCount==5)
+		else if(ClickCount==5)
 			{
 			LEDMode=LED_GreenBlinkThird; 
 			IsSystemLocked=0;

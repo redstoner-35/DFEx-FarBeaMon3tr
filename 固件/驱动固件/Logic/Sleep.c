@@ -138,7 +138,8 @@ void SleepMgmt(void)
 		DisableSysPeripheral();//关闭所有外设
 		STOP();  //令STOP=1，使单片机进入睡眠
 		//系统已唤醒，立即开始检测
-		StartSystemTimeBase(); //启动系统定时器提供系统定时和延时函数
+		_nop_();		
+		StartSystemTimeBase(); //执行一个NOP确保系统稳定后启动系统定时模块
 		MarkAsKeyPressed(); //立即标记按键按下
 		SideKey_SetIntOFF(); //关闭侧按中断
 		do	

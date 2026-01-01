@@ -30,7 +30,7 @@ typedef enum
 /* Extern Functions definition - Result Export & Init Operation */
 /************************************************************************************/	
 int ThermalILIMCalc(void); 					//根据温控模块计算电流限制
-void RecalcPILoop(int LastCurrent); //换挡的时候重新计算PI环路
+void RecalcPILoop(void); //换挡的时候重新计算PI环路
 	
 /************************************************************************************/
 /* Extern Functions definition - Thermal Management Logic Handler */

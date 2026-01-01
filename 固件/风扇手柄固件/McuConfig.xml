@@ -1,6 +1,6 @@
 <McuConfig>
 <mcuName>CMS8S6990NAQN20</mcuName>
-<power>0</power>
+<power>1</power>
 <config>
 <data>0xFF</data>
 <data>0xEF</data>

@@ -37,9 +37,8 @@ static volatile bit IsT0OVF; //T0已溢出
 void StartSystemTimeBase(void)
 	{
 	//启动延时函数
-	TCON&=0xCF; //清除溢出标记位，关闭定时器
-	TMOD&=0xF0;
-	TMOD|=0x01; //T0设置为使用Fext,16bit向上计数模式
+	TCON=0x00; //清除溢出标记位，关闭定时器
+	TMOD=0x01; //T0设置为使用Fext,16bit向上计数模式
 	TH0=0x00;
 	TL0=0x00; //初始化数值
 	
@@ -47,8 +46,8 @@ void StartSystemTimeBase(void)
   CCEN=0x00; //关闭比较和捕获
 	RLDH=0x0B;
 	RLDL=0xDB; //将重装载值设置为产生31.25mS延迟(1/32秒)，计算公式为65535-(48/24(0.5uS)=2000*31.25mS)=3035[0x0BDB]
-  TH2=0x5D;
-  TL2=0x66; //将计数器设置为产生31.25mS延迟的初值	
+	TH2=0x0B;
+	TL2=0xDB;  //装载定时器初值，设定为0x0BDB使得定时器产生31.25mS延迟
 	
 	//启用中断
 	T2IF=0x00; //清零T2中断

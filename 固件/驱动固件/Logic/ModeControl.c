@@ -6,6 +6,14 @@
 功能，并且实现系统中无极调光功能的具体逻辑模块。
 
 **	History: 
+
+				2025年12月28日 12:42 1.修复QuerySystemFullScaleCurrent()函数中，负责在
+															 极亮挡位激活并开启POWER模式时，错误的取出ECO模式
+															 的输出电流导致极亮的LM值和电流工作异常。
+														 2.针对新的逐步降低恒温控制的逻辑，修改极亮的截断电
+															 压改为使用TurboICCMax.h内的宏定义进行统一设置。
+														 3.对截止电压进行调整，提高普通挡位的关断阈值。
+
 				2025年12月26日 10:05 1.新增用于走夜路日常照明且具备瞬时爆发输出用来压制
 														 远光狗的走夜路挡位，并在挡位参数结构体内注册相关的
 														 挡位。
@@ -209,7 +217,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_ExtremelyLow,
 		CalcIREFValue(200),  //200mA
 		0,   //最小电流没用到，无视
-		2850,  //2.85V关断
+		2900,  //2.9V关断
 		true, //带记忆
 		false,
 		//配置是否允许进入爆闪
@@ -226,7 +234,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Low,
 		CalcIREFValue(1000),  //1000mA电流
 		0,   //最小电流没用到，无视
-		2950,  //2.8V关断
+		2950,  //2.95V关断
 		true,
 		false,
 		//配置是否允许进入爆闪
@@ -243,7 +251,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Mid,
 		CalcIREFValue(2000),  //2000mA电流
 		0,   //最小电流没用到，无视
-		3050,  //3.0V关断
+		3050,  //3.05V关断
 		true,
 		false,
 		//配置是否允许进入爆闪
@@ -260,7 +268,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_MHigh,
 		CalcIREFValue(4000),  //4000mA电流
 		0,   //最小电流没用到，无视
-		3150,  //3.1V关断
+		3150,  //3.15V关断
 		true,
 		true,
 		//配置是否允许进入爆闪
@@ -277,7 +285,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_High,
 		CalcIREFValue(8500),  //8500mA电流
 		0,   //最小电流没用到，无视
-		3250,  //3.2V关断
+		3250,  //3.25V关断
 		true,
 		true,
 		//配置是否允许进入爆闪
@@ -294,7 +302,7 @@ code ModeStrDef ModeSettings[ModeTotalDepth]=
 		Mode_Turbo,
 		CalcIREFValue(TurboICCMAX),  //30A电流	
 		0,   //最小电流没用到，无视
-		3400,  //3.4V关断
+		TurboOFFVoltage,  //使用配置文件的关断值
 		false, //极亮不能带记忆
 		true,
 		//配置是否允许进入爆闪
@@ -638,7 +646,7 @@ void SwitchToGear(ModeIdxDef TargetMode)
 	BeaconFSM_Reset(); 					//复位整个信标模块	
 			
 	//如果新老挡位都是常亮挡，则重新设置PI环避免电流过调
-	if(TargetMode>1&&TargetMode<11&&IsLastModeNeedStepDown)RecalcPILoop(Current); 	
+	if(TargetMode>1&&TargetMode<11&&IsLastModeNeedStepDown)RecalcPILoop(); 	
 	}	
 
 //执行关机处理的函数	
@@ -683,9 +691,11 @@ void ReturnToOFFState(void)
 //获取系统挡位在没有任何外部影响情况下的全部电流
 int QuerySystemFullScaleCurrent(void)
 	{
-	//极亮且开启ECO模式，电流按照ECO模式的ICCMAX取
-	if(CurrentMode->ModeIdx==Mode_Turbo&&IsPowerModeEnabled)
+	if(CurrentMode->ModeIdx==Mode_Turbo&&!IsPowerModeEnabled)
+		{
+		//极亮且开启ECO模式，电流按照ECO模式的ICCMAX取,限制输出功率
 		return CalcIREFValue(ECOTurboICCMAX);
+		}
 	//其他情况按照极亮当前电流取
   return QueryCurrentGearILED();	
 	}
