@@ -53,6 +53,7 @@
 #define BatteryDynamicTurboDegFactor 20 //极亮模式下动态调节恒温温度实现无缝过渡的系数，单位(mV)系数越小，温度下降速度越快 
 
 //常亮电流配置
+#define ThermalFoldbackILEDDegVal 5700 //触发温度回折保护之后，降档系统立即减少的电流量(mA)
 #define ILEDConstantGlowMin 8500 //降档系统内的低温温控的常亮电流设置(mA)
 #define ILEDConstantGlowMinTurbo 11000 //降档系统内的极亮温控的常亮电流设置(mA)
 #define ILEDConstantGlowMinECOTurbo 9000 //降档系统内的极亮温控（ECO模式）的常亮电流设置(mA)
@@ -318,7 +319,7 @@ void ThermalPILoopCalc(void)
 			}
 		else ConstantILED=CalcIREFValue(ILEDConstantGlowMin);  //其他挡位，执行正常的常亮电流
 		
-		if(IsNearThermalFoldBack)ConstantILED-=CalcIREFValue(2000); //接近温度上限，立即将常亮电流下调2000mA
+		if(IsNearThermalFoldBack)ConstantILED-=CalcIREFValue(ThermalFoldbackILEDDegVal); //接近温度上限，立即将常亮电流下调阻止系统继续温升
 		ProtFact=QueryConstantTemp(); //获取目标常亮温度
 		//温度误差为正（温度大于恒温值）
 		if(Data.Systemp>ProtFact)
@@ -328,7 +329,7 @@ void ThermalPILoopCalc(void)
 			调常亮电流强制继续使用P项降档快速拉低电流，这样可以避免温度继
 			续上去在正常情况下触发退出极亮的保护机制
 			**************************************************************/
-			if(Data.Systemp>LeaveTurboTemperature-3)IsNearThermalFoldBack=1;
+			if(Data.Systemp>(LeaveTurboTemperature-4))IsNearThermalFoldBack=1;
 			
 			Err=Data.Systemp-ProtFact;  //误差值等于目标温度-恒温温度
 
@@ -389,7 +390,7 @@ void ThermalPILoopCalc(void)
 				//温度下来了很多，系统已经令电流回升到强制降额前的常亮电流，则复位标记位
 				if(IsNearThermalFoldBack)
 					{
-					ConstantILED+=CalcIREFValue(2000); 									//把减掉的2000mA加回来得到原来的目标常亮是多少电流
+					ConstantILED+=CalcIREFValue(ThermalFoldbackILEDDegVal); 	//把减掉的电流值加回来得到原来的目标常亮是多少电流
 					if(CurrentBuf>ConstantILED)IsNearThermalFoldBack=0;  
 					}
 				//积分项(I)

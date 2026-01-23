@@ -11,11 +11,19 @@
 #include "WatchDog.h"
 #include "LogSystem.h"
 
+typedef enum
+	{
+	IP2366DCState_Normal,
+	IP2366DCState_LowTemp,
+	IP2366DCState_highTemp
+	}IP2366DCStateDef;
+
 bool IsEnableDischargeAtStor=true;
 static char WaitAfterTypeCRemoved;	
 bool CurrentStorDisState=true;
 bool IsSystemOverheating=false;
-static bool IP2366DCDCState=false;
+bool IsSystemLowTemp=false;
+static IP2366DCStateDef IP2366DCDCState=IP2366DCState_Normal;
 static bool IsAutoSaveEnabled=false;
 static unsigned char AutoSavePowerTIM=160;
 static unsigned char WaitTCReconnectTIM=0;
@@ -246,17 +254,17 @@ static void QuerySystemChargeState(bool *ChgState,bool *DisState,TypeCRoleDef *T
 		ChgEN=false;
 		DisEN=false;
 		Role=TypeC_NoConnect;
-		}
+		}	
 	else if(IsEnableAdapterEmu)
 		{
 		//开启适配器模拟，开启放电关闭充电
 		ChgEN=false;
 		DisEN=true;
 		Role=TypeC_SourceOnly;
-		}
+		}	
 	else
 		{
-		ChgEN=true;
+		ChgEN=IsSystemLowTemp?false:true;      //如果系统处于低温保护，则禁止充电
 		if(IsEnableTempChargeOnly)DisEN=false; //临时打开仅充电功能
 		else if(StorageMode!=StorageMode_OFF)DisEN=IP2366_IsEnableDischarge(ADCO.Vbatt);  //存储模式开启，使用当前电池电压进行配置是否使能放电
 		else DisEN=DCDCOutputBit;
@@ -418,16 +426,24 @@ void SysAutoSavePowerCfg(void)
 //系统过热保护处理	
 void SysOverHeatProt(void)
 	{
+	IP2366DCStateDef StateBuf;
   //执行存储模式管理和自循环管理
 	StorageModeDischargeControl();
 	//NTC异常
 	if(!ADCO.IsNTCOK)return;
+	//检测是否低温	
+	if(ADCO.Systemp<=0)IsSystemLowTemp=true;
+	else if(ADCO.Systemp>15)IsSystemLowTemp=false;
 	//检测是否过热	
 	if(ADCO.Systemp>(float)CfgData.OverHeatLockTemp)IsSystemOverheating=true;
 	else if(ADCO.Systemp<(float)CfgData.OverHeatLockTemp-10)IsSystemOverheating=false;			
-	//同步DCDC状态
-  if(IP2366DCDCState==IsSystemOverheating)return;
-	if(SetSystemDischargeState())IP2366DCDCState=IsSystemOverheating;
+	//计算并同步DCDC状态
+	if(IsSystemOverheating)StateBuf=IP2366DCState_highTemp;
+	else if(IsSystemLowTemp)StateBuf=IP2366DCState_LowTemp;
+	else StateBuf=IP2366DCState_Normal;
+	
+  if(IP2366DCDCState==StateBuf)return;
+	if(SetSystemDischargeState())IP2366DCDCState=StateBuf;
 	}	
 	
 //进行IP2366的输出初始化	
@@ -704,10 +720,17 @@ void IP2366_PostInit(void)
 			while(retry);
 			//充电器成功降压，切换继电器到安全模式，并重启系统
 			if(retry)
-				{							
+				{	
+				//重置操作之前，启动看门狗防止系统电源不稳后MCU跑飞，无法复位导致无限黑屏						
+				WatchDog_Init(); 				
+				WatchDog_Feed();
+					
+				//发送命令切换磁保持继电器，切换至安全启动模式	
 				ForceEnableAdvPM();	
 				AUXPSU_SetIPDState(true);						
 				AUXPSU_ConnectTCtoIPD();					
+					
+				//显示重置成功并重启系统	
 				delay_Second(1);									
 				ShowPostInfo(78,"充电器重置完毕\0","4A",Msg_Warning);
 				delay_Second(1);
@@ -732,6 +755,17 @@ void IP2366_PostInit(void)
 		//等待芯片重新协商
 		IP2366_WaitChipInitAfterChangeCC();
 		}
+	//低温保护
+	if(ADCO.IsNTCOK&&ADCO.Systemp<=0)
+		{
+		IP2366DCDCState=IP2366DCState_LowTemp;
+		IsSystemLowTemp=true;
+		ShowPostInfo(78,"电池温度过低\0","WF",Msg_Warning);
+		delay_Second(1);
+		ShowPostInfo(78,"已禁止电池充电\0","WF",Msg_Warning);
+		delay_Second(1);
+		}
+		
 	//设置芯片睡眠功能
 	if(!IP2366_SetDeepSleepModeEnabled(CfgData.SleepCfg==System_Sleep_Deep?true:false))
 		{
@@ -863,7 +897,7 @@ void IP2366_PostInit(void)
 		}
 	ICFG.ChargePower=CfgData.InputConfig.ChargePower;	
 	ICFG.PreChargeCurrent=CfgData.InputConfig.PreChargeCurrent; //其他参数照常填写
-	ICFG.IsEnableCharger=true; //充电器始终开启
+	ICFG.IsEnableCharger=IsSystemLowTemp?false:true; 						//充电器如果是低温保护，则关闭
 	ICFG.ChargeCurrent=DCDCOutputBit?CurrentIP2366FW->IP2366ICCMAX:CfgData.InputConfig.ChargeCurrent; //初始化时如果开启输出则填写9.7A	
   //写寄存器设置充电系统配置
 	Result=IP2366_SetSinkProtocol(&CfgData.SinkConfig);

@@ -107,7 +107,13 @@ void UpdataRunTimeLog(void)
 		Cap=fabsf(BATSample[1])/(float)3600; //当前电流*1000 /3600秒得到AH
    	if(State!=Batt_discharging)LogData.TotalChargeAh+=Cap;
     else LogData.TotalDischargeAh+=Cap;
-		if(!BalanceState)LogData.UnbalanceBatteryAh+=Cap; //如果均衡器处于关闭状态，则将容量统计至未均衡区域
+		if(!CfgData.EnableExtendedBalance)LogData.UnbalanceBatteryAh=0;            //系统关闭自动均衡修正，不统计未均衡的容量值
+    else if(!BalanceState)
+			{
+			//如果系统仍然在正常充电(包括恒压充电阶段还没满的时候)，但是均衡器处于关闭状态，则将容量统计至未均衡区域
+			if(State==Batt_CVCharge&&BATSample[1]>0.6)LogData.UnbalanceBatteryAh+=Cap;
+      else if(State!=Batt_CVCharge)LogData.UnbalanceBatteryAh+=Cap;
+			} 
     //计算Wh
 		Cap=fabsf(BATSample[0]*BATSample[1])/(float)3600;//当前电压*电流/3600秒得到Wh
 		if(State==Batt_discharging)LogData.TotalDischargeWh+=Cap;

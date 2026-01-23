@@ -9,11 +9,12 @@
 
 void EnteredInstantCapTest(void)
 	{
+	extern bool IsSystemLowTemp;
 	ShowPostInfo(97,"一次性测容初始化\0","40",Msg_Statu);		
 	//没有启动一次性测容
 	if(CfgData.InstantCTest!=InstantCTest_Armed)return;
-	//存储模式激活会导致结果不准确，不允许启动	
-	if(StorageMode!=StorageMode_OFF)return;
+	//存储模式激活会导致结果不准确,以及当前系统处于低温保护状态，不允许启动	
+	if(StorageMode!=StorageMode_OFF||IsSystemLowTemp)return;
 	//电池电压大于每节2.75V，以及系统当前不处于安全模式，不允许启动
 	if(!IsBootFromVBUS||ADCO.Vbatt>(2.75*BattCellCount))return; 
 	//启动测容

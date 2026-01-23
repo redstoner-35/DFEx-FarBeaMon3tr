@@ -152,6 +152,7 @@ static void RenderBattState(void)
 	bool IsShowBatt;
 	extern bool IsSystemOverheating;
 	extern bool OCState;
+	extern bool IsSystemLowTemp;
 	extern IP2366ResetCPortProcDef IPSinkState;
 	extern bool IsDispChargingINFO;
 	extern bool IsEnableTempChargeOnly;
@@ -240,6 +241,7 @@ static void RenderBattState(void)
 			LCD_ShowChinese(132,64,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
 		
 	  else if(IPSinkState!=IP2366_CPort_Reseted)LCD_ShowChinese(132,64,"充满\0",LIGHTGREEN,BLACK,0);
+	  else if(IsSystemLowTemp&&BATT!=Batt_discharging)LCD_ShowChinese(86,61,IsDispChargingINFO?"低温":"保护",YELLOW,BLACK,0);	
 		else switch(BATT)			//根据枚举状态显示
 			{
 			case Batt_StandBy:LCD_ShowChinese(132,64,"待机\0",WHITE,BLACK,0);break;

@@ -11,8 +11,8 @@ static char OCDeAssertCounter=80;
 //向下减少充电电压
 static void DecreseVFull(void)
 	{
-	CfgData.InputConfig.FullVoltage-=20; //充电电压减少20mV
-	if(CfgData.InputConfig.FullVoltage<4100)CfgData.InputConfig.FullVoltage=4100; //不允许一直往下调到低于4.1V
+	CfgData.InputConfig.FullVoltage-=10; //充电电压减少10mV
+	if(CfgData.InputConfig.FullVoltage<4150)CfgData.InputConfig.FullVoltage=4150; //不允许一直往下调到低于4.15V
 	WriteConfiguration(&CfgUnion,false);
 	IP2366_UpdateFullVoltage(CfgData.InputConfig.FullVoltage); //更新充电电压
 	}
@@ -29,7 +29,7 @@ void OverChargeDetectModule(void)
 	//判断是否满足Asser条件
   if(OCState)IsAssert=false;	 //已经触发了
 	else if(ADCO.Ibatt<-0.05)IsAssert=false; //放电阶段强制Deassert
-	else if(ADCO.Vbatt>(4.215*BattCellCount))IsAssert=true;	 //电池电压超了，强制触发
+	else if(ADCO.Vbatt>(4.24*BattCellCount))IsAssert=true;	 //电池电压超了，强制触发
 	else if(IDiff>0.35&&ADCO.Ibatt<0.2)IsAssert=true; //满足电流瞬间跌到0且当前电流接近0才触发	
 	else IsAssert=false;
 	//触发操作处理
@@ -37,7 +37,7 @@ void OverChargeDetectModule(void)
 		{
 		OCDeAssertCounter=80;
 		OCState=true; //标记系统过冲
-		if(ADCO.Vbatt>(4.215*BattCellCount))DecreseVFull(); //电池电压过高，减少充电电压
+		if(ADCO.Vbatt>(4.24*BattCellCount))DecreseVFull(); //电池电压过高，减少充电电压
 		}
 	//判断是否满足DeAssert条件
 	if(IsAssert||!OCState)IsDeAssert=false; //不满足退出条件

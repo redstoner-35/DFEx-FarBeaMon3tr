@@ -174,6 +174,7 @@ void MainMenuRenderProcess(void)
 	int Temp;
 	extern bool IsSystemOverheating;
 	extern bool OCState;
+	extern bool IsSystemLowTemp;
 	extern bool IsEnableHPGauge;
 	extern bool IsEnableTempChargeOnly;
 	extern IP2366ResetCPortProcDef IPSinkState;
@@ -314,6 +315,7 @@ void MainMenuRenderProcess(void)
   else if(!ProcessStorageChgOnlyDisplay())//根据枚举状态显示
 		{
 		if(IPSinkState!=IP2366_CPort_Reseted)LCD_ShowChinese(86,61,"充满\0",LIGHTGREEN,BLACK,0);
+		else if(IsSystemLowTemp&&BATT!=Batt_discharging)LCD_ShowChinese(86,61,IsDispChargingINFO?"低温":"保护",YELLOW,BLACK,0);	
 		else switch(BATT)			
 			{
 			case Batt_StandBy:

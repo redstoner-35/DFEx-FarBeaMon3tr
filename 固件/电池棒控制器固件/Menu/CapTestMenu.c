@@ -27,6 +27,7 @@ typedef enum
 	CapTest_ErrorDischarging,
 	CapTest_ErrorChipHang,
 	CapTest_ErrorStorageModeEnabled,
+	CapTest_ErrorBattTooCold,
 	}CapTestFSMDef;
 	
 //外部变量
@@ -94,6 +95,16 @@ void CTestAverageACC(void)
 		//电池重新开始充电中
 	  if(VBUSReConnectTimeCounter<50&&VBUS.IsTypeCConnected&&BattIsCharging())VBUSReConnectTimeCounter=0;
 	  else VBUSReConnectTimeCounter--;
+		}
+	//测容系统完成测容，交替显示充入的Wh和Ah数	
+	if(CFSMState==CapTest_Finish)
+		{
+		if(AverageCounter>0)AverageCounter--;
+		else
+			{
+			AverageCounter=8;
+			IsUpDateGUI=false;
+			}
 		}
 	//测容系统没有激活，禁止遥测
 	if(CFSMState!=CapTest_WaitTypeCInsert&&CFSMState!=CapTest_Running&&CFSMState!=CapTest_ConfirmForceStopTest)return;
@@ -168,6 +179,7 @@ void CTestKeyHandler(void)
 		case CapTest_ErrorAlreadyCharging:
 		case CapTest_ErrorChipHang:
 		case CapTest_ErrorDischarging:
+		case CapTest_ErrorBattTooCold:
 		case CapTest_Finish:
 		case CapTest_ErrorStorageModeEnabled:
 			if(KeyState.KeyEvent!=KeyEvent_ESC)break;
@@ -193,6 +205,14 @@ static void ShowVBatStartVoltage(void)
 	LCD_ShowHybridString(4,41,Str,RED,LGRAY,0);
 	}	
 	
+//显示系统为什么无法进行容量测试
+static void ShowCapTestErrorReason(char *Reason,char x)
+	{
+	LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
+	LCD_ShowHybridString(x,41,Reason,YELLOW,LGRAY,0);
+	ShowPressExitToLeave();
+	}
+
 //GUI处理
 void CTestGUIHandler(void)
 	{
@@ -264,13 +284,15 @@ void CTestGUIHandler(void)
 					LCD_ShowIntNum(124,35,time,2,YELLOW,LGRAY,12);
 					LCD_ShowChinese12x12(143,35,"秒\0",WHITE,LGRAY,12,0);		  
 					}
-		    //显示充电功率和Wh数
-		    LCD_ShowChinese(3,50,"能量",WHITE,LGRAY,0);
-		    if(CurrentTestResult.Data.TotalWh<10)LCD_ShowFloatNum1(33,50,CurrentTestResult.Data.TotalWh,1,CYAN,LGRAY,12);
-				else LCD_ShowIntNum(33,50,iroundf(CurrentTestResult.Data.TotalWh),3,CYAN,LGRAY,12);
-		    LCD_ShowString(60,50,"Wh",CYAN,LGRAY,12,0);
+		    //交替显示充电功率\Wh数以及电池电压电流
 				if(!IsDispChargingINFO)
-					{
+					{		    
+					//显示电池能量
+					LCD_ShowChinese(3,50,"能量",WHITE,LGRAY,0);	
+					if(CurrentTestResult.Data.TotalWh<10)LCD_ShowFloatNum1(33,50,CurrentTestResult.Data.TotalWh,1,CYAN,LGRAY,12);
+					else LCD_ShowIntNum(33,50,iroundf(CurrentTestResult.Data.TotalWh),3,CYAN,LGRAY,12);
+					LCD_ShowString(60,50,"Wh",CYAN,LGRAY,12,0);
+					//显示电池当前输入功率
 					LCD_ShowChinese(87,50,"功率",WHITE,LGRAY,0);
 					Power=fabsf(ADCO.Vbatt*ADCO.Ibatt);
 					if(Power<10)LCD_ShowFloatNum1(115,50,Power,1,GREEN,LGRAY,12);
@@ -279,6 +301,13 @@ void CTestGUIHandler(void)
 					}
 				else
 					{
+					//显示电池电流
+					LCD_ShowChinese(3,50,"电流",WHITE,LGRAY,0);	
+					Power=fabsf(ADCO.Ibatt);
+					if(Power<10)LCD_ShowFloatNum1(33,50,Power,2,CYAN,LGRAY,12);
+					else LCD_ShowFloatNum1(33,50,Power,1,CYAN,LGRAY,12);		
+					LCD_ShowString(67,50,"A",GREEN,LGRAY,12,0);	
+					//显示电池电压	
 					LCD_ShowChinese(87,50,"电压",WHITE,LGRAY,0);
 					//根据电压值切换显示精度
 					if(ADCO.Vbatt<10.0)LCD_ShowFloatNum1(115,50,ADCO.Vbatt,2,GREEN,LGRAY,12);	
@@ -360,12 +389,15 @@ void CTestGUIHandler(void)
 		case CapTest_Finish:
 			LCD_ShowChinese(33,22,"容量测试已完成",GREEN,LGRAY,0);
 		  LCD_ShowChinese(24,41,"共充入",GREEN,LGRAY,0);
-		  Power=CurrentTestResult.Data.TotalmAH/1000;
-		  if(Power<10)LCD_ShowFloatNum1(67,41,Power,3,WHITE,LGRAY,12);
-		  else if(Power<100)LCD_ShowFloatNum1(67,41,Power,2,WHITE,LGRAY,12);
-		  else if(Power<1000)LCD_ShowFloatNum1(67,41,Power,1,WHITE,LGRAY,12);
-		  else LCD_ShowIntNum(67,41,iroundf(Power),4,WHITE,LGRAY,12);
-		  LCD_ShowString(112,41,"Ah",WHITE,LGRAY,12,0);
+		  if(!IsDispChargingINFO)Power=CurrentTestResult.Data.TotalmAH/1000;
+			else Power=CurrentTestResult.Data.TotalWh;
+			//显示具体数字		
+			if(Power<10)LCD_ShowFloatNum1(67,41,Power,3,WHITE,LGRAY,12);
+			else if(Power<100)LCD_ShowFloatNum1(67,41,Power,2,WHITE,LGRAY,12);
+			else if(Power<1000)LCD_ShowFloatNum1(67,41,Power,1,WHITE,LGRAY,12);
+			else LCD_ShowIntNum(67,41,iroundf(Power),4,WHITE,LGRAY,12);
+
+			LCD_ShowString(112,41,!IsDispChargingINFO?"Ah":"Wh",WHITE,LGRAY,12,0);
 			ShowPressExitToLeave();
 		  break;
 	  //确认退出
@@ -384,33 +416,29 @@ void CTestGUIHandler(void)
 			LCD_ShowChinese(28,22,"容量测试异常结束",RED,LGRAY,0);
 			ShowPressExitToLeave();
 		  break;
-	  //正在充放电
-	  case CapTest_ErrorDischarging:
-		case CapTest_ErrorAlreadyCharging:
-			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
-		  LCD_ShowChinese(10,41,"系统",RED,LGRAY,0);
-		  if(CFSMState==CapTest_ErrorAlreadyCharging)LCD_ShowChinese12x12(36,41,"充",RED,LGRAY,12,0);
-			else LCD_ShowChinese12x12(36,41,"放",RED,LGRAY,12,0);
-		  LCD_ShowChinese(50,41,"电中",RED,LGRAY,0);
- 		  LCD_ShowChar(74,41,',',RED,LGRAY,12,0);  
-			LCD_ShowChinese(83,41,"请移除线材",RED,LGRAY,0);
-			ShowPressExitToLeave();
-		  break;
+    //正在切换至全速充电		
 		case CapTest_WaitSwitchingSafeMode:	
 			LCD_ShowChinese(20,19,"充电测容进行中",CYAN,LGRAY,0);
 		  LCD_ShowChinese(21,42,"正在切换到全速充电",WHITE,LGRAY,0);
 	    LCD_ShowChinese(46,54,"请稍后……",WHITE,LGRAY,0);
 			break;
+	  //正在充放电
+	  case CapTest_ErrorDischarging:
+			ShowCapTestErrorReason("系统放电中,请移除线材",10);
+		  break;
+		case CapTest_ErrorAlreadyCharging:
+			ShowCapTestErrorReason("系统充电中,请移除线材",10);
+		  break;
 		//存储模式开启
 		case CapTest_ErrorStorageModeEnabled:
-			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
-		  LCD_ShowChinese(21,41,"长期存储模式已激活",YELLOW,LGRAY,0);
-			ShowPressExitToLeave();
-		  break;		
+			ShowCapTestErrorReason("长期存储模式已激活",21);
+		  break;	
+    //电池温度过低已激活充电保护		
+		case CapTest_ErrorBattTooCold:
+		  ShowCapTestErrorReason("电池温度过低无法充电",18);		
+		  break;
 		case CapTest_ErrorChipHang:
-			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
-		  LCD_ShowChinese(21,41,"充放电管理芯片异常",RED,LGRAY,0);
-			ShowPressExitToLeave();
+			ShowCapTestErrorReason("充放电管理芯片异常",21);	
 		  break;
 		case CapTest_ErrorBattToHigh:
 			LCD_ShowChinese(28,22,"容量测试无法继续",RED,LGRAY,0);
@@ -427,6 +455,7 @@ void CTestFSMHandler(void)
 	{
 	extern bool OCState;
 	bool LastCTestState;
+	extern bool IsSystemLowTemp;
 	//状态机	
 	switch(CFSMState)
 		{
@@ -449,6 +478,7 @@ void CTestFSMHandler(void)
 	    else if(BATT==Batt_discharging)CFSMState=CapTest_ErrorDischarging;
 	    else if(BATT==Batt_ChgError)CFSMState=CapTest_ErrorChipHang;
 		  else if(BATT!=Batt_StandBy||VBUS.IsTypeCConnected)CFSMState=CapTest_ErrorAlreadyCharging;
+			else if(IsSystemLowTemp)CFSMState=CapTest_ErrorBattTooCold;
 		  else if(ADCO.Vbatt>(BattCellCount*2.75))CFSMState=CapTest_ErrorBattToHigh;
 		  else CFSMState=CapTest_WaitTypeCInsert; //等待Type-C插入
 			IsUpDateGUI=false; //发送指令重绘GUI

@@ -825,40 +825,78 @@ void IP2366_LockUpDetect(void)
 	else ChipLockUpTime=0;
 	}	
 	
-//获取充电状态	
+//获取充电状态		
+static bool IsSystemInCCCharge=true;	
+	
 bool IP2366_GetChargerState(BatteryStateDef *State)	
 	{
 	char buf,buf2;
 	float Result,IMin;
+	int ibuf;
+	PDStateDef PDState;
 	BatteryStateDef temp;
-	bool IsEnteredCVMode=false;
 	//获取状态
 	if(!IP2366_ReadReg(&buf2,REG_STATE_CTL2))return false;
 	if(!IP2366_ReadReg(&buf,REG_STATE_CTL0))return false;  //读取STATE-CTL0和STATE-CTL2
 	if(!(buf2&0x80))temp=Batt_StandBy; 			//VBUS都没电哪来的待机状态
 	else if(buf&0x08)temp=Batt_discharging; //输出已启用，电池正在向外放电
-	else if(buf&0x20)
+	else if(buf&0x20)	//当CHGEN=1的时候获取电池充电状态
 		{
 		//获取充电状态
-		temp=(BatteryStateDef)(buf&0x07); //当CHGEN=1的时候获取电池充电状态
-		if(!IP2366_getCurrentChargeParam(NULL,&Result))return false; //获取浮充电压
-		Result-=0.2; //比目标浮充电压低0.2V作为恒流充电判断条件
-		//获取充电功率
-		if(!IP2366_ReadReg(&buf,REG_SYSCTL12))return false;
-		buf>>=5;
-		buf&=0x07;
-		switch((ChargePowerDef)buf)	
+		temp=(BatteryStateDef)(buf&0x07); 
+		//如果当前系统处于恒压充电状态，则检测电池当前电压和输入电流判定是否处于恒压充电模式
+		if(temp==Batt_CVCharge)do
 			{
-			case Power_30W:IMin=1.50;break;
-			case Power_45W:IMin=2.50;break;
-			case Power_60W:
-			case Power_65W:IMin=4.0;break;
-			case Power_100W:IMin=5.5;break;
-			case Power_140W:IMin=8.2;break;
-			}
-		//条件判断，电池电压达到额定满充电压且电池电流小于进入浮充的最小值，指示进入浮充
-		if(ADCO.Vbatt>Result&&fabsf(ADCO.Ibatt)<IMin)IsEnteredCVMode=true;
-		if(!IsEnteredCVMode&&temp==Batt_CVCharge)temp=Batt_CCCharge;
+			//默认处于恒流模式
+			temp=Batt_CCCharge;
+			//判断电池当前电压确定是否已经充满
+			if(!IP2366_getCurrentChargeParam(NULL,&Result))return false; //获取浮充电压
+			if(ADCO.Vbatt<(Result-0.10))break;	
+			//检测当前VBUS输入电压和快充模式
+      if(!IP2366_ReadReg(&buf,REG_STATE_CTL2))return false;				
+			buf&=0x07;
+			if(!buf)   
+				{
+				//当前系统处于非PD状态，直接读取VBUS寄存器获得VBUS电压
+				if(!IP2366_ReadReg(&buf,REG_VSYS_LSB))return false;	
+				ibuf=((int)buf)&0xFF;
+				if(!IP2366_ReadReg(&buf,REG_VSYS_MSB))return false;		
+				ibuf|=(int)(buf<<8);	
+				Result=(float)ibuf/(float)1000; //换算为V
+				
+				//使用电压状态判断当前系统的快充挡位
+				if(Result>25)PDState=PD_28VMode;
+				else if(Result>18)PDState=PD_20VMode;
+				else if(Result>13)PDState=PD_15VMode;
+				else if(Result>10)PDState=PD_12VMode;
+				else if(Result>8)PDState=PD_9VMode;
+				else if(Result>6)PDState=PD_7VMode;
+				else PDState=PD_5VMode;
+				}
+			//系统处于PD输入模式，直接判定参数
+			else PDState=(PDStateDef)buf;
+				
+			//根据系统当前的PD输入模式决定电流	
+			switch(PDState)	
+				{
+				case PD_5VMode:IMin=0.4;break;  //5V挡位下2A电流大概0.6A充电，0.4A判定为恒压
+				case PD_7VMode:IMin=0.7;break;  //7V挡位下3A电流大概1A充电，0.8A判定为恒压
+				case PD_9VMode:IMin=1.3;break;  //9V3A下1.3A判定为恒压截止
+				case PD_12VMode:IMin=1.8;break; //12V下判定为1,8A恒压截止
+				case PD_15VMode:IMin=2.5;break;  //15V下判定为2.5A截止
+				case PD_20VMode:IMin=3.5;break;  //20V下判定为3.5A截止
+				case PD_28VMode:IMin=8.0;break;  //28V下8A截止
+				}
+
+			//条件判断（电池电流小于等于进入浮充的最小值，则指示进入浮充）
+			if(fabsf(ADCO.Ibatt)>IMin)IsSystemInCCCharge=false;
+			//显示系统已经进入恒压充电
+			if(!IsSystemInCCCharge)temp=Batt_CVCharge;
+			
+			}while(0);		//利用执行一次的循环进行判定
+    
+		//其余状态，复位浮充指示标记位
+    else IsSystemInCCCharge=true;
 		}
 	else temp=Batt_StandBy; //待机状态
 	//获取成功
