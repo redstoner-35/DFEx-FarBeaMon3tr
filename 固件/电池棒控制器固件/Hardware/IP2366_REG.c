@@ -845,7 +845,7 @@ bool IP2366_GetChargerState(BatteryStateDef *State)
 		//获取充电状态
 		temp=(BatteryStateDef)(buf&0x07); 
 		//如果当前系统处于恒压充电状态，则检测电池当前电压和输入电流判定是否处于恒压充电模式
-		if(temp==Batt_CVCharge)do
+		if(IsSystemInCCCharge&&temp==Batt_CVCharge)do
 			{
 			//默认处于恒流模式
 			temp=Batt_CCCharge;
@@ -889,7 +889,7 @@ bool IP2366_GetChargerState(BatteryStateDef *State)
 				}
 
 			//条件判断（电池电流小于等于进入浮充的最小值，则指示进入浮充）
-			if(fabsf(ADCO.Ibatt)>IMin)IsSystemInCCCharge=false;
+			if(fabsf(ADCO.Ibatt)<=IMin)IsSystemInCCCharge=false;
 			//显示系统已经进入恒压充电
 			if(!IsSystemInCCCharge)temp=Batt_CVCharge;
 			

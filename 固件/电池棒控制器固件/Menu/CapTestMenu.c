@@ -392,12 +392,12 @@ void CTestGUIHandler(void)
 		  if(!IsDispChargingINFO)Power=CurrentTestResult.Data.TotalmAH/1000;
 			else Power=CurrentTestResult.Data.TotalWh;
 			//显示具体数字		
-			if(Power<10)LCD_ShowFloatNum1(67,41,Power,3,WHITE,LGRAY,12);
-			else if(Power<100)LCD_ShowFloatNum1(67,41,Power,2,WHITE,LGRAY,12);
-			else if(Power<1000)LCD_ShowFloatNum1(67,41,Power,1,WHITE,LGRAY,12);
-			else LCD_ShowIntNum(67,41,iroundf(Power),4,WHITE,LGRAY,12);
+			if(Power<10)LCD_ShowFloatNum1(67,41,Power,3,GREEN,LGRAY,12);
+			else if(Power<100)LCD_ShowFloatNum1(67,41,Power,2,GREEN,LGRAY,12);
+			else if(Power<1000)LCD_ShowFloatNum1(67,41,Power,1,GREEN,LGRAY,12);
+			else LCD_ShowIntNum(67,41,iroundf(Power),4,GREEN,LGRAY,12);
 
-			LCD_ShowString(112,41,!IsDispChargingINFO?"Ah":"Wh",WHITE,LGRAY,12,0);
+			LCD_ShowString(112,41,!IsDispChargingINFO?"Ah":"Wh",GREEN,LGRAY,12,0);
 			ShowPressExitToLeave();
 		  break;
 	  //确认退出
