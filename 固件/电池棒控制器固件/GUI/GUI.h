@@ -204,6 +204,9 @@ void ShowPostInfo(char Present,char *Msg,char *ID,MessageTypeDef Type); //展示自
 void PostScreenInit(void); //主菜单初始化
 
 //外部调用的显示函数
+void DisplaySysPDState(int x,int y);  //显示VBUS的PD状态
+char *DisplayChgState(char *Str);
+char *DisplayProtectState(char *Str); //显示充放电菜单的状态指示
 void ShowPressExitToLeave(void);  //显示按下ESC退出
 void DoThingsBeforeOFF(void); //系统关机前执行菜单的善后函数
 void ClearMenuIndex(void);  //清除菜单index

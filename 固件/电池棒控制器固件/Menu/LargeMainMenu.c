@@ -141,7 +141,7 @@ static bool ShowSpecicalModeAtBatt(void)
 	//其余状态返回false
 	return false;
 	}
-
+	
 //显示电池状态
 static void RenderBattState(void)
 	{
@@ -154,7 +154,6 @@ static void RenderBattState(void)
 	extern bool OCState;
 	extern bool IsSystemLowTemp;
 	extern IP2366ResetCPortProcDef IPSinkState;
-	extern bool IsDispChargingINFO;
 	extern bool IsEnableTempChargeOnly;
 	//检测UI是否结束渲染
 	Is2366Telem=true;
@@ -238,27 +237,27 @@ static void RenderBattState(void)
 		else if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt) //输出短路或者输入过压
 			LCD_ShowChinese(132,64,"故障\0",RED,BLACK,0);
 		else if(OCState)
-			LCD_ShowChinese(132,64,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
+			LCD_ShowChinese(132,64,DisplayProtectState("过充"),YELLOW,BLACK,0);
 		
 	  else if(IPSinkState!=IP2366_CPort_Reseted)LCD_ShowChinese(132,64,"充满\0",LIGHTGREEN,BLACK,0);
-	  else if(IsSystemLowTemp&&BATT!=Batt_discharging)LCD_ShowChinese(86,61,IsDispChargingINFO?"低温":"保护",YELLOW,BLACK,0);	
+	  else if(IsSystemLowTemp&&BATT!=Batt_discharging)LCD_ShowChinese(86,61,DisplayProtectState("低温"),YELLOW,BLACK,0);	
 		else switch(BATT)			//根据枚举状态显示
 			{
 			case Batt_StandBy:LCD_ShowChinese(132,64,"待机\0",WHITE,BLACK,0);break;
 			case Batt_PreChage:
-				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"涓流\0",MAGENTA,BLACK,0);
+				LCD_ShowChinese(132,64,DisplayChgState("涓流\0"),MAGENTA,BLACK,0);
 				break;
 			case Batt_CCCharge:
-				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"恒流\0",YELLOW,BLACK,0);
+				LCD_ShowChinese(132,64,DisplayChgState("恒流\0"),YELLOW,BLACK,0);
 				break;
 			case Batt_CVCharge:
-				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"恒压\0",GBLUE,BLACK,0);
+				LCD_ShowChinese(132,64,DisplayChgState("恒压\0"),GBLUE,BLACK,0);
 				break;
 			case Batt_ChgWait:
-				LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"暂停\0",YELLOW,BLACK,0);
+				LCD_ShowChinese(132,64,DisplayChgState("暂停\0"),YELLOW,BLACK,0);
 				break;
 			case Batt_ChgDone:LCD_ShowChinese(132,64,"充满\0",LIGHTGREEN,BLACK,0);break;
-			case Batt_ChgError:LCD_ShowChinese(132,64,IsDispChargingINFO?"充电":"超时\0",ORANGE,BLACK,0);break;
+			case Batt_ChgError:LCD_ShowChinese(132,64,DisplayChgState("超时\0"),ORANGE,BLACK,0);break;
 			case Batt_discharging:LCD_ShowChinese(132,64,"放电\0",CYAN,BLACK,0);break;
 			}
 		}
@@ -287,7 +286,7 @@ void RenderTypeCState(void)
 	//正常渲染
 	LCD_DrawRectangle(0,0,159,79,WHITE);	
 	//电压
-	LCD_ShowFloatNum1(3,3,VTypec,2,IsEnableHPGauge?ORANGE:LIGHTGREEN,BLACK,24);
+	LCD_ShowFloatNum1(3,3,VTypec,(IsEnableHPGauge&&VTypec<10)?3:2,IsEnableHPGauge?ORANGE:LIGHTGREEN,BLACK,24);
 	LCD_ShowChar(73,3,'V',IsEnableHPGauge?ORANGE:LIGHTGREEN,BLACK,24,0);
 	//电流
 	LCD_Fill(3,28,84,76,BLACK);
@@ -345,16 +344,7 @@ void RenderTypeCState(void)
 	LCD_Fill(112,41,142,52,BLACK);
 	LCD_ShowHybridString(115,41,"协议",WHITE,BLACK,0);
 	//PD快充
-	if(VBUS.QuickChargeState==QuickCharge_PD&&VBUS.PDState!=PD_5VMode)switch(VBUS.PDState)
-		{
-		case PD_5VMode:LCD_ShowString(115,56,"N/A",WHITE,BLACK,12,0);break;
-		case PD_7VMode:LCD_ShowString(108,56,"PD 7V",MAGENTA,BLACK,12,0);break;
-		case PD_9VMode:LCD_ShowString(108,56,"PD 9V",MAGENTA,BLACK,12,0);break;
-		case PD_12VMode:LCD_ShowString(108,56,"PD12V",MAGENTA,BLACK,12,0);break;
-		case PD_15VMode:LCD_ShowString(108,56,"PD15V",MAGENTA,BLACK,12,0);break;
-		case PD_20VMode:LCD_ShowString(108,56,"PD20V",YELLOW,BLACK,12,0);break;
-		case PD_28VMode:LCD_ShowString(108,56,"PDEPR",CYAN,BLACK,12,0);break;
-		}
+	if(VBUS.QuickChargeState==QuickCharge_PD)DisplaySysPDState(108,56);
 	//QC和大电流快充
 	else if(VBUS.QuickChargeState==QuickCharge_HV)LCD_ShowChinese(115,56,"高压\0",YELLOW,BLACK,0);
 	else if(VBUS.QuickChargeState==QuickCharge_HC)LCD_ShowChinese(115,56,"高流\0",YELLOW,BLACK,0);

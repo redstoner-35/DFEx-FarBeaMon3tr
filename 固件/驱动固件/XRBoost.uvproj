@@ -322,7 +322,7 @@
             <InterruptVectorAddress>0</InterruptVectorAddress>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>EnableStdGPIO,USING_LED_FV7011I,FullPowerStrobe,FullPowerBeacon</Define>
+              <Define>EnableStdGPIO,USING_LED_N7270HP,FullPowerStrobe,FullPowerBeacon</Define>
               <Undefine></Undefine>
               <IncludePath>.\StdDriver\inc;.\Hardware;.\include\Hardware;.\include\Logic;.\include\Middleware;.\include\System</IncludePath>
             </VariousControls>

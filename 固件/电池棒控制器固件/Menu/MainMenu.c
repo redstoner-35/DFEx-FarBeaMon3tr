@@ -203,7 +203,7 @@ void MainMenuRenderProcess(void)
 		LCD_Fill(9,18,74,75,BLACK);
 		//电压
 		Power=(VTypec>4&&VTypec<30)?VTypec:0;
-		LCD_ShowFloatNum1(9,18,Power,2,IsEnableHPGauge?ORANGE:LIGHTGREEN,BLACK,12);
+		LCD_ShowFloatNum1(9,18,Power,(Power<10&&IsEnableHPGauge)?3:2,IsEnableHPGauge?ORANGE:LIGHTGREEN,BLACK,12);
 		LCD_ShowChar(62,18,'V',IsEnableHPGauge?ORANGE:LIGHTGREEN,BLACK,12,0);
 		//电流
 		Power=fabsf(ITypeC);
@@ -215,7 +215,7 @@ void MainMenuRenderProcess(void)
 			LCD_ShowChar(9,32,'-',YELLOW,BLACK,12,0);	
 			LCD_ShowFloatNum1(18,32,Power,Power<10?2:1,YELLOW,BLACK,12);
 			}
-		else LCD_ShowFloatNum1(9,32,Power,2,YELLOW,BLACK,12);
+		else LCD_ShowFloatNum1(9,32,Power,(Power<10&&IsEnableHPGauge)?3:2,YELLOW,BLACK,12);
 		LCD_ShowChar(62,32,'A',YELLOW,BLACK,12,0);	
 		//功率
 	  Power=fabsf(((VTypec>4&&VTypec<30)?VTypec:0)*Power);
@@ -250,16 +250,7 @@ void MainMenuRenderProcess(void)
 				{
 				LCD_ShowPicture(61,60,9,14,QuickCHarge);
 				//PD快充
-				if(VBUS.QuickChargeState==QuickCharge_PD&&VBUS.PDState!=PD_5VMode)switch(VBUS.PDState)
-					{
-					case PD_5VMode:break;
-					case PD_7VMode:LCD_ShowString(9,61,"PD 7V",MAGENTA,BLACK,12,0);break;
-					case PD_9VMode:LCD_ShowString(9,61,"PD 9V",MAGENTA,BLACK,12,0);break;
-					case PD_12VMode:LCD_ShowString(9,61,"PD12V",MAGENTA,BLACK,12,0);break;
-					case PD_15VMode:LCD_ShowString(9,61,"PD15V",MAGENTA,BLACK,12,0);break;
-					case PD_20VMode:LCD_ShowString(9,61,"PD20V",YELLOW,BLACK,12,0);break;
-					case PD_28VMode:LCD_ShowString(9,61,"PDEPR",CYAN,BLACK,12,0);break;
-					}
+				if(VBUS.QuickChargeState==QuickCharge_PD&&VBUS.PDState!=PD_5VMode)DisplaySysPDState(9,61);
 				//QC和大电流快充
 				else if(VBUS.QuickChargeState==QuickCharge_HV)LCD_ShowChinese(9,61,"高压\0",YELLOW,BLACK,0);
 				else if(VBUS.QuickChargeState==QuickCharge_HC)LCD_ShowChinese(9,61,"高流\0",YELLOW,BLACK,0);
@@ -286,7 +277,7 @@ void MainMenuRenderProcess(void)
 	else if(IsEnableTempChargeOnly||!DCDCOutputBit)Color=LIGHTBLUE; //非存储模式下开启仅充电，电池电压为淡蓝色
 	else Color=LIGHTGREEN; //都没有开启则绿色
 	//显示电池电压
-	LCD_ShowFloatNum1(86,18,VBat,2,Color,BLACK,12);
+	LCD_ShowFloatNum1(86,18,VBat,VBat<10?3:2,Color,BLACK,12);
 	LCD_ShowChar(139,18,'V',Color,BLACK,12,0);
 	//电流
 	LCD_Fill(86,32,135,57,BLACK);
@@ -297,7 +288,7 @@ void MainMenuRenderProcess(void)
 		  if(Power>-10)LCD_ShowFloatNum1(95,32,Power,2,YELLOW,BLACK,12);
 			else LCD_ShowFloatNum1(95,32,Power,1,YELLOW,BLACK,12);
 			}
-	else LCD_ShowFloatNum1(86,32,Power,2,YELLOW,BLACK,12);
+	else LCD_ShowFloatNum1(86,32,Power,Power<10?3:2,YELLOW,BLACK,12);
 	LCD_ShowChar(139,32,'A',YELLOW,BLACK,12,0);	
 	//功率
 	Power=fabsf(VBat*Power);
@@ -311,30 +302,30 @@ void MainMenuRenderProcess(void)
 	else if(CState.VSysState!=VSys_State_Normal||CState.VBusState==VBUS_OverVolt) //输出短路或者输入过压
 		LCD_ShowChinese(86,61,"故障\0",RED,BLACK,0);
   else if(OCState)
-		LCD_ShowChinese(86,61,IsDispChargingINFO?"过充":"保护",YELLOW,BLACK,0);
+		LCD_ShowChinese(86,61,DisplayProtectState("过充"),YELLOW,BLACK,0);
   else if(!ProcessStorageChgOnlyDisplay())//根据枚举状态显示
 		{
 		if(IPSinkState!=IP2366_CPort_Reseted)LCD_ShowChinese(86,61,"充满\0",LIGHTGREEN,BLACK,0);
-		else if(IsSystemLowTemp&&BATT!=Batt_discharging)LCD_ShowChinese(86,61,IsDispChargingINFO?"低温":"保护",YELLOW,BLACK,0);	
+		else if(IsSystemLowTemp&&BATT!=Batt_discharging)LCD_ShowChinese(86,61,DisplayProtectState("低温"),YELLOW,BLACK,0);	
 		else switch(BATT)			
 			{
 			case Batt_StandBy:
 				LCD_ShowChinese(86,61,"待机\0",WHITE,BLACK,0);	
 				break;
 			case Batt_PreChage:
-				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"涓流\0",MAGENTA,BLACK,0);
+				LCD_ShowChinese(86,61,DisplayChgState("涓流\0"),MAGENTA,BLACK,0);
 				break;
 			case Batt_CCCharge:
-				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"恒流\0",YELLOW,BLACK,0);
+				LCD_ShowChinese(86,61,DisplayChgState("恒流\0"),YELLOW,BLACK,0);
 				break;
 			case Batt_CVCharge:
-				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"恒压\0",GBLUE,BLACK,0);
+				LCD_ShowChinese(86,61,DisplayChgState("恒压\0"),GBLUE,BLACK,0);
 				break;
 			case Batt_ChgWait:
-				LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"暂停\0",YELLOW,BLACK,0);
+				LCD_ShowChinese(86,61,DisplayChgState("暂停\0"),YELLOW,BLACK,0);
 				break;
 			case Batt_ChgDone:LCD_ShowChinese(86,61,"充满\0",LIGHTGREEN,BLACK,0);break;
-			case Batt_ChgError:LCD_ShowChinese(86,61,IsDispChargingINFO?"充电":"超时\0",ORANGE,BLACK,0);break;
+			case Batt_ChgError:LCD_ShowChinese(86,61,DisplayChgState("超时\0"),ORANGE,BLACK,0);break;
 			case Batt_discharging:LCD_ShowChinese(86,61,"放电\0",WHITE,BLACK,0);break;
 			}
 		}

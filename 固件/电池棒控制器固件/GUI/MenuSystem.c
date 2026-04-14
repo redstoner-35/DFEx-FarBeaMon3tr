@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "SwitchICON.h"
 #include "LCD_Init.h"
+#include "IP2366_REG.h"
 
 //外部assign用的变量
 bool AlwaysTrue=true;
@@ -15,6 +16,36 @@ static char SetupMenuIdx=0;
 static bool MarkMenuNeedToReturn=false;
 static bool IsSetupRendered=false;
 static char GUIDelay=0;
+
+//显示VBUS的PD状态
+void DisplaySysPDState(int x,int y)
+  {
+	extern IP2366VBUSStateDef VBUS;
+	switch(VBUS.PDState)
+	   {
+		 case PD_5VMode:LCD_ShowString(x,y,"PD 5V",MAGENTA,BLACK,12,0);break;
+		 case PD_7VMode:LCD_ShowString(x,y,"PD 7V",MAGENTA,BLACK,12,0);break;
+		 case PD_9VMode:LCD_ShowString(x,y,"PD 9V",MAGENTA,BLACK,12,0);break;
+		 case PD_12VMode:LCD_ShowString(x,y,"PD12V",MAGENTA,BLACK,12,0);break;
+		 case PD_15VMode:LCD_ShowString(x,y,"PD15V",MAGENTA,BLACK,12,0);break;
+		 case PD_20VMode:LCD_ShowString(x,y,"PD20V",YELLOW,BLACK,12,0);break;
+		 case PD_28VMode:LCD_ShowString(x,y,"PDEPR",CYAN,BLACK,12,0);break;
+		 }
+	 }
+
+//充电指示显示充电状态
+char *DisplayChgState(char *Str)
+	{
+	extern bool IsDispChargingINFO;
+	return IsDispChargingINFO?"充电":Str;
+	}	
+	
+//异常指示显示保护状态
+char *DisplayProtectState(char *Str)
+	{
+	extern bool IsDispChargingINFO;
+	return IsDispChargingINFO?Str:"保护";
+	}
 
 //根据传入的秒数选择时间
 void ShowTimeCode(u16 y,long Time)

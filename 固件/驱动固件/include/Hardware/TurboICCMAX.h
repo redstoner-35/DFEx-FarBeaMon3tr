@@ -58,6 +58,12 @@
 
 	#define TurboICCMAX 28000
 
+
+//夜巡老王N7270HE
+#elif defined(USING_LED_N7270HP)
+
+	#define TurboICCMAX 35800
+
 //专属定制版本加强NBT160
 #elif defined(USING_LED_FV7011I)
 
@@ -78,7 +84,7 @@
 
 #ifdef TurboICCMAX
   
-	#if defined(USING_LED_FV7011I)
+	#if (defined(USING_LED_FV7011I)|defined(USING_LED_N7270HP))
 	   //使用FV7011I灯珠，ECO模式限制为25A
       #define ECOTurboICCMAX 25000
   #elif (TurboICCMAX < 32000UL)

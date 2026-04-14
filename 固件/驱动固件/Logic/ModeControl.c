@@ -104,7 +104,7 @@
 
 //根据LED类型打印极亮电流参数
 #if defined(Custom_LED_ICCMAX)
-  #message "LED Type : DFEx-Super LED+ FV7212D"
+  #message "LED Type : N/A (defined by project Configuration)"
 	#message "LED Current : N/A (defined by project Configuration)"
 
 #elif defined(USING_LED_FV7212D)
@@ -130,6 +130,10 @@
 #elif defined(USING_LED_FV7011I)
 	#message "LED Type : DFEx-Super LED+ FV7011I"
 	#message "LED Current : 35.5A"	
+	
+#elif defined(USING_LED_N7270HP)
+	#message "LED Type : NightWatch N7-270HP"
+	#message "LED Current : 35.8A"
 	
 #else
 	#message "LED Type : Unknown LED"
